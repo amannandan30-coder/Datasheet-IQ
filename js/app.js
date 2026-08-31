@@ -31,8 +31,23 @@ App.Router = {
 /* ── UI ──────────────────────────────────────────────────── */
 App.UI = {
 
+  toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (sidebar) sidebar.classList.toggle('open');
+    if (backdrop) backdrop.classList.toggle('active');
+  },
+
+  closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (sidebar) sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
+  },
+
   /* Render the current route into #main-content */
   async render() {
+    App.UI.closeMobileMenu();
     App.Router.parse();
     const { route, params } = App.State;
     const dataset_id = App.State.dataset_id;
