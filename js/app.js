@@ -11,20 +11,49 @@ App.State = {
 };
 
 /* ── Router ──────────────────────────────────────────────── */
+/* ── Router ──────────────────────────────────────────────── */
 App.Router = {
+  historyStack: [],
+
   go(page, params = {}) {
-    App.State.route  = page;
-    App.State.params = params;
-    window.location.hash = '#/' + page + '?' + new URLSearchParams(params).toString();
-    App.UI.render();
+    const qs = new URLSearchParams(params).toString();
+    const targetHash = '#/' + page + (qs ? '?' + qs : '');
+
+    if (window.location.hash === targetHash) {
+      App.UI.render();
+    } else {
+      window.location.hash = targetHash;
+    }
+  },
+
+  back() {
+    if (this.historyStack.length > 1) {
+      window.history.back();
+    } else {
+      this.go('dashboard');
+    }
   },
 
   parse() {
-    const hash = window.location.hash.slice(2) || '';
-    const [page, qs] = hash.split('?');
+    const rawHash = window.location.hash.slice(2) || 'dashboard';
+    const [page, qs] = rawHash.split('?');
     const params = Object.fromEntries(new URLSearchParams(qs));
     App.State.route  = page || 'dashboard';
     App.State.params = params;
+
+    const currentHash = rawHash;
+    const stack = this.historyStack;
+
+    if (stack.length === 0) {
+      stack.push(currentHash);
+    } else if (stack[stack.length - 1] !== currentHash) {
+      const prevIdx = stack.lastIndexOf(currentHash);
+      if (prevIdx !== -1) {
+        this.historyStack = stack.slice(0, prevIdx + 1);
+      } else {
+        stack.push(currentHash);
+      }
+    }
   },
 };
 
@@ -89,6 +118,16 @@ App.UI = {
 
   updateBreadcrumb(route, params) {
     const bc = document.getElementById('breadcrumb');
+    const backBtn = document.getElementById('topbar-back-btn');
+
+    if (backBtn) {
+      if (route === 'dashboard' || (App.Router.historyStack.length <= 1 && route === 'dashboard')) {
+        backBtn.style.display = 'none';
+      } else {
+        backBtn.style.display = 'inline-flex';
+      }
+    }
+
     if (!bc) return;
     const crumbs = [{ label: 'Dashboard', route: 'dashboard' }];
     if (route === 'category' && params.name) {
