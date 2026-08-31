@@ -102,9 +102,9 @@ App.Views.InventoryTable = (() => {
         <button class="btn btn-secondary" onclick="exportCSV()">⬇️ Export CSV</button>
       </div>
 
-      <div class="card mb-16">
-        <div class="flex gap-10 flex-wrap" id="filter-row">
-          <input class="input" style="width:240px" placeholder="Search product, brand, item ID…" oninput="applySearch(this.value)" id="inv-search">
+      <div class="card mb-16" style="overflow:visible">
+        <div class="filter-row" id="filter-row">
+          <input class="input" placeholder="Search product, brand, item ID…" oninput="applySearch(this.value)" id="inv-search">
           <select class="select" onchange="applyFilter('cat',this.value)"><option value="">All Categories</option>${cats.map(c=>`<option>${c}</option>`).join('')}</select>
           <select class="select" onchange="applyFilter('brand',this.value)"><option value="">All Brands</option>${brands.map(b=>`<option>${b}</option>`).join('')}</select>
           <select class="select" onchange="applyFilter('wh',this.value)"><option value="">All Warehouses</option>${whs.map(w=>`<option>${w}</option>`).join('')}</select>

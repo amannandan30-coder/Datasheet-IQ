@@ -870,6 +870,30 @@
   text-transform: capitalize;
 }
 
+/* ── FILTER ROW RESPONSIVE SCALING (100% ZOOM FIX) ────────── */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.filter-row .input {
+  flex: 1.5 1 180px;
+  min-width: 150px;
+  max-width: 250px;
+}
+
+.filter-row .select {
+  flex: 1 1 115px;
+  min-width: 105px;
+  max-width: 165px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 /* ── RECONCILIATION ──────────────────────────────────────── */
 .reconcile-row {
   display: flex;
