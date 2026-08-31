@@ -24,11 +24,11 @@ App.Views.About = (() => {
       <div class="card mb-24" style="background:linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.06));border:1px solid rgba(99,102,241,0.25);position:relative;overflow:hidden">
         <div style="position:absolute;top:-20px;right:-20px;font-size:140px;opacity:0.04;pointer-events:none">👨‍💻</div>
         
-        <div class="flex items-start gap-16 flex-wrap" style="position:relative;z-index:2">
-          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg, #6366f1, #8b5cf6);display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 8px 24px rgba(99,102,241,0.3);flex-shrink:0">
+        <div class="flex items-start gap-16 flex-wrap about-creator-flex" style="position:relative;z-index:2">
+          <div class="about-creator-avatar" style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg, #6366f1, #8b5cf6);display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 8px 24px rgba(99,102,241,0.3);flex-shrink:0">
             👨‍💻
           </div>
-          <div style="flex:1;min-width:240px">
+          <div style="flex:1;min-width:200px">
             <div class="flex items-center gap-10 flex-wrap">
               <div class="text-xl font-bold" style="color:#ffffff">Aman Nandan</div>
               <span class="badge badge-accent">Creator & Lead Architect</span>
@@ -38,7 +38,7 @@ App.Views.About = (() => {
               "Liquidation IQ was engineered to solve a major real-world bottleneck: analyzing massive, messy, multi-worksheet liquidation Excel files without manual spreadsheet cleanup. It automatically normalizes product names, resolves brand duplicates, separates variants, and calculates accurate inventory valuation with 100% offline privacy."
             </div>
             
-            <div class="flex gap-12 mt-16 flex-wrap">
+            <div class="flex gap-12 mt-16 flex-wrap about-creator-tags">
               <div class="tag" style="background:rgba(99,102,241,0.15);color:#818cf8;border-color:rgba(99,102,241,0.3);padding:4px 10px">
                 ⚡ 100% Client-Side ETL
               </div>
