@@ -82,6 +82,7 @@ App.UI = {
       case 'uploads':     await App.Views.UploadsHistory.render(main); break;
       case 'inventory':   await App.Views.InventoryTable.render(main, params, dataset_id); break;
       case 'suggestions': await App.Views.DataQuality.render(main, params, dataset_id); break;
+      case 'about':       await App.Views.About.render(main); break;
       default:            await App.Views.Dashboard.render(main, dataset_id);
     }
   },
@@ -494,6 +495,7 @@ function renderSidebar() {
     ]},
     { label: 'Settings', items: [
       { route:'uploads',  icon:'📂',   label:'Uploads' },
+      { route:'about',    icon:'ℹ️',   label:'About' },
     ]},
   ];
 
