@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Scratch / Temporary Log Files
+scratch/
+*.log
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
