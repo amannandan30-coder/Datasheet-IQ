@@ -204,6 +204,7 @@ App.Views.InventoryTable = (() => {
   function statusBadge(type) {
     const t = (type||'').toLowerCase();
     if (t==='damaged') return 'badge-danger';
+    if (t==='expired') return 'badge-purple';
     if (t.includes('expir')) return 'badge-warning';
     return 'badge-muted';
   }

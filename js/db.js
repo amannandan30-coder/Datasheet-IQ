@@ -151,14 +151,13 @@ App.DB = (() => {
       const t = _db.transaction(storeName, 'readwrite');
       const st = t.objectStore(storeName);
       const idx = st.index('dataset_id');
-      const req = idx.openCursor(IDBKeyRange.only(dataset_id));
-      let count = 0;
+      const req = idx.getAllKeys(IDBKeyRange.only(dataset_id));
       req.onsuccess = (e) => {
-        const cursor = e.target.result;
-        if (!cursor) { resolve(count); return; }
-        cursor.delete();
-        count++;
-        cursor.continue();
+        const keys = e.target.result || [];
+        for (const k of keys) {
+          st.delete(k);
+        }
+        resolve(keys.length);
       };
       req.onerror = (e) => reject(e.target.error);
     });

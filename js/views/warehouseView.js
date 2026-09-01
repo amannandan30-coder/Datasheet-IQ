@@ -32,15 +32,16 @@ App.Views.WarehouseView = (() => {
     const whMap = new Map();
     for (const r of records) {
       const wh = r.normalized_warehouse || 'Unknown';
-      if (!whMap.has(wh)) whMap.set(wh, { name:wh, qty:0, value:0, weight:0, skus:new Set(), damaged:0, nearExpiry:0 });
+      if (!whMap.has(wh)) whMap.set(wh, { name:wh, qty:0, value:0, weight:0, skus:new Set(), damaged:0, nearExpiry:0, expired:0 });
       const w = whMap.get(wh);
       w.qty    += (r.qty||0);
       w.value  += (r.source_value||0);
       w.weight += (r.total_weight||0);
       w.skus.add(r.product_family_id);
       const t = (r.raw_bad_inventory_type||'').toLowerCase();
-      if (t==='damaged')            w.damaged    += (r.source_value||0);
-      if (t.includes('expir'))      w.nearExpiry += (r.source_value||0);
+      if (t === 'damaged') w.damaged += (r.source_value||0);
+      if (t === 'expired') w.expired += (r.source_value||0);
+      if (t.includes('near')) w.nearExpiry += (r.source_value||0);
     }
 
     const whs = [...whMap.values()].sort((a,b) => b.value-a.value);
@@ -63,10 +64,16 @@ App.Views.WarehouseView = (() => {
       el.className = 'warehouse-card animate-fade-in-up';
       el.style.animationDelay = `${i*0.06}s`;
       el.innerHTML = `
-        <div class="warehouse-name">🏭 ${wh.name}</div>
+        <div class="warehouse-card-header">
+          <div class="warehouse-icon" style="background:${color}22;color:${color}">🏭</div>
+          <div>
+            <div class="warehouse-name">${wh.name}</div>
+            <div class="warehouse-sub">${wh.skus.size} SKUs · ${App.Fmt.number(wh.qty)} units</div>
+          </div>
+        </div>
         <div class="warehouse-stats">
           <div class="warehouse-stat">
-            <div class="warehouse-stat-val" style="color:${color}">${App.Fmt.number(wh.skus.size)}</div>
+            <div class="warehouse-stat-val">${wh.skus.size}</div>
             <div class="warehouse-stat-lbl">SKUs</div>
           </div>
           <div class="warehouse-stat">
@@ -82,9 +89,10 @@ App.Views.WarehouseView = (() => {
             <div class="warehouse-stat-lbl">Weight</div>
           </div>
         </div>
-        ${wh.damaged ? `<div class="flex gap-8 mt-12" style="border-top:1px solid var(--border);padding-top:10px">
-          <span class="text-xs text-muted">Damaged:</span><span class="text-xs text-danger font-semibold">${App.Fmt.currency(wh.damaged)}</span>
-          <span class="text-xs text-muted">Near Expiry:</span><span class="text-xs" style="color:var(--warning);font-weight:600">${App.Fmt.currency(wh.nearExpiry)}</span>
+        ${(wh.damaged || wh.nearExpiry || wh.expired) ? `<div class="flex gap-8 mt-12 flex-wrap" style="border-top:1px solid var(--border);padding-top:10px">
+          ${wh.damaged ? `<span class="text-xs text-muted">Damaged: <strong class="text-danger">${App.Fmt.currency(wh.damaged)}</strong></span>` : ''}
+          ${wh.nearExpiry ? `<span class="text-xs text-muted">Near Expiry: <strong style="color:#f59e0b">${App.Fmt.currency(wh.nearExpiry)}</strong></span>` : ''}
+          ${wh.expired ? `<span class="text-xs text-muted">Expired: <strong style="color:#a855f7">${App.Fmt.currency(wh.expired)}</strong></span>` : ''}
         </div>` : ''}
       `;
       el.onclick = () => App.Router.go('warehouse', { name: encodeURIComponent(wh.name) });

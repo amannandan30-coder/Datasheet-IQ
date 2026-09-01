@@ -96,7 +96,7 @@ App.Cleaner = (() => {
     const raw_cat   = rec.l0    || rec.category || rec.Category || '';
     const raw_wh    = rec.entity_name || rec.warehouse || rec.Warehouse || '';
     const raw_uom   = rec.variant_uom_text || rec.uom || rec.UOM || '';
-    const raw_type  = rec.bad_inventory_type || rec.Type || rec.type || 'damaged';
+    const raw_type  = rec.bad_inventory_type || rec.Type || rec.type || 'unknown';
 
     const qty = toNumber(rec.qty || rec.quantity || rec.Sum_of_QTY) ?? 0;
     const variant_mrp = toNumber(rec.variant_mrp || rec.mrp);
@@ -142,7 +142,7 @@ App.Cleaner = (() => {
       raw_value:            rec.Value ?? rec.value,
       raw_weight:           rec.Weight ?? rec.weight,
       raw_total_weight:     rec['Total Weight'] ?? rec.total_weight,
-      raw_bad_inventory_type: norm(raw_type) || 'damaged',
+      raw_bad_inventory_type: norm(raw_type) || 'unknown',
 
       // NORMALIZED
       normalized_warehouse:     normTitle(raw_wh) || 'Unknown Warehouse',

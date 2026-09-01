@@ -154,17 +154,63 @@ App.UI = {
     App.UI.toast('Dataset loaded ✅');
   },
 
+  /* Custom Confirmation Modal */
+  showConfirmModal({ title = 'Confirm Action', message = 'Are you sure?', confirmText = 'Confirm', danger = true, onConfirm }) {
+    document.getElementById('confirm-modal-overlay')?.remove();
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'confirm-modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:440px">
+        <div class="modal-header">
+          <div class="modal-title">${title}</div>
+          <button class="modal-close" onclick="document.getElementById('confirm-modal-overlay').remove()">✕</button>
+        </div>
+        <div class="modal-body" style="padding:16px 20px">
+          <div style="font-size:14px;color:var(--text-primary);line-height:1.5">${message}</div>
+        </div>
+        <div class="modal-footer" style="padding:12px 20px">
+          <button class="btn btn-ghost" onclick="document.getElementById('confirm-modal-overlay').remove()">Cancel</button>
+          <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" id="confirm-modal-btn">${confirmText}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('confirm-modal-btn').onclick = async () => {
+      overlay.remove();
+      if (onConfirm) await onConfirm();
+    };
+  },
+
   /* Delete dataset */
   async deleteDataset(id) {
-    if (!confirm('Delete this dataset? This cannot be undone.')) return;
-    await App.DB.deleteDataset(id);
-    if (App.State.dataset_id === id) {
-      App.State.dataset_id = null;
-      localStorage.removeItem('liq_active_dataset');
-      App.UI.updateDatasetDisplay();
-    }
-    App.Router.go('uploads');
-    App.UI.toast('Dataset deleted');
+    const ds = await App.DB.getDataset(id);
+    const fname = ds ? ds.filename : 'this dataset';
+    App.UI.showConfirmModal({
+      title: '🗑️ Delete Dataset',
+      message: `Are you sure you want to delete <strong>${fname}</strong>?<br><br><span style="color:var(--text-muted);font-size:12px">This will remove all associated inventory records, brands, categories, and KPI stats. This action cannot be undone.</span>`,
+      confirmText: 'Delete Dataset',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await App.DB.deleteDataset(id);
+          if (App.State.dataset_id === id) {
+            App.State.dataset_id = null;
+            localStorage.removeItem('liq_active_dataset');
+            const remaining = await App.DB.getAllDatasets();
+            if (remaining.length > 0) {
+              App.State.dataset_id = remaining[0].id;
+              localStorage.setItem('liq_active_dataset', remaining[0].id);
+            }
+            await App.UI.updateDatasetDisplay();
+          }
+          await App.UI.render();
+          App.UI.toast('Dataset deleted ✅');
+        } catch (err) {
+          console.error('[Delete Dataset]', err);
+          App.UI.toast('Failed to delete dataset: ' + err.message);
+        }
+      }
+    });
   },
 
   /* Update sidebar dataset display */
@@ -564,6 +610,7 @@ function setupGlobalSearch() {
     if (!status) return 'badge-muted';
     const s = String(status).toLowerCase();
     if (s === 'damaged') return 'badge-danger';
+    if (s === 'expired') return 'badge-purple';
     if (s.includes('expir')) return 'badge-warning';
     if (s === 'saleable') return 'badge-success';
     return 'badge-muted';
@@ -588,7 +635,7 @@ function setupGlobalSearch() {
         const cat = escapeHtml(r.normalized_category || '');
         const uom = escapeHtml(r.uom || r.variant_uom_text || '');
         const wh = escapeHtml(r.warehouse_id || r.normalized_warehouse || 'Unknown Warehouse');
-        const status = r.bad_inventory_type || r.status || '';
+        const status = r.raw_bad_inventory_type || r.bad_inventory_type || r.status || '';
 
         const metaParts = [];
         if (brand) metaParts.push(brand);

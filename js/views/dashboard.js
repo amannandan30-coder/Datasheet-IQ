@@ -21,6 +21,16 @@ App.Views.Dashboard = (() => {
     return cfg.color || CAT_COLORS[idx % CAT_COLORS.length];
   }
 
+  function getStatusColor(statusKey) {
+    const k = String(statusKey || '').toLowerCase().trim();
+    if (k === 'damaged') return '#ef4444'; // Red (#ef4444)
+    if (k === 'expired') return '#a855f7'; // Purple (#a855f7)
+    if (k === 'near_expiry' || k === 'nearexpiry' || k === 'near expiry') return '#f59e0b'; // Amber (#f59e0b)
+    if (k === 'unknown') return '#94a3b8'; // Gray (#94a3b8)
+    if (k === 'saleable') return '#10b981'; // Green (#10b981)
+    return '#6366f1';
+  }
+
   async function render(container, dataset_id) {
     container.innerHTML = `<div class="animate-fade-in"><div class="flex items-center gap-12 mb-24" style="padding:4px 0">
       <div class="spinner"></div><span class="text-muted">Loading dashboard…</span></div></div>`;
@@ -130,7 +140,7 @@ App.Views.Dashboard = (() => {
     if (Object.keys(statusDist).length > 0) {
       const statusHtml = Object.entries(statusDist).map(([k,v]) => {
         const pct = totalStatus ? (v.count/totalStatus*100).toFixed(1) : 0;
-        const color = k==='damaged' ? '#ef4444' : k.includes('expir') ? '#f59e0b' : '#10b981';
+        const color = getStatusColor(k);
         return `<div class="flex items-center gap-8" style="margin-bottom:6px">
           <span class="status-dot" style="background:${color}"></span>
           <span class="text-sm" style="flex:1;text-transform:capitalize">${k.replace(/_/g,' ')}</span>
@@ -292,12 +302,12 @@ App.Views.Dashboard = (() => {
       if (!canvas) return;
       const labels = Object.keys(statusDist).map(k => k.replace(/_/g,' '));
       const values = Object.values(statusDist).map(v => v.value);
-      const colors = ['#ef4444','#f59e0b','#10b981','#6366f1','#38bdf8'];
+      const colors = Object.keys(statusDist).map(k => getStatusColor(k));
 
       if (window._statusChart) window._statusChart.destroy();
       window._statusChart = new Chart(canvas, {
         type: 'doughnut',
-        data: { labels, datasets: [{ data: values, backgroundColor: colors.slice(0,labels.length), borderWidth:2, borderColor:'#13151e' }] },
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth:2, borderColor:'#13151e' }] },
         options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ color:'#94a3b8', font:{size:11} } } } }
       });
     });
