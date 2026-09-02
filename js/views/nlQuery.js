@@ -18,9 +18,9 @@ App.Views.NLQuery = (() => {
   function render(container, dataset_id) {
     container.innerHTML = `
       <div class="nl-query-wrap mb-24" id="nl-wrap">
-        <div class="flex items-center gap-10 mb-10">
-          <span style="font-size:20px">🤖</span>
-          <span class="font-semibold">Ask about your inventory…</span>
+        <div class="nl-header">
+          <div class="nl-ai-icon-box">🤖</div>
+          <span class="nl-title">Ask about your inventory…</span>
         </div>
         <input class="nl-query-input" id="nl-input" placeholder="e.g. How much atta do we have? / Which brand has the most units?" 
                autocomplete="off">

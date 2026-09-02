@@ -656,49 +656,138 @@
 .conf-low    { background: var(--danger-dim);  color: var(--danger); }
 .conf-review { background: var(--info-dim);    color: var(--info); }
 
-/* ── NL QUERY ────────────────────────────────────────────── */
+/* ── NL QUERY CHATBOT UI ─────────────────────────────────── */
 .nl-query-wrap {
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border);
+  position: relative;
+  background: linear-gradient(145deg, rgba(26, 29, 40, 0.95) 0%, rgba(19, 21, 30, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--r-xl);
-  padding: 16px 20px;
+  padding: 20px 24px;
   margin-bottom: 24px;
-  transition: border-color var(--transition);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
-.nl-query-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+
+.nl-query-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.35) 30%, rgba(139, 92, 246, 0.35) 70%, transparent 100%);
+  pointer-events: none;
+}
+
+.nl-query-wrap:focus-within {
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 0 3px rgba(99, 102, 241, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.nl-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.nl-ai-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.15));
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+  flex-shrink: 0;
+  animation: nlAiPulse 4s ease-in-out infinite;
+}
+
+@keyframes nlAiPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(99, 102, 241, 0.18); border-color: rgba(99, 102, 241, 0.3); }
+  50% { box-shadow: 0 0 18px rgba(99, 102, 241, 0.35); border-color: rgba(139, 92, 246, 0.5); }
+}
+
+.nl-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
 
 .nl-query-input {
   width: 100%;
-  background: none;
-  border: none;
+  background: rgba(12, 14, 20, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--r-md);
   outline: none;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 15px;
-  padding: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px 14px;
+  transition: all 0.15s ease;
+  margin-bottom: 12px;
 }
-.nl-query-input::placeholder { color: var(--text-muted); }
-
-.nl-examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-.nl-example-chip {
-  padding: 4px 10px;
-  background: var(--bg-surface-3);
-  border: 1px solid var(--border);
-  border-radius: var(--r-full);
-  font-size: 11px;
+.nl-query-input::placeholder {
   color: var(--text-muted);
-  cursor: pointer;
-  transition: all var(--transition);
+  font-size: 13.5px;
 }
-.nl-example-chip:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
+.nl-query-input:focus {
+  background: rgba(12, 14, 20, 0.6);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.nl-examples {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.nl-example-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.nl-example-chip:hover {
+  background: rgba(99, 102, 241, 0.12);
+  color: #ffffff;
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.18);
+}
+
+.nl-example-chip:active {
+  transform: translateY(0) scale(0.98);
+  background: rgba(99, 102, 241, 0.2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
 
 .nl-result {
-  background: var(--bg-surface);
+  background: linear-gradient(145deg, rgba(19, 21, 30, 0.98) 0%, rgba(15, 17, 24, 0.95) 100%);
   border: 1px solid var(--border-accent);
-  border-radius: var(--r-lg);
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  animation: fadeInUp 0.3s ease;
+  border-radius: var(--r-xl);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: fadeInUp 0.25s ease-out;
 }
 
 /* ── CHARTS ──────────────────────────────────────────────── */
