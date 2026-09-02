@@ -1791,9 +1791,9 @@ body.is-landing .main-content {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* ── CINEMATIC SCROLL TRACK (450vh) ─────────────────────── */
+/* ── CINEMATIC SCROLL TRACK (160vh - Fast 20-Frame Scrub) ─ */
 .landing-scroll-track {
-  height: 450vh;
+  height: 160vh;
   position: relative;
   width: 100%;
   padding-top: 72px;

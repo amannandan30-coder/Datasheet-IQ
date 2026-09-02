@@ -688,6 +688,11 @@ App.Views.Landing = (() => {
     if (!canvas || !track) return;
     const ctx = canvas.getContext('2d');
 
+    // Max 20 Keyframes sampled evenly across 240 frames
+    const KEYFRAMES_20 = [
+      1, 14, 26, 39, 51, 64, 76, 89, 102, 114, 127, 139, 152, 164, 177, 189, 202, 215, 227, 240
+    ];
+
     const TOTAL_FRAMES = 240;
     const FRAME_ASPECT = 1280 / 720; // 16:9
     const frames = new Array(TOTAL_FRAMES + 1);
@@ -728,8 +733,7 @@ App.Views.Landing = (() => {
       img.src = getFramePath(index);
       img.onload = () => {
         if (callback && !destroyed) callback(img);
-        // If this newly loaded frame is close to what we need, redraw
-        if (Math.abs(targetFrameIndex - index) < 3) {
+        if (targetFrameIndex === index) {
           renderCurrentFrame();
         }
       };
@@ -742,19 +746,19 @@ App.Views.Landing = (() => {
       if (frames[targetIdx] && frames[targetIdx].complete) {
         return frames[targetIdx];
       }
-      // Look forward and backward
-      for (let offset = 1; offset < 30; offset++) {
-        const back = targetIdx - offset;
-        if (back >= 1 && frames[back] && frames[back].complete) {
-          return frames[back];
-        }
-        const fwd = targetIdx + offset;
-        if (fwd <= TOTAL_FRAMES && frames[fwd] && frames[fwd].complete) {
-          return frames[fwd];
+      // Look through 20 keyframes for nearest complete frame
+      let closest = KEYFRAMES_20[0];
+      let minDiff = 999;
+      for (const kf of KEYFRAMES_20) {
+        if (frames[kf] && frames[kf].complete) {
+          const diff = Math.abs(kf - targetIdx);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closest = kf;
+          }
         }
       }
-      // Fallback to frame 1
-      return (frames[1] && frames[1].complete) ? frames[1] : null;
+      return frames[closest] || null;
     }
 
     // Draw the image filling the canvas (aspect cover, top-aligned)
@@ -793,37 +797,16 @@ App.Views.Landing = (() => {
       }
     }
 
-    // Progressive loading pipeline
+    // Progressive loading pipeline for 20 Keyframes
     function startProgressiveLoading() {
       // 1. Immediately load frame 1 for instant first paint
-      loadFrame(1, (img) => {
+      loadFrame(KEYFRAMES_20[0], (img) => {
         resizeCanvas();
         drawImageCover(img);
         currentRenderedFrame = img;
 
-        // 2. Load intermediate milestone frames (every 10th frame)
-        for (let i = 10; i <= TOTAL_FRAMES; i += 10) {
-          loadFrame(i);
-        }
-
-        // 3. Incrementally load chunks in idle moments
-        let currentChunk = 2;
-        function loadNextChunk() {
-          if (destroyed || currentChunk > TOTAL_FRAMES) return;
-          const limit = Math.min(currentChunk + 8, TOTAL_FRAMES);
-          for (let i = currentChunk; i <= limit; i++) {
-            if (!frames[i]) loadFrame(i);
-          }
-          currentChunk = limit + 1;
-
-          if (window.requestIdleCallback) {
-            window.requestIdleCallback(loadNextChunk, { timeout: 80 });
-          } else {
-            setTimeout(loadNextChunk, 25);
-          }
-        }
-
-        setTimeout(loadNextChunk, 100);
+        // 2. Preload the remaining 19 keyframes
+        KEYFRAMES_20.forEach(f => loadFrame(f));
       });
     }
 
@@ -907,15 +890,13 @@ App.Views.Landing = (() => {
       const currentScroll = -rect.top;
       const progress = Math.min(Math.max(currentScroll / maxScroll, 0), 1);
 
-      // Map progress to frame index 1 to 240
-      const newFrame = Math.min(TOTAL_FRAMES, Math.max(1, Math.floor(progress * (TOTAL_FRAMES - 1)) + 1));
+      // Map progress (0.0 to 1.0) to exactly 20 keyframes max
+      const step = Math.min(19, Math.max(0, Math.floor(progress * 20)));
+      const newFrame = KEYFRAMES_20[step];
 
       if (newFrame !== targetFrameIndex) {
         targetFrameIndex = newFrame;
         loadFrame(targetFrameIndex);
-        // Also pre-fetch adjacent frames
-        if (targetFrameIndex + 1 <= TOTAL_FRAMES) loadFrame(targetFrameIndex + 1);
-        if (targetFrameIndex - 1 >= 1) loadFrame(targetFrameIndex - 1);
       }
 
       updateStages(progress);
