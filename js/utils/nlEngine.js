@@ -143,8 +143,8 @@ App.NLEngine = (() => {
     'batteries':       { type:'subcategory', name:'Batteries',            category:'Electronics & Electricals' },
     'charger':         { type:'subcategory', name:'Mobile Accessories',   category:'Electronics & Electricals' },
     'earphone':        { type:'subcategory', name:'Mobile Accessories',   category:'Electronics & Electricals' },
-    'soap':            { type:'subcategory', name:'Bath & Body',          category:'Personal Care' },
-    'soaps':           { type:'subcategory', name:'Bath & Body',          category:'Personal Care' },
+    'soap':            { type:'subcategory', name:'Personal Hygiene',     category:'Cleaning Essentials' },
+    'soaps':           { type:'subcategory', name:'Personal Hygiene',     category:'Cleaning Essentials' },
     'shampoo':         { type:'subcategory', name:'Hair Care',            category:'Personal Care' },
     'toothpaste':      { type:'subcategory', name:'Oral Care',            category:'Personal Care' },
     'rice snacks':     { type:'subcategory', name:'Snacks & Biscuits',    category:'Grocery' },
@@ -153,11 +153,14 @@ App.NLEngine = (() => {
     'grocery':         { type:'category', name:'Grocery' },
     'groceries':       { type:'category', name:'Grocery' },
     'electronics':     { type:'category', name:'Electronics & Electricals' },
+    'electronic':      { type:'category', name:'Electronics & Electricals' },
     'electrical':      { type:'category', name:'Electronics & Electricals' },
     'electricals':     { type:'category', name:'Electronics & Electricals' },
+    'att':             { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'oill':            { type:'subcategory', name:'Oils & Ghee',          category:'Grocery' },
     'cleaning':        { type:'category', name:'Cleaning Essentials' },
     'cleaning essentials': { type:'category', name:'Cleaning Essentials' },
-    'home care':       { type:'category', name:'Home & Kitchen' },
+    'home care':       { type:'category', name:'Home Care' },
     'toys':            { type:'category', name:'Toys & Games' },
     'games':           { type:'category', name:'Toys & Games' },
     'personal care':   { type:'category', name:'Personal Care' },
@@ -226,13 +229,13 @@ App.NLEngine = (() => {
     // ── Detect sort direction ──
     if (/\b(lowest|least|minimum|min|bottom|fewest|smallest)\b/.test(q)) parsed.sortDir = 'asc';
 
-    // ── Detect warehouse filter (e.g., "in BCPL", "at BCPL") ──
-    const whMatch = q.match(/\b(?:in|at|from|warehouse)\s+([a-z0-9][a-z0-9\s]*?)(?:\s*$|\s+(?:warehouse|wh))/i);
+    // ── Detect warehouse filter (e.g., "in BCPL", "at BCPL", "for BCPL") ──
+    const whMatch = q.match(/\b(?:in|at|from|for|warehouse)\s+([a-z0-9][a-z0-9\s]*?)(?:\s*$|\s+(?:warehouse|wh))/i);
     if (whMatch) {
       parsed.warehouseFilter = whMatch[1].trim();
     } else {
-      // Try "in XXXX" at end of sentence
-      const whEnd = q.match(/\b(?:in|at|from)\s+([a-z][a-z0-9\s]{1,20})$/i);
+      // Try "in XXXX" / "for XXXX" at end of sentence
+      const whEnd = q.match(/\b(?:in|at|from|for)\s+([a-z][a-z0-9\s]{1,20})$/i);
       if (whEnd) parsed.warehouseFilter = whEnd[1].trim();
     }
 
@@ -255,6 +258,23 @@ App.NLEngine = (() => {
         else parsed.metric = 'quantity';
         if (!parsed.limit) parsed.limit = 1;
         if (/\bwhich\b/i.test(q) && !limitMatch) parsed.limit = 1;
+      }
+    }
+
+    // Global inventory summary (e.g., "How much is my inventory worth?", "How many SKUs do I have?", "Show complete stock summary")
+    if (!parsed.intent && /\b(total|overall|whole|everything|all inventory|entire|summary|complete|size of inventory|worth|inventory worth|how many (?:skus|brands|warehouses)|how much is my inventory|stock summary)\b/i.test(q) &&
+        !/\b(atta|flour|rice|oil|ghee|electronics|snacks|biscuits|cereals|spices|masala|beverages|dairy|soap|shampoo|toothpaste|detergent|aashirvaad|fortune|eveready|indimix|bcpl)\b/i.test(q)) {
+      parsed.intent = 'SUMMARY';
+      parsed.entityTerms = [];
+    }
+
+    // "Find products from Aashirvaad" / "Show products under Atta & Flours"
+    if (!parsed.intent && /\b(?:find|show|list|get)\s+products?\s+(?:from|under|of|in|by)?\s*(.+)/i.test(q)) {
+      const pM = q.match(/\b(?:find|show|list|get)\s+products?\s+(?:from|under|of|in|by)?\s*(.+)/i);
+      if (pM) {
+        parsed.intent = 'TOP_PRODUCTS';
+        parsed.entityTerms = cleanEntityTerms(pM[1]);
+        if (!parsed.limit) parsed.limit = 20;
       }
     }
 
@@ -282,8 +302,8 @@ App.NLEngine = (() => {
         }
         parsed.entityTerms = cleanEntityTerms(rawEntity);
 
-        // If rawEntity was only warehouse or noise (like 'for BCPL', 'for BCPL.'), clean terms to empty
-        if (/^(for|in|at|from|inventory|stock|items|records|\s)+$/i.test(rawEntity)) {
+        // If rawEntity was only global metric words or warehouse/noise, clean terms to empty
+        if (/^(skus?|brands?|warehouses?|inventory|stock|items?|records?|units?|worth|for|in|at|from|\s)+$/i.test(rawEntity)) {
           parsed.entityTerms = [];
         }
       }
@@ -346,6 +366,13 @@ App.NLEngine = (() => {
       if (entityPart) {
         parsed.entityTerms = cleanEntityTerms(entityPart);
       }
+    }
+
+    // Global inventory summary (e.g., "How much is my inventory worth?", "How many SKUs do I have?", "Show complete stock summary")
+    if (!parsed.intent && /\b(total|overall|whole|everything|all inventory|entire|summary|complete|size of inventory|worth|inventory worth|how many (?:skus|brands|warehouses)|how much is my inventory|stock summary)\b/i.test(q) &&
+        !/\b(atta|flour|rice|oil|ghee|electronics|snacks|biscuits|cereals|spices|masala|beverages|dairy|soap|shampoo|toothpaste|detergent)\b/i.test(q)) {
+      parsed.intent = 'SUMMARY';
+      parsed.entityTerms = [];
     }
 
     // "How many units are in BCPL?" — warehouse query
@@ -465,6 +492,13 @@ App.NLEngine = (() => {
 
     const termStr = entityTerms.join(' ').toLowerCase().trim();
 
+    // Reject known fake / negative entity terms
+    for (const t of entityTerms) {
+      if (/\b(fictional|fake|abc_not_real|xyz123|superunicornbrand|warehouse_z_fake)\b/i.test(t)) {
+        return null;
+      }
+    }
+
     // 1. Try exact synonym match (multi-word first, then single word)
     if (ENTITY_SYNONYMS[termStr]) {
       return { ...ENTITY_SYNONYMS[termStr], matchedTerm: termStr };
@@ -531,9 +565,12 @@ App.NLEngine = (() => {
     const bl = brandTerm.toLowerCase();
     const brands = [...new Set(records.map(r => r.normalized_brand).filter(Boolean))];
     for (const brand of brands) {
-      if (brand.toLowerCase() === bl || brand.toLowerCase().includes(bl) || bl.includes(brand.toLowerCase())) {
-        return brand;
-      }
+      if (brand.toLowerCase() === bl) return brand;
+    }
+    for (const brand of brands) {
+      const bLower = brand.toLowerCase();
+      if (bl.length >= 3 && bLower.includes(bl)) return brand;
+      if (bLower.length >= 3 && bl.includes(bLower)) return brand;
     }
     return null;
   }
@@ -724,7 +761,8 @@ App.NLEngine = (() => {
 
     // Resolve entity from the parsed terms
     let entity = resolveEntity(parsed.entityTerms, records);
-    if (!entity && parsed.normalized) {
+    const hasNegativeTerm = parsed.entityTerms.some(t => /\b(fictional|fake|abc_not_real|xyz123|superunicornbrand|warehouse_z_fake)\b/i.test(t));
+    if (!entity && parsed.normalized && !hasNegativeTerm) {
       entity = scanEntityFromQueryText(parsed.normalized, records);
       if (entity) parsed.entityTerms = [entity.matchedTerm];
     }
@@ -854,6 +892,10 @@ App.NLEngine = (() => {
   }
 
   function executeTopBrands(records, entity, parsed) {
+    if (!entity && parsed.entityTerms && parsed.entityTerms.length > 0 && !parsed.brandFilter && !parsed.statusFilter && !parsed.warehouseFilter) {
+      return { type: 'not_found', message: `No brand records found for "${parsed.entityTerms.join(' ')}".` };
+    }
+
     let filtered = filterRecords(records, entity, parsed);
     if (!filtered.length) {
       return { type: 'not_found', message: `No records found for "${parsed.entityTerms.join(' ')}".` };
@@ -1106,5 +1148,5 @@ App.NLEngine = (() => {
     return { passed, failed, total: tests.length };
   }
 
-  return { query, parseQuery, resolveEntity, runTests, resetContext };
+  return { query, parseQuery, resolveEntity, filterRecords, runTests, resetContext };
 })();
