@@ -444,48 +444,91 @@ App.Views.Landing = (() => {
         <!-- ── ABOUT / ENTERPRISE TRUST SECTION ─────────────────── -->
         <section class="landing-section about-section" id="about">
           <div class="landing-container">
-            <div class="manifesto-card">
-              <div class="manifesto-badge">
-                <span class="badge-dot"></span>
-                <span>ENTERPRISE GUARANTEE</span>
+            
+            <div class="manifesto-card animate-hud">
+              <div class="manifesto-glow-border"></div>
+              <div class="manifesto-aura"></div>
+              
+              <!-- Corner Bracket Accents -->
+              <div class="manifesto-corner-tl"></div>
+              <div class="manifesto-corner-tr"></div>
+              <div class="manifesto-corner-bl"></div>
+              <div class="manifesto-corner-br"></div>
+
+              <div class="manifesto-header">
+                <div class="manifesto-badge">
+                  <span class="badge-dot dot-emerald"></span>
+                  <span>ENTERPRISE GUARANTEE & AUDIT MANIFESTO</span>
+                </div>
+                <div class="manifesto-status-tag">
+                  <span>SYSTEM AUDIT VERIFIED</span>
+                </div>
               </div>
 
-              <h2 class="manifesto-title">Designed for Zero Data Loss & Absolute Accuracy</h2>
+              <h2 class="manifesto-title">
+                Designed for Zero Data Loss & <span class="gradient-text-emerald">Absolute Accuracy</span>
+              </h2>
 
-              <p class="manifesto-body">
-                Liquidation inventory operates on razor-thin margins and strict timelines. Traditional spreadsheet analysis leads to lost units, incorrect pack-size conversions, and missed liquidation opportunities.
-              </p>
-
-              <p class="manifesto-subbody">
-                Liquidation IQ was engineered as a high-precision intelligence layer. Every single row in the uploaded manifest is tracked, normalized, and accounted for—empowering buyers, auditors, and warehouse operators with mathematical certainty.
-              </p>
+              <div class="manifesto-callout-box">
+                <p class="manifesto-lead">
+                  Liquidation inventory operates on razor-thin margins and strict timelines. Traditional spreadsheet analysis leads to lost units, incorrect pack-size conversions, and missed liquidation opportunities.
+                </p>
+                <p class="manifesto-subbody">
+                  Liquidation IQ was engineered as a high-precision intelligence layer. Every single row in the uploaded manifest is tracked, normalized, and accounted for—empowering buyers, auditors, and warehouse operators with mathematical certainty.
+                </p>
+              </div>
 
               <div class="manifesto-guarantees">
-                <div class="guarantee-item">
-                  <div class="guarantee-icon">🛡️</div>
+                
+                <div class="guarantee-item guarantee-emerald">
+                  <div class="guarantee-icon-wrapper icon-emerald">
+                    <span>🛡️</span>
+                  </div>
                   <div class="guarantee-text">
-                    <div class="guarantee-title">Zero Data Loss</div>
-                    <div class="guarantee-desc">Every summary row, duplicate, or excluded row is logged and reconcilable.</div>
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="guarantee-title">Zero Data Loss</div>
+                      <span class="guarantee-tag tag-emerald">0 Rows Dropped</span>
+                    </div>
+                    <div class="guarantee-desc">Every summary row, duplicate, or excluded item is reconcilable with full mathematical proof.</div>
                   </div>
                 </div>
 
-                <div class="guarantee-item">
-                  <div class="guarantee-icon">⚡</div>
+                <div class="guarantee-item guarantee-cyan">
+                  <div class="guarantee-icon-wrapper icon-cyan">
+                    <span>⚡</span>
+                  </div>
                   <div class="guarantee-text">
-                    <div class="guarantee-title">Deterministic Normalization</div>
-                    <div class="guarantee-desc">100% reproducible results without AI hallucination or guesswork.</div>
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="guarantee-title">Deterministic Engine</div>
+                      <span class="guarantee-tag tag-cyan">0% Hallucination</span>
+                    </div>
+                    <div class="guarantee-desc">100% reproducible pack conversions and weight calculations without AI guesswork.</div>
                   </div>
                 </div>
 
-                <div class="guarantee-item">
-                  <div class="guarantee-icon">🔒</div>
+                <div class="guarantee-item guarantee-indigo">
+                  <div class="guarantee-icon-wrapper icon-indigo">
+                    <span>🔒</span>
+                  </div>
                   <div class="guarantee-text">
-                    <div class="guarantee-title">100% Client-Side Privacy</div>
-                    <div class="guarantee-desc">All inventory records stay in your local browser database.</div>
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="guarantee-title">Client-Side Privacy</div>
+                      <span class="guarantee-tag tag-indigo">Local Browser DB</span>
+                    </div>
+                    <div class="guarantee-desc">All inventory records stay in your local browser's SQLite / IndexedDB memory.</div>
                   </div>
                 </div>
+
               </div>
+
+              <!-- Footer Verification Seal -->
+              <div class="manifesto-footer-seal">
+                <span class="seal-icon">✓</span>
+                <span>Audited Engine Matrix v2.4.0 • Zero Cloud Exposure Certified</span>
+              </div>
+
             </div>
+
           </div>
         </section>
 
