@@ -104,7 +104,19 @@ App.Views.NLQuery = (() => {
 
     // ── Brand list ──
     if (res.data?.brands && !res.data?.categories) {
-      html += `<div class="mb-12">${res.data.brands.map((b,i) => `
+      const isSummary = res.intent === 'SUMMARY';
+      if (isSummary) {
+        const toggleId = 'summary-brands-' + Math.random().toString(36).substr(2, 6);
+        html += `<div class="mb-12">
+          <button class="btn btn-sm btn-ghost mb-8" onclick="const el=document.getElementById('${toggleId}'); if(el){ const isHidden=el.style.display==='none'; el.style.display=isHidden?'block':'none'; this.querySelector('.arrow').textContent=isHidden?'▲':'▼'; }">
+            <span>🏷️</span> <span>View Brand Breakdown (${res.data.brands.length} brands)</span> <span class="arrow text-xs text-muted" style="margin-left:4px">▼</span>
+          </button>
+          <div id="${toggleId}" style="display:none" class="animate-fade-in">`;
+      } else {
+        html += `<div class="mb-12">`;
+      }
+
+      html += res.data.brands.map((b,i) => `
         <div class="brand-row" onclick="App.Router.go('brand',{id:encodeURIComponent('${b.name}')})">
           <div class="brand-rank">${i+1}</div>
           <div class="brand-avatar">${(b.name||'?')[0].toUpperCase()}</div>
@@ -117,7 +129,10 @@ App.Views.NLQuery = (() => {
             <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.weight(b.weight)}</div><div class="brand-stat-lbl">Weight</div></div>
             <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.currency(b.value)}</div><div class="brand-stat-lbl">Value</div></div>
           </div>
-        </div>`).join('')}</div>`;
+        </div>`).join('');
+
+      html += `</div>`;
+      if (isSummary) html += `</div>`;
     }
 
     // ── Product table ──

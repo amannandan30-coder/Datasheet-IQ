@@ -34,9 +34,15 @@ App.Fmt = (() => {
   function weight(val) {
     if (val == null || isNaN(val) || Number(val) === 0) return '—';
     const n = Number(val);
-    if (n >= 1000) return `${(n/1000).toFixed(2)} T`;
-    if (n >= 1)    return `${n.toFixed(2)} KG`;
-    return `${(n*1000).toFixed(0)} g`;
+    if (n >= 1000) {
+      const t = n / 1000;
+      return `${Number.isInteger(t) ? t : t.toFixed(2)} T`;
+    }
+    if (n >= 1) {
+      return `${Number.isInteger(n) ? n : n.toFixed(2)} KG`;
+    }
+    const g = n * 1000;
+    return `${Number.isInteger(g) ? g : g.toFixed(0)} g`;
   }
 
   function pct(val, total) {

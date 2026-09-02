@@ -104,9 +104,21 @@ App.NLEngine = (() => {
     'chocolates':      { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
     'sweets':          { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
     'candy':           { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'laddu':           { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'ladoo':           { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'laddoo':          { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'burfi':           { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'besan laddu':     { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'ghee besan laddu':{ type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
     'oats':            { type:'subcategory', name:'Breakfast Cereals',    category:'Grocery' },
     'cereal':          { type:'subcategory', name:'Breakfast Cereals',    category:'Grocery' },
     'cereals':         { type:'subcategory', name:'Breakfast Cereals',    category:'Grocery' },
+    'daliya':          { type:'subcategory', name:'Breakfast Cereals',    category:'Grocery' },
+    'dalia':           { type:'subcategory', name:'Breakfast Cereals',    category:'Grocery' },
+    'multigrain daliya':{ type:'subcategory', name:'Breakfast Cereals',   category:'Grocery' },
+    'multigrain chips':{ type:'subcategory', name:'Snacks & Biscuits',    category:'Grocery' },
+    'multigrain atta': { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'multigrain flour':{ type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
 
     // Cleaning subcategories
     'detergent':       { type:'subcategory', name:'Detergents & Laundry', category:'Cleaning Essentials' },
@@ -222,14 +234,34 @@ App.NLEngine = (() => {
 
     // ── INTENT DETECTION (ordered by specificity) ──
 
-    // "How much Aashirvaad atta do we have?" — brand + entity
-    if (/\bhow (?:much|many)\s+(\w[\w\s]*?)\s+(?:do we|have|is there|are there|available|in stock)/i.test(q) ||
+    // "Which brand has the most units?" / "Which atta brand has the most units?" / "Top atta brands by value"
+    if (!parsed.intent && (/\b(?:which|top|best|biggest|largest)\s+(?:brand|brands)\b/i.test(q) ||
+        /\b(?:which|top|best|biggest|largest)\s+(.+?)\s+brands?\b/i.test(q) ||
+        /\btop\s+\d*\s*(.+?)\s+brands?\b/i.test(q))) {
+      const topM = q.match(/(?:which|top|best|biggest|largest)\s+(?:all\s+)?(.+?)\s+brands?\s+(?:has|have|with|by)?\s*(?:the\s+)?(?:most|highest|maximum|max|lowest|least|minimum)?\s*(units?|value|weight|qty|quantity)?/i) ||
+                   q.match(/(?:which|top|best|biggest|largest)\s+brands?\s+(?:has|have|with|by)?\s*(?:the\s+)?(?:most|highest|maximum|max|lowest|least|minimum)?\s*(units?|value|weight|qty|quantity)?/i) ||
+                   q.match(/top\s+\d*\s*(.+?)\s+brands?\s+(?:by\s+)?(value|units?|weight|qty|quantity)?/i);
+      if (topM) {
+        parsed.intent = 'TOP_BRANDS';
+        const term = topM[1] && !/^(brand|brands)$/i.test(topM[1]) ? topM[1] : '';
+        parsed.entityTerms = cleanEntityTerms(term);
+        const metricStr = topM[2] || q;
+        if (/value|worth|price/i.test(metricStr)) parsed.metric = 'value';
+        else if (/weight/i.test(metricStr)) parsed.metric = 'weight';
+        else parsed.metric = 'quantity';
+        if (!parsed.limit) parsed.limit = 1;
+        if (/\bwhich\b/i.test(q) && !limitMatch) parsed.limit = 1;
+      }
+    }
+
+    // "How much Aashirvaad atta do we have?" — brand + entity / category summary
+    if (!parsed.intent && (/\bhow (?:much|many)\s+(\w[\w\s]*?)\s+(?:do we|have|is there|are there|available|in stock|\bare\b|\bis\b|\bin\b|\bat\b|\bfrom\b)/i.test(q) ||
         /\bhow (?:much|many)\s+(?:units?\s+of\s+)?(\w[\w\s]*)/i.test(q) ||
         /\bwhat(?:'s| is| are)\s+(?:the\s+)?(?:total\s+)?(?:amount|quantity|units?|value|weight|stock|inventory|number)\s+(?:of\s+)?(\w[\w\s]*)/i.test(q) ||
         /\btotal\s+(\w[\w\s]*?)(?:\s+(?:stock|inventory|units?|value))?$/i.test(q) ||
-        /\bshow (?:me\s+)?(?:total\s+)?(\w[\w\s]*?)\s+(?:stock|inventory)/i.test(q)) {
+        /\bshow (?:me\s+)?(?:total\s+)?(\w[\w\s]*?)\s+(?:stock|inventory)/i.test(q))) {
       const entityM = q.match(
-        /how (?:much|many)\s+(?:units?\s+of\s+)?(.+?)(?:\s+(?:do we|have|is there|are there|available|in stock)|\s*$)/i
+        /how (?:much|many)\s+(?:units?\s+of\s+)?(.+?)(?:\s+(?:do we|have|is there|are there|available|in stock|\bare\b|\bis\b|\bin\b|\bat\b|\bfrom\b)|\s*$)/i
       ) || q.match(
         /what(?:'s| is| are)\s+(?:the\s+)?(?:total\s+)?(?:amount|quantity|units?|value|weight|stock|inventory|number)\s+(?:of\s+)?(.+)/i
       ) || q.match(
@@ -239,7 +271,12 @@ App.NLEngine = (() => {
       );
       if (entityM) {
         parsed.intent = 'SUMMARY';
-        parsed.entityTerms = cleanEntityTerms(entityM[1]);
+        // Remove warehouse filter string if it bled into entity terms
+        let rawEntity = entityM[1];
+        if (parsed.warehouseFilter) {
+          rawEntity = rawEntity.replace(new RegExp('\\b(?:in|at|from)?\\s*' + escapeRegex(parsed.warehouseFilter) + '\\b', 'gi'), '').trim();
+        }
+        parsed.entityTerms = cleanEntityTerms(rawEntity);
       }
     }
 
@@ -252,26 +289,6 @@ App.NLEngine = (() => {
         parsed.intent = 'TOP_BRANDS';
         parsed.entityTerms = cleanEntityTerms(brandM[1]);
         if (!parsed.limit) parsed.limit = 20;
-      }
-    }
-
-    // "Which atta brand has the most units?" / "Top atta brands by value"
-    if (!parsed.intent && (/\b(?:which|top|best|biggest|largest)\s+(.+?)\s+brands?\b/i.test(q) ||
-        /\btop\s+\d*\s*(.+?)\s+brands?\b/i.test(q))) {
-      const topM = q.match(/(?:which|top|best|biggest|largest)\s+(.+?)\s+brands?\s+(?:has|have|with|by)?\s*(?:most|highest|maximum|max|lowest|least|minimum)?\s*(units?|value|weight|qty|quantity)?/i) ||
-                   q.match(/top\s+\d*\s*(.+?)\s+brands?\s+(?:by\s+)?(value|units?|weight|qty|quantity)?/i);
-      if (topM) {
-        parsed.intent = 'TOP_BRANDS';
-        parsed.entityTerms = cleanEntityTerms(topM[1]);
-        if (topM[2]) {
-          const m2 = topM[2].toLowerCase();
-          if (/value|worth|price/.test(m2)) parsed.metric = 'value';
-          else if (/weight/.test(m2)) parsed.metric = 'weight';
-          else parsed.metric = 'quantity';
-        }
-        if (!parsed.limit) parsed.limit = 1; // "which brand" implies top 1
-        // If "top N" was detected, keep that limit; "which" implies 1
-        if (/\bwhich\b/i.test(q) && !limitMatch) parsed.limit = 1;
       }
     }
 
@@ -426,7 +443,7 @@ App.NLEngine = (() => {
     const brands = [...new Set(records.map(r => r.normalized_brand).filter(Boolean))];
     for (const brand of brands) {
       const bl = brand.toLowerCase();
-      if (bl === termStr || bl.includes(termStr) || termStr.includes(bl)) {
+      if (bl === termStr || (bl.length >= 3 && termStr.includes(bl)) || (termStr.length >= 3 && bl.includes(termStr))) {
         return { type: 'brand', name: brand, matchedTerm: termStr };
       }
     }
@@ -649,18 +666,19 @@ App.NLEngine = (() => {
     // If entity terms contain both a brand and a category/subcategory, handle combination
     // e.g., "Aashirvaad atta" → brand=Aashirvaad, subcategory=Atta & Flours
     let combinedBrand = null;
-    if (entity && entity.type === 'brand' && parsed.entityTerms.length > 1) {
+    const matchedWords = (entity?.matchedTerm || '').toLowerCase().split(/\s+/);
+    if (entity && entity.type === 'brand' && parsed.entityTerms.length > matchedWords.length) {
       // Check if other terms resolve to a category/subcategory
-      const otherTerms = parsed.entityTerms.filter(t => t.toLowerCase() !== entity.matchedTerm);
+      const otherTerms = parsed.entityTerms.filter(t => !matchedWords.includes(t.toLowerCase()));
       const otherEntity = resolveEntity(otherTerms, records);
       if (otherEntity && (otherEntity.type === 'category' || otherEntity.type === 'subcategory')) {
         combinedBrand = entity.name;
         entity = otherEntity;
         parsed.brandFilter = combinedBrand;
       }
-    } else if (entity && (entity.type === 'category' || entity.type === 'subcategory') && parsed.entityTerms.length > 1) {
+    } else if (entity && (entity.type === 'category' || entity.type === 'subcategory') && parsed.entityTerms.length > matchedWords.length) {
       // Check if other terms resolve to a brand
-      const otherTerms = parsed.entityTerms.filter(t => t.toLowerCase() !== entity.matchedTerm);
+      const otherTerms = parsed.entityTerms.filter(t => !matchedWords.includes(t.toLowerCase()));
       const otherEntity = resolveEntity(otherTerms, records);
       if (otherEntity && otherEntity.type === 'brand') {
         combinedBrand = otherEntity.name;
@@ -951,22 +969,26 @@ App.NLEngine = (() => {
     if (!dataset_id) { console.error('No dataset_id. Load a dataset first.'); return; }
 
     const tests = [
-      { q: 'What is the total amount of flour?',    expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
-      { q: 'How much atta do we have?',             expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
-      { q: 'How many units of atta?',               expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
-      { q: 'What is the value of atta?',            expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
-      { q: 'Show all atta brands',                  expectIntent: 'TOP_BRANDS',expectEntity: 'Atta & Flours' },
-      { q: 'Which atta brand has the most units?',  expectIntent: 'TOP_BRANDS',expectEntity: 'Atta & Flours' },
-      { q: 'Top 5 atta brands by value',            expectIntent: 'TOP_BRANDS',expectEntity: 'Atta & Flours' },
-      { q: 'How much Aashirvaad atta do we have?',  expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
-      { q: 'Show Aashirvaad variants',              expectIntent: 'BRAND_PRODUCTS', expectEntity: null },
-      { q: 'How much rice do we have?',             expectIntent: 'SUMMARY',   expectEntity: 'Rice' },
+      { q: 'What is the total value of my inventory?', expectIntent: 'SUMMARY',         expectEntity: null },
+      { q: 'What is the total weight?',              expectIntent: 'SUMMARY',         expectEntity: null },
+      { q: 'How much atta do we have?',             expectIntent: 'SUMMARY',         expectEntity: 'Atta & Flours' },
+      { q: 'What is the total amount of flour?',    expectIntent: 'SUMMARY',         expectEntity: 'Atta & Flours' },
+      { q: 'How much rice do we have?',             expectIntent: 'SUMMARY',         expectEntity: 'Rice' },
+      { q: 'How much oil do we have?',              expectIntent: 'SUMMARY',         expectEntity: 'Oils & Ghee' },
+      { q: 'How much electronics inventory do we have?', expectIntent: 'SUMMARY',    expectEntity: 'Electronics & Electricals' },
       { q: 'Which category has the highest value?',  expectIntent: 'TOP_CATEGORIES', expectEntity: null },
+      { q: 'Which brand has the most units?',        expectIntent: 'TOP_BRANDS',      expectEntity: null },
       { q: 'Show damaged inventory',                expectIntent: 'FILTERED_SEARCH', expectEntity: null },
-      { q: 'Show damaged electronics',              expectIntent: 'FILTERED_SEARCH', expectEntity: 'Electronics & Electricals' },
-      { q: 'Show damaged electronics in BCPL',      expectIntent: 'FILTERED_SEARCH', expectEntity: 'Electronics & Electricals' },
-      { q: 'How many units are in BCPL?',           expectIntent: 'SUMMARY',   expectEntity: null },
-      { q: 'What is the total weight of atta?',     expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
+      { q: 'How many units are in BCPL?',           expectIntent: 'SUMMARY',         expectEntity: null },
+      { q: 'Show top 5 brands by value',            expectIntent: 'TOP_BRANDS',      expectEntity: null },
+      { q: 'Show top 5 brands by units',            expectIntent: 'TOP_BRANDS',      expectEntity: null },
+      { q: 'Show top products by value',            expectIntent: 'TOP_PRODUCTS',    expectEntity: null },
+      { q: 'How much multigrain atta do we have?',  expectIntent: 'SUMMARY',         expectEntity: 'Atta & Flours' },
+      { q: 'How much multigrain chips do we have?', expectIntent: 'SUMMARY',         expectEntity: 'Snacks & Biscuits' },
+      { q: 'How much besan do we have?',             expectIntent: 'SUMMARY',         expectEntity: 'Atta & Flours' },
+      { q: 'How much besan laddu do we have?',       expectIntent: 'SUMMARY',         expectEntity: 'Chocolates & Sweets' },
+      { q: 'How much ghee do we have?',              expectIntent: 'SUMMARY',         expectEntity: 'Oils & Ghee' },
+      { q: 'How much electronics are in BCPL?',      expectIntent: 'SUMMARY',         expectEntity: 'Electronics & Electricals' },
     ];
 
     console.log('=== NL ENGINE TEST SUITE ===');

@@ -180,16 +180,27 @@ App.Categorizer = (() => {
       }
     }
 
-    // 3. Product keyword checks (exact word boundary)
-    // Exclude "zero/no/no added maida" (bakery/pasta products, not flour)
-    // Exclude "besan laddu/ladoo/burfi/halwa" (sweets, not flour)
+    // 3. Product keyword checks (Precedence-aware signal rules)
+    const isSweet = /\b(laddu|ladoo|laddoo|burfi|barfi|halwa|sweet|mithai|toffee|candy|chocolate)\b/i.test(prodLower);
+    const isCereal = /\b(daliya|dalia|oats|muesli|cornflakes)\b/i.test(prodLower);
+    const isSnack = /\b(chips|namkeen|munchies|popcorn|rusk|wafer|biscuit|cookie)\b/i.test(prodLower);
+
     const attaKeywordMatch = /\b(atta|flour|flours|chakki|maida|besan|suji|rava)\b/i.test(prodLower);
     const attaExclude = /\b(sunflower|batteries|attract|rattan|flourish|flower)\b/i.test(prodLower) ||
                         /\b(zero|no|no[\s-]added)\s+maida\b/i.test(prodLower) ||
-                        (/\bbesan\b/i.test(prodLower) && /\b(laddu|ladoo|laddoo|burfi|halwa|sweet|mithai|papdi)\b/i.test(prodLower));
+                        isSweet || isCereal || isSnack;
     const isAtta = attaKeywordMatch && !attaExclude;
 
-    if (isAtta) {
+    if (isSweet) {
+      mainCat = 'Grocery';
+      subCat  = 'Chocolates & Sweets';
+    } else if (isCereal) {
+      mainCat = 'Grocery';
+      subCat  = 'Breakfast Cereals';
+    } else if (isSnack) {
+      mainCat = 'Grocery';
+      subCat  = 'Snacks & Biscuits';
+    } else if (isAtta) {
       mainCat = 'Grocery';
       subCat  = 'Atta & Flours';
     } else if (/\b(basmati|rice|poha)\b/i.test(prodLower)) {
@@ -199,7 +210,6 @@ App.Categorizer = (() => {
       mainCat = 'Grocery';
       subCat  = 'Pulses & Lentils';
     } else if (/\b(bulb|bulbs|led|batten|torch|trimmer|battery|batteries|charger|extension)\b/i.test(prodLower)) {
-      // Note: "tube" removed — too many false positives from packaging "(Tube)" in cosmetics/personal care
       mainCat = 'Electronics & Electricals';
     } else if (/\b(detergent|surf|tide|ariel|rin|harpic|lizol|dettol|dishwash)\b/i.test(prodLower)) {
       mainCat = 'Cleaning Essentials';
