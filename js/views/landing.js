@@ -118,61 +118,126 @@ App.Views.Landing = (() => {
         </section>
 
         <!-- ── BENTO FEATURES GRID SECTION ───────────────────────── -->
-        <section class="landing-section" id="features">
+        <section class="landing-section features-section" id="features">
+          <div class="section-bg-glow"></div>
           <div class="landing-container">
             
             <div class="landing-section-header text-center">
-              <div class="landing-section-tag">ENGINEERED FOR SCALE</div>
-              <h2 class="landing-section-title">Comprehensive Inventory Intelligence</h2>
+              <div class="landing-section-badge mb-16">
+                <span class="landing-stage-badge-dot dot-cyan"></span>
+                <span>ENGINEERED FOR ENTERPRISE SCALE</span>
+              </div>
+              <h2 class="landing-section-title">
+                Comprehensive Inventory <span class="gradient-text">Intelligence</span>
+              </h2>
               <p class="landing-section-sub">
-                Designed to solve the hardest problems in inventory liquidation — from messy unstructured manifests to instant financial reconciliation.
+                Designed to solve the hardest problems in inventory liquidation — from unstructured manifests to instant financial reconciliation.
               </p>
             </div>
 
             <div class="bento-grid">
               
-              <!-- Card 1: AI Search & NLP -->
-              <div class="bento-card bento-col-2">
-                <div class="bento-card-bg"></div>
-                <div class="bento-icon">🤖</div>
-                <h3 class="bento-title">Natural-Language Query Engine</h3>
+              <!-- Card 1: AI Search & NLP (Col 2) -->
+              <div class="bento-card bento-col-2 bento-card-indigo">
+                <div class="bento-card-glow"></div>
+                <div class="bento-header-row">
+                  <div class="bento-icon-box icon-indigo">🤖</div>
+                  <span class="bento-status-pill">AI Query Engine v2.0</span>
+                </div>
+                <h3 class="bento-title">Natural-Language Conversational Querying</h3>
                 <p class="bento-desc">
-                  Ask natural questions like <em>"How much Atta do we have?"</em> or <em>"Show all Fortune brands"</em> and get instant, audited stock breakdowns with exact KG totals.
+                  Ask natural questions like <em>"How much Atta do we have?"</em>, <em>"Which brand has highest weight?"</em>, or <em>"Show stock near expiry"</em> and receive audited breakdowns instantly.
                 </p>
-                <div class="bento-preview-chips mt-16">
-                  <span class="preview-chip">"Which atta brand has highest weight?"</span>
-                  <span class="preview-chip">"Show stock near expiry"</span>
+                <div class="bento-mock-terminal">
+                  <div class="terminal-header">
+                    <span class="term-dot red"></span>
+                    <span class="term-dot yellow"></span>
+                    <span class="term-dot green"></span>
+                    <span class="term-title">NL Query Console</span>
+                  </div>
+                  <div class="terminal-body">
+                    <div class="term-prompt">⚡ Query: "How much Atta do we have in total?"</div>
+                    <div class="term-response">
+                      <span class="resp-highlight">✓ 6,290.00 KG</span> across 12 Fortune & Aashirvaad Lots (41.5% of total stock)
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Card 2: Deterministic Normalization -->
-              <div class="bento-card">
-                <div class="bento-card-bg"></div>
-                <div class="bento-icon">⚙️</div>
+              <!-- Card 2: Zero Data Loss Normalizer (Col 1) -->
+              <div class="bento-card bento-card-emerald">
+                <div class="bento-card-glow"></div>
+                <div class="bento-header-row">
+                  <div class="bento-icon-box icon-emerald">⚙️</div>
+                  <span class="bento-status-pill pill-emerald">100% Audit Proof</span>
+                </div>
                 <h3 class="bento-title">Zero Data Loss Normalizer</h3>
                 <p class="bento-desc">
-                  Every single row in the manifest is accounted for. Discrepancies, excluded lines, and pack conversions are logged with 100% mathematical auditability.
+                  Every row in the manifest is accounted for. Discrepancies, summary lines, and pack conversions are logged with 100% mathematical certainty.
                 </p>
+                <div class="bento-stat-stack">
+                  <div class="stat-mini-bar">
+                    <span>Reconciliation Accuracy</span>
+                    <strong class="text-success">100.0%</strong>
+                  </div>
+                  <div class="mini-progress-track">
+                    <div class="mini-progress-fill" style="width: 100%;"></div>
+                  </div>
+                </div>
               </div>
 
-              <!-- Card 3: Multi-Tier Category Engine -->
-              <div class="bento-card">
-                <div class="bento-card-bg"></div>
-                <div class="bento-icon">📊</div>
-                <h3 class="bento-title">15 Primary Category Drill-Down</h3>
+              <!-- Card 3: Multi-Tier Category Engine (Col 1) -->
+              <div class="bento-card bento-card-purple">
+                <div class="bento-card-glow"></div>
+                <div class="bento-header-row">
+                  <div class="bento-icon-box icon-purple">📊</div>
+                  <span class="bento-status-pill pill-purple">15 Primary Categories</span>
+                </div>
+                <h3 class="bento-title">Category Drill-Down Engine</h3>
                 <p class="bento-desc">
-                  Instant classification into Atta, Rice, Oil, Spices, Personal Care, Beverages, and Packaging variants with unit-level breakdown.
+                  Instant classification into Atta, Rice, Oil, Spices, FMCG, Personal Care, and Packaging variants with unit-level drill-down.
                 </p>
+                <div class="bento-category-bars">
+                  <div class="cat-bar-item">
+                    <span>🌾 Atta & Grain</span>
+                    <strong>6.29T</strong>
+                  </div>
+                  <div class="cat-bar-item">
+                    <span>🍚 Rice & Pulses</span>
+                    <strong>3.11T</strong>
+                  </div>
+                  <div class="cat-bar-item">
+                    <span>🌻 Edible Oil</span>
+                    <strong>2.84T</strong>
+                  </div>
+                </div>
               </div>
 
-              <!-- Card 4: Local Storage Privacy -->
-              <div class="bento-card bento-col-2">
-                <div class="bento-card-bg"></div>
-                <div class="bento-icon">🔒</div>
-                <h3 class="bento-title">Client-Side Database Privacy</h3>
+              <!-- Card 4: Local Storage Privacy (Col 2) -->
+              <div class="bento-card bento-col-2 bento-card-sky">
+                <div class="bento-card-glow"></div>
+                <div class="bento-header-row">
+                  <div class="bento-icon-box icon-sky">🔒</div>
+                  <span class="bento-status-pill pill-sky">Client-Side Database</span>
+                </div>
+                <h3 class="bento-title">Client-Side SQLite & IndexedDB Privacy</h3>
                 <p class="bento-desc">
-                  All manifest data remains local inside your browser's SQLite / IndexedDB storage. Zero cloud exposure, zero third-party data tracking.
+                  All manifest data remains local inside your browser's database. Zero cloud exposure, zero third-party data tracking, and instant offline performance.
                 </p>
+                <div class="bento-privacy-grid">
+                  <div class="privacy-feature-item">
+                    <span class="feature-icon">🛡️</span>
+                    <span>100% Local Encryption</span>
+                  </div>
+                  <div class="privacy-feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span>Instant In-Memory Queries</span>
+                  </div>
+                  <div class="privacy-feature-item">
+                    <span class="feature-icon">📥</span>
+                    <span>1-Click Formatted XLSX Export</span>
+                  </div>
+                </div>
               </div>
 
             </div>
