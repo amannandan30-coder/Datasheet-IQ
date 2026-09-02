@@ -230,23 +230,29 @@ App.NLEngine = (() => {
     if (/\b(lowest|least|minimum|min|bottom|fewest|smallest)\b/.test(q)) parsed.sortDir = 'asc';
 
     // ── Detect warehouse filter (e.g., "in BCPL", "at BCPL", "for BCPL") ──
-    const whMatch = q.match(/\b(?:in|at|from|for|warehouse)\s+([a-z0-9][a-z0-9\s]*?)(?:\s*$|\s+(?:warehouse|wh))/i);
-    if (whMatch) {
-      parsed.warehouseFilter = whMatch[1].trim();
-    } else {
-      // Try "in XXXX" / "for XXXX" at end of sentence
-      const whEnd = q.match(/\b(?:in|at|from|for)\s+([a-z][a-z0-9\s]{1,20})$/i);
-      if (whEnd) parsed.warehouseFilter = whEnd[1].trim();
+    if (!/\b(?:find|show|list|get)\s+products\s+from\b/i.test(q)) {
+      const whMatch = q.match(/\b(?:in|at|from|for|warehouse)\s+([a-z0-9][a-z0-9\s]*?)(?:\s*$|\s+(?:warehouse|wh))/i);
+      if (whMatch) {
+        parsed.warehouseFilter = whMatch[1].trim();
+      } else {
+        const whEnd = q.match(/\b(?:in|at|from|for)\s+([a-z][a-z0-9\s]{1,20})$/i);
+        if (whEnd) parsed.warehouseFilter = whEnd[1].trim();
+      }
     }
 
     // ── INTENT DETECTION (ordered by specificity) ──
 
-    // "Which brand has the most units?" / "Which atta brand has the most units?" / "Top atta brands by value"
-    if (!parsed.intent && (/\b(?:which|top|best|biggest|largest)\s+(?:brand|brands)\b/i.test(q) ||
-        /\b(?:which|top|best|biggest|largest)\s+(.+?)\s+brands?\b/i.test(q) ||
+    // "Which brand has the most units?" / "Who has the highest quantity of atta?" / "Which atta brand has the most units?" / "Kaunsa atta brand sabse zyada hai?" / "Top atta brands by value"
+    if (!parsed.intent && (/\b(?:which|who|top|best|biggest|largest|highest|kaunsa|kon\s*sa|konsa|kis|kiska|kiske)\s+(?:brand|brands)\b/i.test(q) ||
+        /\b(?:which|who|top|best|biggest|largest|highest|kaunsa|kon\s*sa|konsa|kis|kiska|kiske)\s+(.+?)\s+brands?\b/i.test(q) ||
+        /\bwho\s+(?:has|is)\s+(?:the\s+)?(?:highest|most|top|maximum)\s+(?:quantity|units?|stock|value|weight)?\s*(?:of|in)?\s*(.+)?/i.test(q) ||
+        /\bkaunsa\s+(.+?)\s+brand\b/i.test(q) ||
+        /\b(.+?)\s+brand\s+(?:sabse|sab\s+se)\s+(?:zyada|bada|adhik)\b/i.test(q) ||
         /\btop\s+\d*\s*(.+?)\s+brands?\b/i.test(q))) {
-      const topM = q.match(/(?:which|top|best|biggest|largest)\s+(?:all\s+)?(.+?)\s+brands?\s+(?:has|have|with|by)?\s*(?:the\s+)?(?:most|highest|maximum|max|lowest|least|minimum)?\s*(units?|value|weight|qty|quantity)?/i) ||
-                   q.match(/(?:which|top|best|biggest|largest)\s+brands?\s+(?:has|have|with|by)?\s*(?:the\s+)?(?:most|highest|maximum|max|lowest|least|minimum)?\s*(units?|value|weight|qty|quantity)?/i) ||
+      const topM = q.match(/(?:which|who|top|best|biggest|largest|highest|kaunsa|kon\s*sa|konsa|kis|kiska|kiske)\s+(?:all\s+)?(.+?)\s+brands?\s+(?:has|have|with|by)?\s*(?:the\s+)?(?:most|highest|maximum|max|lowest|least|minimum|sabse\s+zyada|sab\s+se\s+zyada)?\s*(units?|value|weight|qty|quantity)?/i) ||
+                   q.match(/who\s+(?:has|is)\s+(?:the\s+)?(?:highest|most|top|maximum)\s+(?:quantity|units?|stock|value|weight)?\s*(?:of|in)?\s*(.+)/i) ||
+                   q.match(/(?:which|who|top|best|biggest|largest|highest|kaunsa|kon\s*sa|konsa|kis|kiska|kiske)\s+brands?\s+(?:has|have|with|by)?\s*(?:the\s+)?(?:most|highest|maximum|max|lowest|least|minimum|sabse\s+zyada|sab\s+se\s+zyada)?\s*(units?|value|weight|qty|quantity)?/i) ||
+                   q.match(/(.+?)\s+brand\s+(?:sabse|sab\s+se)\s+(?:zyada|bada|adhik)\b/i) ||
                    q.match(/top\s+\d*\s*(.+?)\s+brands?\s+(?:by\s+)?(value|units?|weight|qty|quantity)?/i);
       if (topM) {
         parsed.intent = 'TOP_BRANDS';
@@ -257,24 +263,29 @@ App.NLEngine = (() => {
         else if (/weight/i.test(metricStr)) parsed.metric = 'weight';
         else parsed.metric = 'quantity';
         if (!parsed.limit) parsed.limit = 1;
-        if (/\bwhich\b/i.test(q) && !limitMatch) parsed.limit = 1;
+        if (/\b(which|who|kaunsa|kon\s*sa|konsa|kis|kiska|kiske)\b/i.test(q) && !limitMatch) parsed.limit = 1;
       }
     }
 
     // Global inventory summary (e.g., "How much is my inventory worth?", "How many SKUs do I have?", "Show complete stock summary")
     if (!parsed.intent && /\b(total|overall|whole|everything|all inventory|entire|summary|complete|size of inventory|worth|inventory worth|how many (?:skus|brands|warehouses)|how much is my inventory|stock summary)\b/i.test(q) &&
-        !/\b(atta|flour|rice|oil|ghee|electronics|snacks|biscuits|cereals|spices|masala|beverages|dairy|soap|shampoo|toothpaste|detergent|aashirvaad|fortune|eveready|indimix|bcpl)\b/i.test(q)) {
+        !/\b(atta|flour|rice|oil|ghee|electronics|snacks|biscuits|cereals|spices|masala|beverages|dairy|soap|shampoo|toothpaste|detergent|aashirvaad|fortune|eveready|indimix|bcpl|products?|from|by)\b/i.test(q)) {
       parsed.intent = 'SUMMARY';
       parsed.entityTerms = [];
     }
 
-    // "Find products from Aashirvaad" / "Show products under Atta & Flours"
-    if (!parsed.intent && /\b(?:find|show|list|get)\s+products?\s+(?:from|under|of|in|by)?\s*(.+)/i.test(q)) {
-      const pM = q.match(/\b(?:find|show|list|get)\s+products?\s+(?:from|under|of|in|by)?\s*(.+)/i);
+    // "Find products from Aashirvaad" / "Show products under Atta & Flours" / "Which product has the most units?"
+    if (!parsed.intent && (/\b(?:find|show|list|get|which)\s+(?:all\s+)?(.+?\s+)?products?\b/i.test(q) ||
+        /\bwhich\s+(.+?)\s+product\b/i.test(q))) {
+      const pM = q.match(/\b(?:find|show|list|get|which)\s+(?:all\s+)?(.+?\s+)?products?\s+(?:from|under|of|in|by|has|have|with)?\s*(.*)/i) ||
+                 q.match(/\bwhich\s+(.+?)\s+product\b/i);
       if (pM) {
-        parsed.intent = 'TOP_PRODUCTS';
-        parsed.entityTerms = cleanEntityTerms(pM[1]);
-        if (!parsed.limit) parsed.limit = 20;
+        const isFromBrand = /\b(from|by)\b/i.test(q) && !/\bby\s+(value|units?|weight|qty|quantity)\b/i.test(q);
+        parsed.intent = isFromBrand ? 'BRAND_PRODUCTS' : 'TOP_PRODUCTS';
+        let term = pM[1] && !/^(product|products|top\s*\d*|top)$/i.test(pM[1].trim()) ? pM[1].trim() : (pM[2] || '');
+        if (/^(?:by\s+)?(value|units?|weight|qty|quantity)$/i.test(term.trim())) term = '';
+        parsed.entityTerms = cleanEntityTerms(term);
+        if (!parsed.limit) parsed.limit = /\bwhich\b/i.test(q) ? 1 : 20;
       }
     }
 
@@ -443,7 +454,7 @@ App.NLEngine = (() => {
   function cleanEntityTerms(raw) {
     if (!raw) return [];
     return raw
-      .replace(/\b(total|amount|quantity|units?|value|worth|weight|stock|inventory|items?|products?|records?|number|count|of|the|our|all|show|list|how|much|many|me|do|we|have|is|are|there|please|and|whole|summarize|summary|give|tell)\b/gi, '')
+      .replace(/\b(total|amount|quantity|units?|value|worth|weight|stock|inventory|items?|products?|records?|number|count|of|the|our|all|show|list|how|much|many|me|do|we|have|is|are|there|please|and|whole|summarize|summary|give|tell|kitna|hai|ka|ke|ki|batao|karo|pada|zyada|sabse|kya|bataie|kiska|konsa|kaunsa)\b/gi, '')
       .replace(/\s+/g, ' ')
       .trim()
       .split(/\s+/)
@@ -502,6 +513,16 @@ App.NLEngine = (() => {
     // 1. Try exact synonym match (multi-word first, then single word)
     if (ENTITY_SYNONYMS[termStr]) {
       return { ...ENTITY_SYNONYMS[termStr], matchedTerm: termStr };
+    }
+
+    // 1.5 Try exact multi-word brand match (e.g. "Whole Farm") before single-word synonyms
+    if (entityTerms.length > 1 && termStr) {
+      const brands = [...new Set(records.map(r => r.normalized_brand).filter(Boolean))];
+      for (const brand of brands) {
+        if (brand.toLowerCase() === termStr) {
+          return { type: 'brand', name: brand, matchedTerm: termStr };
+        }
+      }
     }
 
     // 2. Try each term individually in synonyms

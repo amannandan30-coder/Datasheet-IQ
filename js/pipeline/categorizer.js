@@ -184,11 +184,12 @@ App.Categorizer = (() => {
     const isSweet = /\b(laddu|ladoo|laddoo|burfi|barfi|halwa|sweet|mithai|toffee|candy|chocolate)\b/i.test(prodLower);
     const isCereal = /\b(daliya|dalia|oats|muesli|cornflakes)\b/i.test(prodLower);
     const isSnack = /\b(chips|namkeen|munchies|popcorn|rusk|wafer|biscuit|cookie)\b/i.test(prodLower);
+    const isNoodle = /\b(noodle|noodles|pasta|maggi|macaroni|spaghetti|vermicelli)\b/i.test(prodLower);
 
     const attaKeywordMatch = /\b(atta|flour|flours|chakki|maida|besan|suji|rava)\b/i.test(prodLower);
     const attaExclude = /\b(sunflower|batteries|attract|rattan|flourish|flower)\b/i.test(prodLower) ||
                         /\b(zero|no|no[\s-]added)\s+maida\b/i.test(prodLower) ||
-                        isSweet || isCereal || isSnack;
+                        isSweet || isCereal || isSnack || isNoodle;
     const isAtta = attaKeywordMatch && !attaExclude;
 
     if (isSweet) {
@@ -200,6 +201,9 @@ App.Categorizer = (() => {
     } else if (isSnack) {
       mainCat = 'Grocery';
       subCat  = 'Snacks & Biscuits';
+    } else if (isNoodle) {
+      mainCat = 'Grocery';
+      subCat  = 'Noodles & Pasta';
     } else if (isAtta) {
       mainCat = 'Grocery';
       subCat  = 'Atta & Flours';

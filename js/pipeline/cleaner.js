@@ -74,7 +74,7 @@ App.Cleaner = (() => {
     }
     if (!b) return 'Unknown Brand';
     return normTitle(b
-      .replace(/\s*(pvt\.?\s*ltd\.?|ltd\.?|inc\.?|corp\.?|private limited)$/i, '')
+      .replace(/\s*(pvt\.?\s*ltd\.?|ltd\.?|inc\.?|corp\.?|private limited|grocery)$/i, '')
       .replace(/\s+/g,' ')
       .trim()
     );
