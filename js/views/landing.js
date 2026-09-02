@@ -2,12 +2,10 @@ window.App = window.App || {};
 App.Views = App.Views || {};
 
 /* ============================================================
-   LIQUIDATION IQ — CINEMATIC SCROLL-DRIVEN LANDING PAGE
-   Futuristic AI Warehouse Storyboard Scrubbing Engine (240 Frames)
+   LIQUIDATION IQ — MODERN SAAS LANDING PAGE (Clean Static Layout)
    ============================================================ */
 App.Views.Landing = (() => {
 
-  // Cleanup reference for scroll & resize listeners
   let _cleanup = null;
 
   function render(container) {
@@ -22,7 +20,7 @@ App.Views.Landing = (() => {
         <!-- ── FLOATING TOP NAVBAR ───────────────────────────────── -->
         <header class="landing-nav" id="landing-nav">
           <div class="landing-nav-container">
-            <div class="landing-brand" onclick="App.Views.Landing.scrollTo('hero-track')" role="button" tabindex="0">
+            <div class="landing-brand" onclick="App.Views.Landing.scrollTo('overview')" role="button" tabindex="0">
               <div class="landing-brand-icon">📦</div>
               <div>
                 <div class="landing-brand-title">Liquidation IQ</div>
@@ -32,9 +30,10 @@ App.Views.Landing = (() => {
 
             <!-- Desktop Nav Links -->
             <nav class="landing-links" aria-label="Main Navigation">
-              <button class="landing-link" onclick="App.Views.Landing.scrollTo('hero-track')">Overview</button>
+              <button class="landing-link" onclick="App.Views.Landing.scrollTo('overview')">Overview</button>
               <button class="landing-link" onclick="App.Views.Landing.scrollTo('features')">Features</button>
               <button class="landing-link" onclick="App.Views.Landing.scrollTo('pipeline')">Pipeline</button>
+              <button class="landing-link" onclick="App.Views.Landing.scrollTo('matrix')">Control Center</button>
               <button class="landing-link" onclick="App.Views.Landing.scrollTo('about')">About</button>
             </nav>
 
@@ -61,263 +60,57 @@ App.Views.Landing = (() => {
 
           <!-- Mobile Nav Drawer -->
           <div class="landing-mobile-menu" id="landing-mobile-menu">
-            <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('hero-track'); App.Views.Landing.closeMobileNav()">Overview</button>
+            <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('overview'); App.Views.Landing.closeMobileNav()">Overview</button>
             <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('features'); App.Views.Landing.closeMobileNav()">Features</button>
             <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('pipeline'); App.Views.Landing.closeMobileNav()">Pipeline</button>
+            <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('matrix'); App.Views.Landing.closeMobileNav()">Control Center</button>
             <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('about'); App.Views.Landing.closeMobileNav()">About</button>
             <button class="btn btn-primary btn-md w-full mt-12" onclick="App.Router.go('dashboard')">Open Dashboard</button>
           </div>
         </header>
 
-        <!-- ── CINEMATIC HERO SCROLL TRACK (450vh) ────────────────── -->
-        <section class="landing-scroll-track" id="hero-track">
-          <div class="landing-canvas-sticky">
-            
-            <!-- Background Canvas scrubbing 240 frames -->
-            <canvas id="hero-scroll-canvas" aria-hidden="true"></canvas>
-
-            <!-- Cinematic Vignette & Depth Overlays -->
-            <div class="landing-canvas-vignette"></div>
-            <div class="landing-canvas-gradient-bottom"></div>
-
-            <!-- ── SYNCHRONIZED STORYBOARD STAGES ─────────────────── -->
-            <div class="landing-stage-overlay">
-
-              <!-- STAGE 1: Frames 001 - 060 (Autonomous Ingestion & Scan) -->
-              <div class="landing-stage active" id="stage-1">
-                <div class="landing-stage-inner text-center">
-                  <div class="landing-stage-badge">
-                    <span class="landing-stage-badge-dot"></span>
-                    <span>AUTONOMOUS INGESTION ENGINE</span>
-                  </div>
-
-                  <h1 class="landing-hero-title">
-                    Turn Liquidation Manifests Into<br>
-                    <span class="gradient-text">Actionable Intelligence</span>
-                  </h1>
-
-                  <p class="landing-hero-sub">
-                    Robotic optical scanners and automated intake pipelines ingest high-volume inventory manifests with zero data loss.
-                  </p>
-
-                  <div class="landing-stage-actions">
-                    <button class="btn btn-primary btn-lg landing-hero-btn" onclick="App.Router.go('dashboard')">
-                      <span>Open Dashboard</span>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                        <polyline points="12 5 19 12 12 19"></polyline>
-                      </svg>
-                    </button>
-                    <button class="btn btn-secondary btn-lg" onclick="App.Views.Landing.scrollTo('features')">
-                      <span>Explore System ↓</span>
-                    </button>
-                  </div>
-                </div>
+        <!-- ── HERO SECTION ─────────────────────────────────── -->
+        <section class="landing-hero-section" id="overview">
+          <div class="hero-bg-overlay"></div>
+          <div class="landing-container">
+            <div class="landing-hero-content text-center">
+              
+              <div class="landing-stage-badge mb-20">
+                <span class="landing-stage-badge-dot"></span>
+                <span>AUTONOMOUS INGESTION ENGINE</span>
               </div>
 
-              <!-- STAGE 2: Frames 061 - 120 (Neural Normalization Core) -->
-              <div class="landing-stage" id="stage-2">
-                <div class="landing-stage-grid stage-2-layout">
-                  <div class="hud-glass-card animate-hud">
-                    <div class="hud-card-header">
-                      <div class="flex items-center gap-8">
-                        <div class="hud-pulse-dot"></div>
-                        <span class="hud-title-tag">CORE PIPELINE ACTIVATION</span>
-                      </div>
-                      <span class="hud-status-badge">100% DETERMINISTIC</span>
-                    </div>
+              <h1 class="landing-hero-title">
+                Turn Liquidation Manifests Into<br>
+                <span class="gradient-text">Actionable Intelligence</span>
+              </h1>
 
-                    <h2 class="hud-headline">Neural Normalization Core</h2>
-                    <p class="hud-desc">
-                      Raw manifest text streams directly into the normalization engine, standardizing inconsistent brand names, packaging units, and liquid densities.
-                    </p>
+              <p class="landing-hero-sub">
+                Robotic optical scanners and automated intake pipelines ingest high-volume inventory manifests with zero data loss.
+              </p>
 
-                    <div class="hud-metrics-row">
-                      <div class="hud-metric-box">
-                        <div class="hud-metric-val">7,980</div>
-                        <div class="hud-metric-lbl">SKUs Parsed</div>
-                      </div>
-                      <div class="hud-metric-box">
-                        <div class="hud-metric-val">20,861</div>
-                        <div class="hud-metric-lbl">Units Standardized</div>
-                      </div>
-                      <div class="hud-metric-box">
-                        <div class="hud-metric-val">15</div>
-                        <div class="hud-metric-lbl">Primary Categories</div>
-                      </div>
-                      <div class="hud-metric-box">
-                        <div class="hud-metric-val">0</div>
-                        <div class="hud-metric-lbl">Data Loss</div>
-                      </div>
-                    </div>
-
-                    <div class="hud-footer-tag">
-                      <span class="tag-icon">⚡</span>
-                      <span>Real-time Manifest Ingestion active</span>
-                    </div>
-                  </div>
-                </div>
+              <div class="landing-stage-actions justify-center mb-32">
+                <button class="btn btn-primary btn-lg landing-hero-btn" onclick="App.Router.go('dashboard')">
+                  <span>Open Dashboard</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </button>
+                <button class="btn btn-secondary btn-lg" onclick="App.Views.Landing.scrollTo('features')">
+                  <span>Explore System ↓</span>
+                </button>
               </div>
 
-              <!-- STAGE 3: Frames 121 - 180 (Holographic Decision Intelligence) -->
-              <div class="landing-stage" id="stage-3">
-                <div class="landing-stage-grid stage-3-layout">
-                  <div class="hud-glass-card hud-right-card animate-hud">
-                    <div class="hud-card-header">
-                      <div class="flex items-center gap-8">
-                        <div class="hud-pulse-dot dot-emerald"></div>
-                        <span class="hud-title-tag">DECISION INTELLIGENCE MATRIX</span>
-                      </div>
-                      <span class="hud-status-badge badge-emerald">AUDIT READY</span>
-                    </div>
-
-                    <h2 class="hud-headline">Holographic Inventory HUD</h2>
-                    <p class="hud-desc">
-                      Dynamic valuation algorithms synthesize lot metrics into instant actionable insights, highlighting near-expiry inventory and high-value brand clusters.
-                    </p>
-
-                    <div class="hud-key-stats">
-                      <div class="hud-stat-pill">
-                        <div class="pill-icon">💰</div>
-                        <div>
-                          <div class="pill-val">₹35,47,255.97</div>
-                          <div class="pill-lbl">Verified Lot Valuation</div>
-                        </div>
-                      </div>
-                      <div class="hud-stat-pill">
-                        <div class="pill-icon">⚖️</div>
-                        <div>
-                          <div class="pill-val">15.14 Tonnes</div>
-                          <div class="pill-lbl">Normalized Stock Weight</div>
-                        </div>
-                      </div>
-                      <div class="hud-stat-pill">
-                        <div class="pill-icon">⚠️</div>
-                        <div>
-                          <div class="pill-val">Near-Expiry & Damaged</div>
-                          <div class="pill-lbl">Real-time Quality Triage</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- STAGE 4: Frames 181 - 240 (Complete Liquidation Control) -->
-              <div class="landing-stage" id="stage-4">
-                <div class="stage-4-container">
-                  
-                  <div class="hud-command-center animate-hud">
-                    <div class="hud-corner-tl"></div>
-                    <div class="hud-corner-tr"></div>
-                    <div class="hud-corner-bl"></div>
-                    <div class="hud-corner-br"></div>
-
-                    <!-- Top Header Bar -->
-                    <div class="command-header">
-                      <div class="flex items-center gap-12">
-                        <div class="hud-pulse-dot dot-cyan"></div>
-                        <span class="command-status-tag">COMMAND & CONTROL MATRIX ACTIVE</span>
-                      </div>
-                      <div class="command-live-time">
-                        <span class="live-dot"></span>
-                        <span>100% RECONCILED</span>
-                      </div>
-                    </div>
-
-                    <!-- Headline & Subtitle -->
-                    <div class="command-title-wrap">
-                      <h2 class="command-headline">
-                        Complete Liquidation <span class="gradient-text-cyan">Intelligence Control</span>
-                      </h2>
-                      <p class="command-sub">
-                        Your inventory manifest is fully parsed, structured, and ready for instant decision making. Explore category drill-downs, brand breakdown, and zero-loss audit reports.
-                      </p>
-                    </div>
-
-                    <!-- Main 2-Column Grid -->
-                    <div class="command-grid">
-                      
-                      <!-- Left Column: Live Inventory Snapshot -->
-                      <div class="command-card-left">
-                        <div class="command-card-label">parsed inventory snapshot</div>
-                        <div class="command-metrics-list">
-                          <div class="command-metric-item">
-                            <div class="metric-icon">🌾</div>
-                            <div class="metric-info">
-                              <div class="metric-title">Atta & Wheat Flour</div>
-                              <div class="metric-detail">6,290.00 KG • Fortified & Chakki Fresh</div>
-                            </div>
-                            <div class="metric-tag tag-green">VERIFIED</div>
-                          </div>
-
-                          <div class="command-metric-item">
-                            <div class="metric-icon">🍚</div>
-                            <div class="metric-info">
-                              <div class="metric-title">Rice & Pulses</div>
-                              <div class="metric-detail">3,115.00 KG • Premium Basmati & Kolam</div>
-                            </div>
-                            <div class="metric-tag tag-green">VERIFIED</div>
-                          </div>
-
-                          <div class="command-metric-item">
-                            <div class="metric-icon">🧴</div>
-                            <div class="metric-info">
-                              <div class="metric-title">Personal Care & FMCG</div>
-                              <div class="metric-detail">1,480 Units • Soaps, Shampoo, Detergent</div>
-                            </div>
-                            <div class="metric-tag tag-blue">PARSED</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Right Column: Launchpad & Quick Tools -->
-                      <div class="command-card-right">
-                        <div class="command-card-label">system launchpad</div>
-                        
-                        <button class="btn btn-primary btn-lg command-launch-btn" onclick="App.Router.go('dashboard')">
-                          <span class="btn-glow-bg"></span>
-                          <span>Launch Live Dashboard</span>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                            <polyline points="12 5 19 12 12 19"></polyline>
-                          </svg>
-                        </button>
-
-                        <div class="command-quick-tools">
-                          <div class="quick-tool-chip" onclick="App.Router.go('dashboard')">
-                            <span class="chip-icon">🤖</span>
-                            <span>Natural Language AI Chat</span>
-                          </div>
-                          <div class="quick-tool-chip" onclick="App.Router.go('brands')">
-                            <span class="chip-icon">🏷️</span>
-                            <span>Brand & Lot Analysis</span>
-                          </div>
-                          <div class="quick-tool-chip" onclick="App.Router.go('quality')">
-                            <span class="chip-icon">🛡️</span>
-                            <span>Zero Data Loss Audit</span>
-                          </div>
-                          <div class="quick-tool-chip" onclick="App.Router.go('uploads')">
-                            <span class="chip-icon">📥</span>
-                            <span>1-Click XLSX Export</span>
-                          </div>
-                        </div>
-                      </div>
-
-                    </div>
-
-                    <!-- Footer Ticker Line -->
-                    <div class="command-footer-ticker">
-                      <div class="ticker-item"><span>⚡ Database:</span> SQLite & IndexedDB Ready</div>
-                      <div class="ticker-divider">•</div>
-                      <div class="ticker-item"><span>📊 Manifest SKUs:</span> 7,980 Parsed</div>
-                      <div class="ticker-divider">•</div>
-                      <div class="ticker-item"><span>⚖️ Net Weight:</span> 15,144.22 KG Reconciled</div>
-                    </div>
-
-                  </div>
-
-                </div>
+              <!-- Hero Live Metrics Bar -->
+              <div class="hero-metrics-pill">
+                <div class="pill-stat"><span class="stat-num">7,980</span> <span class="stat-lbl">SKUs Parsed</span></div>
+                <div class="stat-sep">•</div>
+                <div class="pill-stat"><span class="stat-num">20,861</span> <span class="stat-lbl">Units Reconciled</span></div>
+                <div class="stat-sep">•</div>
+                <div class="pill-stat"><span class="stat-num">15,144.22 KG</span> <span class="stat-lbl">Net Weight</span></div>
+                <div class="stat-sep">•</div>
+                <div class="pill-stat tag-green"><span>100% Deterministic</span></div>
               </div>
 
             </div>
@@ -338,79 +131,48 @@ App.Views.Landing = (() => {
 
             <div class="bento-grid">
               
-              <!-- Card 1: Normalization -->
+              <!-- Card 1: AI Search & NLP -->
               <div class="bento-card bento-col-2">
-                <div class="bento-icon-box icon-indigo">🔬</div>
-                <h3 class="bento-title">Smart Normalization Engine</h3>
+                <div class="bento-card-bg"></div>
+                <div class="bento-icon">🤖</div>
+                <h3 class="bento-title">Natural-Language Query Engine</h3>
                 <p class="bento-desc">
-                  Strips corporate suffixes, irregular pack-size strings, and messy SKU variations. Automatically extracts clean brand names, packaging units, and volumetric densities without altering raw data.
+                  Ask natural questions like <em>"How much Atta do we have?"</em> or <em>"Show all Fortune brands"</em> and get instant, audited stock breakdowns with exact KG totals.
                 </p>
-                <div class="bento-badge-row">
-                  <span class="bento-tag">Deterministic Parsing</span>
-                  <span class="bento-tag">Fluid & Solid Density Rules</span>
+                <div class="bento-preview-chips mt-16">
+                  <span class="preview-chip">"Which atta brand has highest weight?"</span>
+                  <span class="preview-chip">"Show stock near expiry"</span>
                 </div>
               </div>
 
-              <!-- Card 2: Category Hierarchy -->
+              <!-- Card 2: Deterministic Normalization -->
               <div class="bento-card">
-                <div class="bento-icon-box icon-emerald">🏷️</div>
-                <h3 class="bento-title">Category Drill-Down Hierarchy</h3>
+                <div class="bento-card-bg"></div>
+                <div class="bento-icon">⚙️</div>
+                <h3 class="bento-title">Zero Data Loss Normalizer</h3>
                 <p class="bento-desc">
-                  Instant 4-tier drill-down: Category → Subcategory → Brand → SKU Variant. Explore quantities, values, and weight profiles in real time.
+                  Every single row in the manifest is accounted for. Discrepancies, excluded lines, and pack conversions are logged with 100% mathematical auditability.
                 </p>
-                <div class="bento-badge-row">
-                  <span class="bento-tag">15 Categories</span>
-                </div>
               </div>
 
-              <!-- Card 3: AI Assistant -->
+              <!-- Card 3: Multi-Tier Category Engine -->
               <div class="bento-card">
-                <div class="bento-icon-box icon-purple">🤖</div>
-                <h3 class="bento-title">Natural Language AI Assistant</h3>
+                <div class="bento-card-bg"></div>
+                <div class="bento-icon">📊</div>
+                <h3 class="bento-title">15 Primary Category Drill-Down</h3>
                 <p class="bento-desc">
-                  Ask natural questions in plain English or Hinglish: "How much atta do we have?", "Top brands by value", or "Damaged stock in Gurgaon".
+                  Instant classification into Atta, Rice, Oil, Spices, Personal Care, Beverages, and Packaging variants with unit-level breakdown.
                 </p>
-                <div class="bento-badge-row">
-                  <span class="bento-tag">Zero-Hallucination Query Engine</span>
-                </div>
               </div>
 
-              <!-- Card 4: Warehouse Intelligence -->
+              <!-- Card 4: Local Storage Privacy -->
               <div class="bento-card bento-col-2">
-                <div class="bento-icon-box icon-sky">🏭</div>
-                <h3 class="bento-title">Multi-Warehouse Stock Distribution</h3>
+                <div class="bento-card-bg"></div>
+                <div class="bento-icon">🔒</div>
+                <h3 class="bento-title">Client-Side Database Privacy</h3>
                 <p class="bento-desc">
-                  Compare inventory across fulfillment centers and warehouse hubs. Track unit counts, gross weight in tonnes, and MRP valuations with automated discrepancy detection.
+                  All manifest data remains local inside your browser's SQLite / IndexedDB storage. Zero cloud exposure, zero third-party data tracking.
                 </p>
-                <div class="bento-badge-row">
-                  <span class="bento-tag">Facility Stock Balancing</span>
-                  <span class="bento-tag">Damaged & Near-Expiry Isolation</span>
-                </div>
-              </div>
-
-              <!-- Card 5: Quality Assurance -->
-              <div class="bento-card">
-                <div class="bento-icon-box icon-amber">⚠️</div>
-                <h3 class="bento-title">Quality Assurance & Lot Reconciliation</h3>
-                <p class="bento-desc">
-                  Isolate damaged units, near-expiry lots, and unresolvable items. Audit total source rows against processed rows with full mathematical proof.
-                </p>
-                <div class="bento-badge-row">
-                  <span class="bento-tag">Forensic Audit Gates</span>
-                </div>
-              </div>
-
-              <!-- Card 6: Data Export -->
-              <div class="bento-card bento-col-2">
-                <div class="bento-icon-box icon-rose">📥</div>
-                <h3 class="bento-title">Instant XLSX & CSV Export Engine</h3>
-                <p class="bento-desc">
-                  Generate presentation-ready, cleaned Excel and CSV workbooks with all normalized fields, weight metrics, and financial calculations ready for downstream ERP integration.
-                </p>
-                <div class="bento-badge-row">
-                  <span class="bento-tag">Formatted Excel (.xlsx)</span>
-                  <span class="bento-tag">Raw CSV Export</span>
-                </div>
               </div>
 
             </div>
@@ -418,15 +180,15 @@ App.Views.Landing = (() => {
           </div>
         </section>
 
-        <!-- ── DETERMINISTIC PIPELINE ARCHITECTURE SECTION ──────── -->
+        <!-- ── NEURAL PIPELINE SECTION ──────────────────────────── -->
         <section class="landing-section pipeline-section" id="pipeline">
           <div class="landing-container">
             
             <div class="landing-section-header text-center">
-              <div class="landing-section-tag">DATA INTEGRITY PIPELINE</div>
-              <h2 class="landing-section-title">From Raw Manifest to Actionable Intelligence</h2>
+              <div class="landing-section-tag">AUTOMATED INGESTION FLOW</div>
+              <h2 class="landing-section-title">The Liquidation IQ Ingestion Pipeline</h2>
               <p class="landing-section-sub">
-                Our 5-stage deterministic engine processes raw manifests without altering source truths or injecting synthetic records.
+                How raw spreadsheet manifests are parsed, cleaned, categorized, and reconciled in milliseconds.
               </p>
             </div>
 
@@ -435,9 +197,9 @@ App.Views.Landing = (() => {
               <!-- Node 1 -->
               <div class="pipeline-node">
                 <div class="node-num">01</div>
-                <div class="node-icon">📂</div>
+                <div class="node-icon">📄</div>
                 <h4 class="node-title">Raw Manifest</h4>
-                <p class="node-desc">Reads complex multi-sheet Excel & CSV workbooks with messy headers.</p>
+                <p class="node-desc">Multi-tab XLSX / CSV manifest file uploaded to browser.</p>
               </div>
 
               <div class="pipeline-connector">
@@ -449,8 +211,8 @@ App.Views.Landing = (() => {
               <div class="pipeline-node">
                 <div class="node-num">02</div>
                 <div class="node-icon">🧹</div>
-                <h4 class="node-title">Smart Cleaner</h4>
-                <p class="node-desc">Excludes totals, cleans noise, parses dates, and sanitizes values.</p>
+                <h4 class="node-title">Text Cleaner</h4>
+                <p class="node-desc">Strips noise, standardizes pack sizes (e.g. 5KG, 1L), cleans brand aliases.</p>
               </div>
 
               <div class="pipeline-connector">
@@ -461,9 +223,9 @@ App.Views.Landing = (() => {
               <!-- Node 3 -->
               <div class="pipeline-node">
                 <div class="node-num">03</div>
-                <div class="node-icon">🔬</div>
-                <h4 class="node-title">Product Engine</h4>
-                <p class="node-desc">Extracts clean brands, pack sizes, and canonical weight metrics.</p>
+                <div class="node-icon">⚖️</div>
+                <h4 class="node-title">Weight Converter</h4>
+                <p class="node-desc">Converts unit quantities to Net KG & Litres with density accuracy.</p>
               </div>
 
               <div class="pipeline-connector">
@@ -490,6 +252,123 @@ App.Views.Landing = (() => {
                 <div class="node-icon">📊</div>
                 <h4 class="node-title">Live Intelligence</h4>
                 <p class="node-desc">Drill-down Dashboard, NL Query Engine, and instant exports.</p>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ── COMMAND & CONTROL MATRIX SECTION ───────────────── -->
+        <section class="landing-section matrix-section" id="matrix">
+          <div class="stage-4-container">
+            
+            <div class="hud-command-center animate-hud">
+              <div class="hud-corner-tl"></div>
+              <div class="hud-corner-tr"></div>
+              <div class="hud-corner-bl"></div>
+              <div class="hud-corner-br"></div>
+
+              <!-- Top Header Bar -->
+              <div class="command-header">
+                <div class="flex items-center gap-12">
+                  <div class="hud-pulse-dot dot-cyan"></div>
+                  <span class="command-status-tag">COMMAND & CONTROL MATRIX ACTIVE</span>
+                </div>
+                <div class="command-live-time">
+                  <span class="live-dot"></span>
+                  <span>100% RECONCILED</span>
+                </div>
+              </div>
+
+              <!-- Headline & Subtitle -->
+              <div class="command-title-wrap">
+                <h2 class="command-headline">
+                  Complete Liquidation <span class="gradient-text-cyan">Intelligence Control</span>
+                </h2>
+                <p class="command-sub">
+                  Your inventory manifest is fully parsed, structured, and ready for instant decision making. Explore category drill-downs, brand breakdown, and zero-loss audit reports.
+                </p>
+              </div>
+
+              <!-- Main 2-Column Grid -->
+              <div class="command-grid">
+                
+                <!-- Left Column: Live Inventory Snapshot -->
+                <div class="command-card-left">
+                  <div class="command-card-label">parsed inventory snapshot</div>
+                  <div class="command-metrics-list">
+                    <div class="command-metric-item">
+                      <div class="metric-icon">🌾</div>
+                      <div class="metric-info">
+                        <div class="metric-title">Atta & Wheat Flour</div>
+                        <div class="metric-detail">6,290.00 KG • Fortified & Chakki Fresh</div>
+                      </div>
+                      <div class="metric-tag tag-green">VERIFIED</div>
+                    </div>
+
+                    <div class="command-metric-item">
+                      <div class="metric-icon">🍚</div>
+                      <div class="metric-info">
+                        <div class="metric-title">Rice & Pulses</div>
+                        <div class="metric-detail">3,115.00 KG • Premium Basmati & Kolam</div>
+                      </div>
+                      <div class="metric-tag tag-green">VERIFIED</div>
+                    </div>
+
+                    <div class="command-metric-item">
+                      <div class="metric-icon">🧴</div>
+                      <div class="metric-info">
+                        <div class="metric-title">Personal Care & FMCG</div>
+                        <div class="metric-detail">1,480 Units • Soaps, Shampoo, Detergent</div>
+                      </div>
+                      <div class="metric-tag tag-blue">PARSED</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Column: Launchpad & Quick Tools -->
+                <div class="command-card-right">
+                  <div class="command-card-label">system launchpad</div>
+                  
+                  <button class="btn btn-primary btn-lg command-launch-btn" onclick="App.Router.go('dashboard')">
+                    <span class="btn-glow-bg"></span>
+                    <span>Launch Live Dashboard</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </button>
+
+                  <div class="command-quick-tools">
+                    <div class="quick-tool-chip" onclick="App.Router.go('dashboard')">
+                      <span class="chip-icon">🤖</span>
+                      <span>Natural Language AI Chat</span>
+                    </div>
+                    <div class="quick-tool-chip" onclick="App.Router.go('brands')">
+                      <span class="chip-icon">🏷️</span>
+                      <span>Brand & Lot Analysis</span>
+                    </div>
+                    <div class="quick-tool-chip" onclick="App.Router.go('quality')">
+                      <span class="chip-icon">🛡️</span>
+                      <span>Zero Data Loss Audit</span>
+                    </div>
+                    <div class="quick-tool-chip" onclick="App.Router.go('uploads')">
+                      <span class="chip-icon">📥</span>
+                      <span>1-Click XLSX Export</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Footer Ticker Line -->
+              <div class="command-footer-ticker">
+                <div class="ticker-item"><span>⚡ Database:</span> SQLite & IndexedDB Ready</div>
+                <div class="ticker-divider">•</div>
+                <div class="ticker-item"><span>📊 Manifest SKUs:</span> 7,980 Parsed</div>
+                <div class="ticker-divider">•</div>
+                <div class="ticker-item"><span>⚖️ Net Weight:</span> 15,144.22 KG Reconciled</div>
               </div>
 
             </div>
@@ -545,36 +424,6 @@ App.Views.Landing = (() => {
           </div>
         </section>
 
-        <!-- ── CINEMATIC CLOSING CTA ─────────────────────────────── -->
-        <section class="landing-section cta-section">
-          <div class="landing-container">
-            <div class="closing-cta-card">
-              <div class="cta-glow-effect"></div>
-              
-              <div class="landing-stage-badge">
-                <span class="landing-stage-badge-dot"></span>
-                <span>INSTANT DEPLOYMENT</span>
-              </div>
-
-              <h2 class="closing-cta-title">
-                Ready to Turn Liquidation Inventory into Actionable Intelligence?
-              </h2>
-
-              <p class="closing-cta-sub">
-                Launch the application now to analyze lots, inspect high-value brands, and query inventory instantly.
-              </p>
-
-              <button class="btn btn-primary btn-lg closing-cta-btn" onclick="App.Router.go('dashboard')">
-                <span>Open Dashboard</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                  <polyline points="12 5 19 12 12 19"></polyline>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </section>
-
         <!-- ── MODERN SAAS FOOTER ────────────────────────────────── -->
         <footer class="landing-footer">
           <div class="footer-top-glow"></div>
@@ -599,18 +448,13 @@ App.Views.Landing = (() => {
                   <span class="footer-tech-tag">🛡️ Zero Data Loss</span>
                   <span class="footer-tech-tag">🔒 Local Privacy</span>
                 </div>
-
-                <div class="system-status-pill mt-16">
-                  <span class="status-indicator-dot"></span>
-                  <span>Neural Ingestion Core Operational</span>
-                </div>
               </div>
 
               <!-- 3-Column Navigation Grid -->
               <div class="landing-footer-nav">
                 <div class="footer-nav-col">
                   <div class="footer-col-title">Platform</div>
-                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('hero-track')">
+                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('overview')">
                     <span>Overview</span>
                   </button>
                   <button class="footer-link" onclick="App.Views.Landing.scrollTo('features')">
@@ -634,9 +478,6 @@ App.Views.Landing = (() => {
                   </button>
                   <button class="footer-link" onclick="App.Router.go('warehouses')">
                     <span>Warehouse Breakdown</span>
-                  </button>
-                  <button class="footer-link" onclick="App.Router.go('quality')">
-                    <span>Data Reconciliation</span>
                   </button>
                 </div>
 
@@ -663,7 +504,7 @@ App.Views.Landing = (() => {
               </div>
               <div class="footer-bottom-actions">
                 <span class="footer-bottom-meta">Engine Build v2.4.0</span>
-                <button class="footer-back-to-top" onclick="App.Views.Landing.scrollTo('hero-track')" title="Back to top">
+                <button class="footer-back-to-top" onclick="App.Views.Landing.scrollTo('overview')" title="Back to top">
                   <span>Back to top ↑</span>
                 </button>
               </div>
@@ -673,258 +514,6 @@ App.Views.Landing = (() => {
 
       </div>
     `;
-
-    // Initialize the GPU-Accelerated Scroll Scrubbing Engine
-    initScrollEngine();
-  }
-
-  /* ── 240-FRAME CANVAS SCROLL SCRUBBING ENGINE ────────────── */
-  function initScrollEngine() {
-    const canvas = document.getElementById('hero-scroll-canvas');
-    const track = document.getElementById('hero-track');
-    const scrubBar = document.getElementById('scrub-bar');
-    const scrubLabel = document.getElementById('scrub-label');
-
-    if (!canvas || !track) return;
-    const ctx = canvas.getContext('2d');
-
-    // Max 20 Keyframes sampled evenly across 240 frames
-    const KEYFRAMES_20 = [
-      1, 14, 26, 39, 51, 64, 76, 89, 102, 114, 127, 139, 152, 164, 177, 189, 202, 215, 227, 240
-    ];
-
-    const TOTAL_FRAMES = 240;
-    const FRAME_ASPECT = 1280 / 720; // 16:9
-    const frames = new Array(TOTAL_FRAMES + 1);
-    let currentRenderedFrame = -1;
-    let isRendering = false;
-    let destroyed = false;
-
-    // High performance device pixel ratio
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-    function resizeCanvas() {
-      if (destroyed || !canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const w = Math.floor(rect.width * dpr);
-      const h = Math.floor(rect.height * dpr);
-
-      if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w;
-        canvas.height = h;
-        currentRenderedFrame = -1; // force redraw on next frame
-        renderCurrentFrame();
-      }
-    }
-
-    // Format path to frame: assets/frames/frame-0001.jpg
-    function getFramePath(index) {
-      const padded = String(index).padStart(4, '0');
-      return `assets/frames/frame-${padded}.jpg`;
-    }
-
-    // Load single image with cache
-    function loadFrame(index, callback) {
-      if (frames[index]) {
-        if (callback && frames[index].complete) callback(frames[index]);
-        return frames[index];
-      }
-      const img = new Image();
-      img.src = getFramePath(index);
-      img.onload = () => {
-        if (callback && !destroyed) callback(img);
-        if (targetFrameIndex === index) {
-          renderCurrentFrame();
-        }
-      };
-      frames[index] = img;
-      return img;
-    }
-
-    // Find nearest loaded frame for zero-flicker scrubbing
-    function getNearestLoadedFrame(targetIdx) {
-      if (frames[targetIdx] && frames[targetIdx].complete) {
-        return frames[targetIdx];
-      }
-      // Look through 20 keyframes for nearest complete frame
-      let closest = KEYFRAMES_20[0];
-      let minDiff = 999;
-      for (const kf of KEYFRAMES_20) {
-        if (frames[kf] && frames[kf].complete) {
-          const diff = Math.abs(kf - targetIdx);
-          if (diff < minDiff) {
-            minDiff = diff;
-            closest = kf;
-          }
-        }
-      }
-      return frames[closest] || null;
-    }
-
-    // Draw the image filling the canvas (aspect cover, top-aligned)
-    function drawImageCover(img) {
-      if (!ctx || !img || !img.complete || img.naturalWidth === 0) return;
-      const cw = canvas.width;
-      const ch = canvas.height;
-      const canvasAspect = cw / ch;
-
-      let drawW, drawH, drawX, drawY;
-
-      if (canvasAspect > FRAME_ASPECT) {
-        drawW = cw;
-        drawH = cw / FRAME_ASPECT;
-        drawX = 0;
-        drawY = 0; // top-aligned: never crop the top
-      } else {
-        drawH = ch;
-        drawW = ch * FRAME_ASPECT;
-        drawX = (cw - drawW) / 2;
-        drawY = 0;
-      }
-
-      ctx.drawImage(img, drawX, drawY, drawW, drawH);
-    }
-
-    let targetFrameIndex = 1;
-
-    function renderCurrentFrame() {
-      if (destroyed || !canvas) return;
-      const img = getNearestLoadedFrame(targetFrameIndex);
-      if (img && img !== currentRenderedFrame) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawImageCover(img);
-        currentRenderedFrame = img;
-      }
-    }
-
-    // Progressive loading pipeline for 20 Keyframes
-    function startProgressiveLoading() {
-      // 1. Immediately load frame 1 for instant first paint
-      loadFrame(KEYFRAMES_20[0], (img) => {
-        resizeCanvas();
-        drawImageCover(img);
-        currentRenderedFrame = img;
-
-        // 2. Preload the remaining 19 keyframes
-        KEYFRAMES_20.forEach(f => loadFrame(f));
-      });
-    }
-
-    // Stages elements references
-    const stage1 = document.getElementById('stage-1');
-    const stage2 = document.getElementById('stage-2');
-    const stage3 = document.getElementById('stage-3');
-    const stage4 = document.getElementById('stage-4');
-
-    // Update synchronized stages based on scroll progress
-    function updateStages(progress) {
-      if (scrubBar) scrubBar.style.width = `${(progress * 100).toFixed(1)}%`;
-      if (scrubLabel) {
-        const currentPadded = String(targetFrameIndex).padStart(3, '0');
-        scrubLabel.textContent = `FRAME ${currentPadded} / 240`;
-      }
-
-      // Stage 1: 0.00 - 0.25 (Fades out 0.18 - 0.24)
-      if (stage1) {
-        if (progress < 0.24) {
-          stage1.classList.add('active');
-          const op = progress < 0.16 ? 1 : (0.24 - progress) / 0.08;
-          stage1.style.opacity = Math.max(0, Math.min(1, op));
-          stage1.style.transform = `translateY(${-progress * 60}px)`;
-        } else {
-          stage1.classList.remove('active');
-          stage1.style.opacity = '0';
-        }
-      }
-
-      // Stage 2: 0.25 - 0.50 (Fades in 0.23-0.28, fades out 0.46-0.51)
-      if (stage2) {
-        if (progress >= 0.22 && progress < 0.51) {
-          stage2.classList.add('active');
-          let op = 1;
-          if (progress < 0.28) op = (progress - 0.22) / 0.06;
-          else if (progress > 0.45) op = (0.51 - progress) / 0.06;
-          stage2.style.opacity = Math.max(0, Math.min(1, op));
-          stage2.style.transform = `translateY(${-(progress - 0.25) * 40}px)`;
-        } else {
-          stage2.classList.remove('active');
-          stage2.style.opacity = '0';
-        }
-      }
-
-      // Stage 3: 0.50 - 0.75 (Fades in 0.49-0.54, fades out 0.71-0.76)
-      if (stage3) {
-        if (progress >= 0.48 && progress < 0.76) {
-          stage3.classList.add('active');
-          let op = 1;
-          if (progress < 0.54) op = (progress - 0.48) / 0.06;
-          else if (progress > 0.70) op = (0.76 - progress) / 0.06;
-          stage3.style.opacity = Math.max(0, Math.min(1, op));
-          stage3.style.transform = `translateY(${-(progress - 0.50) * 40}px)`;
-        } else {
-          stage3.classList.remove('active');
-          stage3.style.opacity = '0';
-        }
-      }
-
-      // Stage 4: 0.75 - 1.00 (Fades in 0.74-0.80)
-      if (stage4) {
-        if (progress >= 0.73) {
-          stage4.classList.add('active');
-          const op = progress < 0.81 ? (progress - 0.73) / 0.08 : 1;
-          stage4.style.opacity = Math.max(0, Math.min(1, op));
-          stage4.style.transform = `translateY(${-(progress - 0.75) * 30}px)`;
-        } else {
-          stage4.classList.remove('active');
-          stage4.style.opacity = '0';
-        }
-      }
-    }
-
-    // Scroll Handler synchronized with requestAnimationFrame
-    function onScroll() {
-      if (destroyed || !track) return;
-
-      const rect = track.getBoundingClientRect();
-      const maxScroll = rect.height - window.innerHeight;
-      const currentScroll = -rect.top;
-      const progress = Math.min(Math.max(currentScroll / maxScroll, 0), 1);
-
-      // Map progress (0.0 to 1.0) to exactly 20 keyframes max
-      const step = Math.min(19, Math.max(0, Math.floor(progress * 20)));
-      const newFrame = KEYFRAMES_20[step];
-
-      if (newFrame !== targetFrameIndex) {
-        targetFrameIndex = newFrame;
-        loadFrame(targetFrameIndex);
-      }
-
-      updateStages(progress);
-
-      if (!isRendering) {
-        isRendering = true;
-        requestAnimationFrame(() => {
-          renderCurrentFrame();
-          isRendering = false;
-        });
-      }
-    }
-
-    // Window Listeners
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', resizeCanvas, { passive: true });
-
-    // Initial Trigger
-    startProgressiveLoading();
-    resizeCanvas();
-    onScroll();
-
-    // Register cleanup callback
-    _cleanup = () => {
-      destroyed = true;
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', resizeCanvas);
-    };
   }
 
   function scrollTo(id) {
