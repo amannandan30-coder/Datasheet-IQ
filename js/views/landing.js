@@ -205,33 +205,118 @@ App.Views.Landing = (() => {
 
               <!-- STAGE 4: Frames 181 - 240 (Complete Liquidation Control) -->
               <div class="landing-stage" id="stage-4">
-                <div class="landing-stage-inner text-center">
-                  <div class="hud-launch-card animate-hud">
-                    <div class="landing-stage-badge">
-                      <span class="landing-stage-badge-dot dot-cyan"></span>
-                      <span>SYSTEMS FULLY SYNCHRONIZED</span>
+                <div class="stage-4-container">
+                  
+                  <div class="hud-command-center animate-hud">
+                    <div class="hud-corner-tl"></div>
+                    <div class="hud-corner-tr"></div>
+                    <div class="hud-corner-bl"></div>
+                    <div class="hud-corner-br"></div>
+
+                    <!-- Top Header Bar -->
+                    <div class="command-header">
+                      <div class="flex items-center gap-12">
+                        <div class="hud-pulse-dot dot-cyan"></div>
+                        <span class="command-status-tag">COMMAND & CONTROL MATRIX ACTIVE</span>
+                      </div>
+                      <div class="command-live-time">
+                        <span class="live-dot"></span>
+                        <span>100% RECONCILED</span>
+                      </div>
                     </div>
 
-                    <h2 class="landing-hero-title launch-title">
-                      Complete Liquidation Control
-                    </h2>
-
-                    <p class="landing-hero-sub launch-sub">
-                      Your liquidation inventory is ready for action. Seamlessly drill down from multi-warehouse lots into brands, product families, and unit variants.
-                    </p>
-
-                    <div class="landing-stage-actions justify-center">
-                      <button class="btn btn-primary btn-lg landing-hero-btn launch-btn" onclick="App.Router.go('dashboard')">
-                        <span>Launch Live Dashboard →</span>
-                      </button>
+                    <!-- Headline & Subtitle -->
+                    <div class="command-title-wrap">
+                      <h2 class="command-headline">
+                        Complete Liquidation <span class="gradient-text-cyan">Intelligence Control</span>
+                      </h2>
+                      <p class="command-sub">
+                        Your inventory manifest is fully parsed, structured, and ready for instant decision making. Explore category drill-downs, brand breakdown, and zero-loss audit reports.
+                      </p>
                     </div>
 
-                    <div class="launch-card-tags">
-                      <span class="about-pill">✓ SQLite & IndexedDB Ready</span>
-                      <span class="about-pill">✓ Conversational AI Connected</span>
-                      <span class="about-pill">✓ 1-Click XLSX Export</span>
+                    <!-- Main 2-Column Grid -->
+                    <div class="command-grid">
+                      
+                      <!-- Left Column: Live Inventory Snapshot -->
+                      <div class="command-card-left">
+                        <div class="command-card-label">parsed inventory snapshot</div>
+                        <div class="command-metrics-list">
+                          <div class="command-metric-item">
+                            <div class="metric-icon">🌾</div>
+                            <div class="metric-info">
+                              <div class="metric-title">Atta & Wheat Flour</div>
+                              <div class="metric-detail">6,290.00 KG • Fortified & Chakki Fresh</div>
+                            </div>
+                            <div class="metric-tag tag-green">VERIFIED</div>
+                          </div>
+
+                          <div class="command-metric-item">
+                            <div class="metric-icon">🍚</div>
+                            <div class="metric-info">
+                              <div class="metric-title">Rice & Pulses</div>
+                              <div class="metric-detail">3,115.00 KG • Premium Basmati & Kolam</div>
+                            </div>
+                            <div class="metric-tag tag-green">VERIFIED</div>
+                          </div>
+
+                          <div class="command-metric-item">
+                            <div class="metric-icon">🧴</div>
+                            <div class="metric-info">
+                              <div class="metric-title">Personal Care & FMCG</div>
+                              <div class="metric-detail">1,480 Units • Soaps, Shampoo, Detergent</div>
+                            </div>
+                            <div class="metric-tag tag-blue">PARSED</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Right Column: Launchpad & Quick Tools -->
+                      <div class="command-card-right">
+                        <div class="command-card-label">system launchpad</div>
+                        
+                        <button class="btn btn-primary btn-lg command-launch-btn" onclick="App.Router.go('dashboard')">
+                          <span class="btn-glow-bg"></span>
+                          <span>Launch Live Dashboard</span>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                          </svg>
+                        </button>
+
+                        <div class="command-quick-tools">
+                          <div class="quick-tool-chip" onclick="App.Router.go('dashboard')">
+                            <span class="chip-icon">🤖</span>
+                            <span>Natural Language AI Chat</span>
+                          </div>
+                          <div class="quick-tool-chip" onclick="App.Router.go('brands')">
+                            <span class="chip-icon">🏷️</span>
+                            <span>Brand & Lot Analysis</span>
+                          </div>
+                          <div class="quick-tool-chip" onclick="App.Router.go('quality')">
+                            <span class="chip-icon">🛡️</span>
+                            <span>Zero Data Loss Audit</span>
+                          </div>
+                          <div class="quick-tool-chip" onclick="App.Router.go('uploads')">
+                            <span class="chip-icon">📥</span>
+                            <span>1-Click XLSX Export</span>
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
+
+                    <!-- Footer Ticker Line -->
+                    <div class="command-footer-ticker">
+                      <div class="ticker-item"><span>⚡ Database:</span> SQLite & IndexedDB Ready</div>
+                      <div class="ticker-divider">•</div>
+                      <div class="ticker-item"><span>📊 Manifest SKUs:</span> 7,980 Parsed</div>
+                      <div class="ticker-divider">•</div>
+                      <div class="ticker-item"><span>⚖️ Net Weight:</span> 15,144.22 KG Reconciled</div>
+                    </div>
+
                   </div>
+
                 </div>
               </div>
 
