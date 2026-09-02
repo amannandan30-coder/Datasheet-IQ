@@ -107,28 +107,28 @@ App.Views.Dashboard = (() => {
     /* ── Source Data & Unresolved Inventory Banner ─────────────────── */
     if (dataset.sourceRowCount) {
       container.insertAdjacentHTML('beforeend', `
-        <div class="card mb-24" style="background:var(--bg-surface);border:1px solid var(--border)">
-          <div class="flex items-center justify-between mb-12">
-            <div class="font-bold text-sm flex items-center gap-8">
-              <span>📋</span> Source File Reconciliation
+        <div class="card mb-24 source-reconciliation-card">
+          <div class="flex items-center justify-between mb-14">
+            <div class="font-bold text-sm flex items-center gap-8 text-primary">
+              <span style="font-size:16px">📋</span> Source File Reconciliation
             </div>
             <button class="btn btn-xs btn-secondary" onclick="App.Router.go('quality')">Inspect Unresolved Records</button>
           </div>
-          <div class="grid-4" style="gap:12px;font-size:13px">
-            <div style="background:var(--bg-surface-2);padding:10px 14px;border-radius:8px">
-              <div class="text-xs text-muted">Total Source Rows</div>
-              <div class="font-bold text-base mt-4">${App.Fmt.number(dataset.sourceRowCount)}</div>
+          <div class="grid-4" style="gap:12px">
+            <div class="reconciliation-box">
+              <div class="text-xs text-muted font-medium">Total Source Rows</div>
+              <div class="font-bold text-base mt-4 text-primary">${App.Fmt.number(dataset.sourceRowCount)}</div>
             </div>
-            <div style="background:var(--bg-surface-2);padding:10px 14px;border-radius:8px">
-              <div class="text-xs text-muted">Summary/Total Rows (Excluded)</div>
+            <div class="reconciliation-box">
+              <div class="text-xs text-muted font-medium">Summary/Total Rows (Excluded)</div>
               <div class="font-bold text-base mt-4 text-warning">${App.Fmt.number(dataset.excludedSummaryRows || 0)}</div>
             </div>
-            <div style="background:var(--bg-surface-2);padding:10px 14px;border-radius:8px">
-              <div class="text-xs text-muted">Unresolved (No Name) Rows</div>
+            <div class="reconciliation-box">
+              <div class="text-xs text-muted font-medium">Unresolved (No Name) Rows</div>
               <div class="font-bold text-base mt-4 text-danger">${App.Fmt.number(dataset.excludedNoNameRows || 0)}</div>
             </div>
-            <div style="background:var(--bg-surface-2);padding:10px 14px;border-radius:8px">
-              <div class="text-xs text-muted">Processed Inventory Records</div>
+            <div class="reconciliation-box">
+              <div class="text-xs text-muted font-medium">Processed Inventory Records</div>
               <div class="font-bold text-base mt-4 text-success">${App.Fmt.number(records.length)}</div>
             </div>
           </div>
