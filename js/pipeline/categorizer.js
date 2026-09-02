@@ -12,7 +12,7 @@ App.Categorizer = (() => {
       color: '#f59e0b',
       subcategories: {
         'General Staples':     { kw: ['staple','grocery','food'] },
-        'Atta & Flours':       { kw: ['\\batta\\b','\\bflour\\b','\\bflours\\b','\\bmaida\\b','\\bbesan\\b','\\bsuji\\b','\\brava\\b','\\bchakki\\b','\\bmultigrain\\b'] },
+        'Atta & Flours':       { kw: ['\\batta\\b','\\bflour\\b','\\bflours\\b','\\bmaida\\b','\\bbesan\\b','\\bsuji\\b','\\brava\\b','\\bchakki\\b','multigrain atta','multigrain flour'] },
         'Rice':                { kw: ['\\brice\\b','\\bbasmati\\b','\\bsella\\b','\\bmogra\\b','\\bpoha\\b'] },
         'Pulses & Lentils':    { kw: ['\\bdal\\b','\\bdaal\\b','\\bmoong\\b','\\bmasoor\\b','\\burad\\b','\\bchana\\b','\\brajma\\b','\\barhar\\b','\\btoor\\b','\\blentil\\b','\\bpulses\\b'] },
         'Oils & Ghee':         { kw: ['\\boil\\b','\\boils\\b','\\bghee\\b','\\bdalda\\b','sunflower','mustard','olive','refined'] },
@@ -20,12 +20,12 @@ App.Categorizer = (() => {
         'Spices & Masalas':    { kw: ['\\bmasala\\b','\\bmasalas\\b','\\bspice\\b','\\bspices\\b','chilli','turmeric','cumin','coriander','garam masala','pepper','haldi','jeera'] },
         'Tea & Coffee':        { kw: ['\\btea\\b','\\bcoffee\\b','\\bchai\\b','green tea','tata tea','brooke bond','bru','nescafe'] },
         'Snacks & Biscuits':   { kw: ['biscuit','biscuits','cookie','cookies','snack','chips','namkeen','cracker','rusk','wafer','popcorn','munchies'] },
-        'Breakfast Cereals':   { kw: ['oats','cornflakes','muesli','cereal','quaker','kellogg','upma'] },
+        'Breakfast Cereals':   { kw: ['oats','cornflakes','muesli','cereal','quaker','kellogg','upma','daliya','dalia'] },
         'Noodles & Pasta':     { kw: ['noodle','noodles','pasta','maggi','macaroni','spaghetti','vermicelli'] },
         'Sauces & Condiments': { kw: ['sauce','ketchup','pickle','chutney','jam','jelly','vinegar','mayonnaise','spread'] },
         'Beverages':           { kw: ['juice','drink','squash','syrup','sharbat','cold drink','energy drink','nimbu','cola'] },
         'Dairy Products':      { kw: ['milk','curd','paneer','butter','cheese','yogurt','lassi','khoa','cream'] },
-        'Chocolates & Sweets': { kw: ['chocolate','candy','toffee','sweet','mithai','barfi','halwa','gum'] },
+        'Chocolates & Sweets': { kw: ['chocolate','candy','toffee','sweet','mithai','barfi','halwa','gum','laddu','ladoo','laddoo','burfi'] },
       }
     },
     'Cleaning Essentials': {
@@ -216,6 +216,7 @@ App.Categorizer = (() => {
       let bestMatch = null;
       let bestScore = 0;
       for (const [sc, { kw }] of Object.entries(catCfg.subcategories)) {
+        if (sc === 'Atta & Flours' && attaExclude) continue;
         let score = 0;
         for (const k of kw) {
           if (matchWord(combinedText, k)) score += k.length;
