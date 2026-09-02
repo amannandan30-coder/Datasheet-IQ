@@ -400,6 +400,35 @@ App.NLEngine = (() => {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
+  function scanEntityFromQueryText(q, records) {
+    if (!q) return null;
+    for (const [synKey, synObj] of Object.entries(ENTITY_SYNONYMS)) {
+      if (synKey.includes(' ')) {
+        const re = new RegExp(`\\b${escapeRegex(synKey)}\\b`, 'i');
+        if (re.test(q)) return { ...synObj, matchedTerm: synKey };
+      }
+    }
+    for (const [synKey, synObj] of Object.entries(ENTITY_SYNONYMS)) {
+      if (!synKey.includes(' ') && synKey.length >= 3) {
+        const re = new RegExp(`\\b${escapeRegex(synKey)}\\b`, 'i');
+        if (re.test(q)) return { ...synObj, matchedTerm: synKey };
+      }
+    }
+    if (records && records.length) {
+      const subcats = [...new Set(records.map(r => r.subcategory).filter(Boolean))];
+      for (const sc of subcats) {
+        const words = sc.toLowerCase().split(/[\s&/]+/);
+        for (const w of words) {
+          if (w.length >= 4 && new RegExp(`\\b${escapeRegex(w)}\\b`, 'i').test(q)) {
+            const catForSc = records.find(r => r.subcategory === sc)?.normalized_category;
+            return { type: 'subcategory', name: sc, category: catForSc, matchedTerm: w };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   /* ────────────────────────────────────────────────────────────
      LAYER 2: Entity Resolution — resolveEntity
      Uses the app's existing taxonomy from App.Categorizer
@@ -602,8 +631,8 @@ App.NLEngine = (() => {
 
     let brands = [...brandMap.values()].map(b => ({ ...b, sku_count: b.skus.size }));
     const field = sortBy === 'value' ? 'value' : sortBy === 'weight' ? 'weight' : 'qty';
-    const dir = sortDir === 'asc' ? 1 : -1;
-    brands.sort((a, b) => dir * (b[field] - a[field]));
+    const isAsc = sortDir === 'asc';
+    brands.sort((a, b) => isAsc ? (a[field] - b[field]) : (b[field] - a[field]));
     if (limit) brands = brands.slice(0, limit);
     return brands;
   }
@@ -662,6 +691,10 @@ App.NLEngine = (() => {
 
     // Resolve entity from the parsed terms
     let entity = resolveEntity(parsed.entityTerms, records);
+    if (!entity && parsed.normalized) {
+      entity = scanEntityFromQueryText(parsed.normalized, records);
+      if (entity) parsed.entityTerms = [entity.matchedTerm];
+    }
 
     // If entity terms contain both a brand and a category/subcategory, handle combination
     // e.g., "Aashirvaad atta" → brand=Aashirvaad, subcategory=Atta & Flours
@@ -690,6 +723,17 @@ App.NLEngine = (() => {
     if (parsed.brandFilter) {
       const resolved = resolveBrand(parsed.brandFilter, records);
       if (resolved) parsed.brandFilter = resolved;
+    }
+
+    // Validate warehouse filter against actual warehouses in dataset
+    if (parsed.warehouseFilter) {
+      const warehouses = [...new Set(records.map(r => r.normalized_warehouse).filter(Boolean))];
+      const matchedWh = warehouses.find(w => w.toLowerCase().includes(parsed.warehouseFilter.toLowerCase()) || parsed.warehouseFilter.toLowerCase().includes(w.toLowerCase()));
+      if (matchedWh) {
+        parsed.warehouseFilter = matchedWh;
+      } else {
+        parsed.warehouseFilter = null;
+      }
     }
 
     // Update context
