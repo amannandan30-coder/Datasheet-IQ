@@ -143,6 +143,11 @@ App.NLEngine = (() => {
     'batteries':       { type:'subcategory', name:'Batteries',            category:'Electronics & Electricals' },
     'charger':         { type:'subcategory', name:'Mobile Accessories',   category:'Electronics & Electricals' },
     'earphone':        { type:'subcategory', name:'Mobile Accessories',   category:'Electronics & Electricals' },
+    'soap':            { type:'subcategory', name:'Bath & Body',          category:'Personal Care' },
+    'soaps':           { type:'subcategory', name:'Bath & Body',          category:'Personal Care' },
+    'shampoo':         { type:'subcategory', name:'Hair Care',            category:'Personal Care' },
+    'toothpaste':      { type:'subcategory', name:'Oral Care',            category:'Personal Care' },
+    'rice snacks':     { type:'subcategory', name:'Snacks & Biscuits',    category:'Grocery' },
 
     // Category-level synonyms
     'grocery':         { type:'category', name:'Grocery' },
@@ -152,8 +157,7 @@ App.NLEngine = (() => {
     'electricals':     { type:'category', name:'Electronics & Electricals' },
     'cleaning':        { type:'category', name:'Cleaning Essentials' },
     'cleaning essentials': { type:'category', name:'Cleaning Essentials' },
-    'home care':       { type:'category', name:'Home Care' },
-    'home':            { type:'category', name:'Home Care' },
+    'home care':       { type:'category', name:'Home & Kitchen' },
     'toys':            { type:'category', name:'Toys & Games' },
     'games':           { type:'category', name:'Toys & Games' },
     'personal care':   { type:'category', name:'Personal Care' },
@@ -172,9 +176,9 @@ App.NLEngine = (() => {
 
   /* ── Status synonyms ─────────────────────────────────────── */
   const STATUS_TERMS = {
+    'near_expiry':['near expiry','near-expiry','nearexpiry','about to expire','expiring soon','expiring'],
     'damaged':    ['damaged','damage','broken','defective'],
     'expired':    ['expired','expire','expiry'],
-    'near_expiry':['near expiry','near-expiry','nearexpiry','about to expire','expiring soon','expiring'],
     'saleable':   ['saleable','salable','good','sellable','ok'],
   };
 
@@ -277,6 +281,11 @@ App.NLEngine = (() => {
           rawEntity = rawEntity.replace(new RegExp('\\b(?:in|at|from)?\\s*' + escapeRegex(parsed.warehouseFilter) + '\\b', 'gi'), '').trim();
         }
         parsed.entityTerms = cleanEntityTerms(rawEntity);
+
+        // If rawEntity was only warehouse or noise (like 'for BCPL', 'for BCPL.'), clean terms to empty
+        if (/^(for|in|at|from|inventory|stock|items|records|\s)+$/i.test(rawEntity)) {
+          parsed.entityTerms = [];
+        }
       }
     }
 
@@ -358,28 +367,46 @@ App.NLEngine = (() => {
       }
     }
 
-    // "Which brand has the most?" — follow-up context
-    if (!parsed.intent && /\bwhich brand\b/i.test(q) && _context.lastSubcategory) {
+    // Follow-up: "Which brand has the most units?" / "Which brand has the most?"
+    if (!parsed.intent && /\bwhich brand\b/i.test(q)) {
       parsed.intent = 'TOP_BRANDS';
-      parsed.entityTerms = [_context.lastEntity || _context.lastSubcategory.toLowerCase()];
+      if (_context.lastSubcategory || _context.lastCategory) {
+        parsed.entityTerms = cleanEntityTerms(_context.lastSubcategory || _context.lastCategory);
+      }
       parsed.limit = 1;
+    }
+
+    // Follow-up: "Top 5 brands" / "Top 5"
+    if (!parsed.intent && /\btop\s+\d*\s*brands?\b/i.test(q)) {
+      parsed.intent = 'TOP_BRANDS';
+      if (_context.lastSubcategory || _context.lastCategory) {
+        parsed.entityTerms = cleanEntityTerms(_context.lastSubcategory || _context.lastCategory);
+      }
+      if (!parsed.limit) parsed.limit = 5;
+    }
+
+    // Follow-up: "What about value?" / "What about weight?"
+    if (!parsed.intent && /\b(what about|how about)\s+(value|worth|price|weight|units?|quantity)\b/i.test(q)) {
+      parsed.intent = 'SUMMARY';
+      if (_context.lastSubcategory || _context.lastCategory) {
+        parsed.entityTerms = cleanEntityTerms(_context.lastSubcategory || _context.lastCategory);
+      }
     }
 
     // If no intent detected but we have a simple term, try SUMMARY
     if (!parsed.intent) {
-      // Strip common filler words to extract entity
+      const isGlobalQuery = /\b(whole|overall|entire|complete|all|total|summarize|summary|size|worth|units|quantity|value|weight)\b/i.test(q) &&
+                            !/\b(flour|atta|rice|oil|electronics|snacks|biscuits|cereals|spices|masala|beverages|dairy|soap|shampoo|toothpaste|bcpl|damaged|expired)\b/i.test(q);
       const stripped = q
-        .replace(/\b(show|list|find|get|display|give|tell|me|all|the|a|an|of|in|at|from|do|we|have|is|are|there|our|my|what|how|much|many|total|inventory|stock|please|sir|okay|ok)\b/gi, '')
+        .replace(/\b(show|list|find|get|display|give|tell|me|all|the|a|an|of|in|at|from|do|we|have|is|are|there|our|my|what|how|much|many|total|inventory|stock|please|sir|okay|ok|size|worth|value|units?|quantity|weight|overall|whole|summary|summarize)\b/gi, '')
         .replace(/\s+/g, ' ').trim();
-      if (stripped.length >= 2) {
+      if (isGlobalQuery || !stripped) {
+        parsed.intent = 'SUMMARY';
+        parsed.entityTerms = [];
+      } else if (stripped.length >= 2) {
         parsed.intent = 'SUMMARY';
         parsed.entityTerms = cleanEntityTerms(stripped);
       }
-    }
-
-    // Final fallback — generic search
-    if (!parsed.intent) {
-      parsed.intent = 'RECORD_SEARCH';
     }
 
     return parsed;
@@ -389,7 +416,7 @@ App.NLEngine = (() => {
   function cleanEntityTerms(raw) {
     if (!raw) return [];
     return raw
-      .replace(/\b(total|amount|quantity|units?|value|worth|weight|stock|inventory|items?|products?|records?|number|count|of|the|our|all|show|list|how|much|many|me|do|we|have|is|are|there|please)\b/gi, '')
+      .replace(/\b(total|amount|quantity|units?|value|worth|weight|stock|inventory|items?|products?|records?|number|count|of|the|our|all|show|list|how|much|many|me|do|we|have|is|are|there|please|and|whole|summarize|summary|give|tell)\b/gi, '')
       .replace(/\s+/g, ' ')
       .trim()
       .split(/\s+/)
@@ -468,11 +495,11 @@ App.NLEngine = (() => {
       }
     }
 
-    // 5. Try fuzzy match against actual brand names in the dataset
+    // 5. Try match against actual brand names in the dataset
     const brands = [...new Set(records.map(r => r.normalized_brand).filter(Boolean))];
     for (const brand of brands) {
       const bl = brand.toLowerCase();
-      if (bl === termStr || (bl.length >= 3 && termStr.includes(bl)) || (termStr.length >= 3 && bl.includes(termStr))) {
+      if (bl === termStr) {
         return { type: 'brand', name: brand, matchedTerm: termStr };
       }
     }
@@ -558,9 +585,15 @@ App.NLEngine = (() => {
     // Apply status filter
     if (parsed.statusFilter) {
       filtered = filtered.filter(r => {
-        const st = (r.raw_bad_inventory_type || '').toLowerCase();
+        const st = (r.raw_bad_inventory_type || '').toLowerCase().trim();
         if (parsed.statusFilter === 'near_expiry') {
           return st === 'near_expiry' || st === 'nearexpiry' || st === 'near expiry';
+        }
+        if (parsed.statusFilter === 'expired') {
+          return st === 'expired' || st === 'expire';
+        }
+        if (parsed.statusFilter === 'damaged') {
+          return st === 'damaged' || st === 'damage';
         }
         return st === parsed.statusFilter || st.includes(parsed.statusFilter);
       });
@@ -772,9 +805,14 @@ App.NLEngine = (() => {
       filtered = filtered.filter(r => r.normalized_brand === parsed.brandFilter);
     }
 
+    if (!entity && parsed.entityTerms && parsed.entityTerms.length > 0 && !parsed.statusFilter && !parsed.warehouseFilter && !parsed.brandFilter) {
+      return { type: 'not_found', message: `No inventory records found for "${parsed.entityTerms.join(' ')}".` };
+    }
+
     if (!filtered.length) {
       const suggestion = entity ? ` Try browsing the ${entity.name || 'category'} section in the sidebar.` : '';
-      return { type: 'not_found', message: `No inventory records found for "${parsed.entityTerms.join(' ')}".${suggestion}` };
+      const entityLabel = entity ? entity.name : (parsed.entityTerms.join(' ') || 'specified criteria');
+      return { type: 'not_found', message: `No inventory records found for "${entityLabel}".${suggestion}` };
     }
 
     const agg = aggregate(filtered);
