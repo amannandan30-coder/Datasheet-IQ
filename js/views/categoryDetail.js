@@ -73,22 +73,18 @@ App.Views.CategoryDetail = (() => {
     const subcats = [...subcatMap.values()].sort((a,b) => b.value - a.value);
     if (subcats.length > 1) {
       const tabsHtml = subcats.map((sc,i) => {
-        // ARCHITECTURE: The actual subcategory value is stored in data-subcat (HTML-attribute-safe).
-        // onclick reads this.dataset.subcat — the browser decodes HTML entities automatically,
-        // so the filter always receives the exact original value (e.g. "Atta & Flours").
-        // escHtml() is used ONLY for the visible label text, never for the data/query value.
         const safeId = `tab-${sc.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
         return `
-          <button class="btn ${i===0?'btn-primary':'btn-ghost'} btn-sm"
+          <button class="subcat-tab ${i===0?'active':''}"
                   onclick="App.Views.CategoryDetail.showSubcat(this.dataset.subcat)"
                   data-subcat="${escHtml(sc.name)}"
                   id="${safeId}">
             ${escHtml(sc.name)}
-            <span class="badge badge-muted">${App.Fmt.number(sc.qty)}</span>
+            <span class="subcat-tab-badge">${App.Fmt.number(sc.qty)}</span>
           </button>`;
       }).join('');
       container.insertAdjacentHTML('beforeend', `
-        <div class="flex gap-6 mb-20" style="flex-wrap:wrap" id="subcat-tabs">${tabsHtml}</div>
+        <div class="subcat-tabs-wrap mb-20" id="subcat-tabs">${tabsHtml}</div>
       `);
     }
 
@@ -120,14 +116,18 @@ App.Views.CategoryDetail = (() => {
     };
 
     App.Views.CategoryDetail.showSubcat = (sc) => {
-      // sc is the exact original subcategory value read from this.dataset.subcat
-      // (browser decodes HTML entities automatically, so & is preserved correctly)
       const filtered = catRecords.filter(r => (r.subcategory||'General') === sc);
       buildBrandList(filtered, container.querySelector('#brand-list-wrap'), totalValue);
       // Deactivate all tabs, then activate the matching one by data-subcat attribute
-      document.querySelectorAll('#subcat-tabs .btn').forEach(b => b.className = 'btn btn-ghost btn-sm');
-      const tab = document.querySelector(`#subcat-tabs .btn[data-subcat="${escHtml(sc)}"]`);
-      if (tab) tab.className = 'btn btn-primary btn-sm';
+      document.querySelectorAll('#subcat-tabs .subcat-tab, #subcat-tabs .btn').forEach(b => {
+        b.classList.remove('active', 'btn-primary');
+        b.classList.add('btn-ghost');
+      });
+      const tab = document.querySelector(`#subcat-tabs [data-subcat="${escHtml(sc)}"]`);
+      if (tab) {
+        tab.classList.add('active');
+        tab.classList.remove('btn-ghost');
+      }
     };
 
     App.Views.CategoryDetail.sort = (by) => {

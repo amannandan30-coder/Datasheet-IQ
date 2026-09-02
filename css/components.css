@@ -666,7 +666,94 @@
 .raw-field-key { color: var(--text-muted); width: 150px; flex-shrink: 0; }
 .raw-field-val { color: var(--text-primary); font-weight: 500; word-break: break-all; }
 
-/* ── FILTER CHIPS ────────────────────────────────────────── */
+/* ── FILTER CHIPS & TABS ─────────────────────────────────── */
+.subcat-tabs-wrap {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.subcat-tab,
+#subcat-tabs .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 15px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  outline: none;
+}
+
+.subcat-tab:hover,
+#subcat-tabs .btn:hover {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--text-primary);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.subcat-tab:active,
+#subcat-tabs .btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ACTIVE STATE — Vibrant Blue Accent */
+.subcat-tab.active,
+.subcat-tab.btn-primary,
+#subcat-tabs .btn-primary,
+#subcat-tabs .btn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Count Badge styling inside pill */
+.subcat-tab-badge,
+#subcat-tabs .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  transition: all 0.18s ease;
+}
+
+.subcat-tab:hover .subcat-tab-badge,
+#subcat-tabs .btn:hover .badge {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.subcat-tab.active .subcat-tab-badge,
+.subcat-tab.btn-primary .subcat-tab-badge,
+#subcat-tabs .btn-primary .badge,
+#subcat-tabs .btn.active .badge {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
 .filter-bar {
   display: flex;
   align-items: center;
