@@ -2587,104 +2587,185 @@ body.is-landing .main-content {
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45);
 }
 
-/* ── MODERN SAAS FOOTER ────────────────────────────────── */
+/* ── ULTRA-PREMIUM SAAS FOOTER ─────────────────────────── */
 .landing-footer {
-  background: rgba(10, 11, 16, 0.96);
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  padding: 64px 0 32px;
+  position: relative;
+  background: linear-gradient(180deg, #0c0e15 0%, #06070a 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 72px 0 36px;
+  overflow: hidden;
+}
+
+.footer-top-glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.6), rgba(168, 85, 247, 0.6), transparent);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
 }
 
 .landing-footer-top {
   display: flex;
   justify-content: space-between;
-  gap: 48px;
-  padding-bottom: 44px;
+  gap: 60px;
+  padding-bottom: 48px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .landing-footer-brand {
-  max-width: 380px;
+  max-width: 360px;
+}
+
+.footer-logo-glow {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  border-color: rgba(99, 102, 241, 0.5);
 }
 
 .landing-footer-desc {
-  font-size: 13.5px;
-  color: var(--text-muted);
-  line-height: 1.6;
+  font-size: 14px;
+  color: #94a3b8;
+  line-height: 1.65;
+  margin-bottom: 18px;
+}
+
+.footer-tech-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 16px;
+}
+
+.footer-tech-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
 }
 
 .system-status-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 12px;
-  border-radius: 12px;
-  background: rgba(16, 185, 129, 0.1);
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.08);
   border: 1px solid rgba(16, 185, 129, 0.25);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
-  color: #10b981;
+  color: #34d399;
 }
 
 .status-indicator-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #10b981;
-  box-shadow: 0 0 6px #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: statusPulse 2s infinite ease-in-out;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
 }
 
 .landing-footer-nav {
   display: flex;
-  gap: 72px;
+  gap: 64px;
 }
 
 .footer-col-title {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(148, 163, 184, 0.5);
-  margin-bottom: 16px;
+  letter-spacing: 0.12em;
+  color: #64748b;
+  margin-bottom: 18px;
 }
 
 .footer-nav-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  min-width: 140px;
 }
 
 .footer-link {
   background: none;
   border: none;
-  color: var(--text-secondary);
-  font-size: 13.5px;
+  color: #94a3b8;
+  font-size: 14px;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 .footer-link:hover {
   color: #ffffff;
+  transform: translateX(4px);
+}
+
+.footer-link:hover span {
+  color: #818cf8;
 }
 
 .landing-footer-bottom {
-  padding-top: 24px;
+  padding-top: 28px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .copyright-text {
-  font-size: 12.5px;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: #64748b;
+}
+
+.copyright-text strong {
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.footer-bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .footer-bottom-meta {
   font-size: 12px;
-  color: rgba(148, 163, 184, 0.45);
+  color: #475569;
+  font-family: var(--font-mono);
+}
+
+.footer-back-to-top {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.footer-back-to-top:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #ffffff;
+  transform: translateY(-2px);
 }
 
 /* ── RESPONSIVE ADAPTATIONS ────────────────────────────── */

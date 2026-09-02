@@ -492,43 +492,96 @@ App.Views.Landing = (() => {
 
         <!-- ── MODERN SAAS FOOTER ────────────────────────────────── -->
         <footer class="landing-footer">
+          <div class="footer-top-glow"></div>
           <div class="landing-container">
             <div class="landing-footer-top">
+              
+              <!-- Brand Info -->
               <div class="landing-footer-brand">
-                <div class="flex items-center gap-10 mb-12">
-                  <div class="landing-brand-icon">📦</div>
-                  <span class="landing-brand-title">Liquidation IQ</span>
+                <div class="flex items-center gap-12 mb-16">
+                  <div class="landing-brand-icon footer-logo-glow">📦</div>
+                  <div>
+                    <div class="landing-brand-title">Liquidation IQ</div>
+                    <div class="landing-brand-sub">Inventory Intelligence Engine</div>
+                  </div>
                 </div>
                 <p class="landing-footer-desc">
-                  The enterprise-grade inventory intelligence platform for liquidation manifests, stock reconciliation, and category drill-downs.
+                  Next-generation deterministic manifest parsing, zero data-loss reconciliation, and high-density warehouse category intelligence.
                 </p>
-                <div class="system-status-pill">
+
+                <div class="footer-tech-badges">
+                  <span class="footer-tech-tag">⚡ SQLite Powered</span>
+                  <span class="footer-tech-tag">🛡️ Zero Data Loss</span>
+                  <span class="footer-tech-tag">🔒 Local Privacy</span>
+                </div>
+
+                <div class="system-status-pill mt-16">
                   <span class="status-indicator-dot"></span>
-                  <span>All Engine Systems Operational</span>
+                  <span>Neural Ingestion Core Operational</span>
                 </div>
               </div>
 
+              <!-- 3-Column Navigation Grid -->
               <div class="landing-footer-nav">
                 <div class="footer-nav-col">
-                  <div class="footer-col-title">Navigation</div>
-                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('hero-track')">Overview</button>
-                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('features')">Features</button>
-                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('pipeline')">Pipeline</button>
-                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('about')">About</button>
+                  <div class="footer-col-title">Platform</div>
+                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('hero-track')">
+                    <span>Overview</span>
+                  </button>
+                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('features')">
+                    <span>Features</span>
+                  </button>
+                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('pipeline')">
+                    <span>Neural Pipeline</span>
+                  </button>
+                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('about')">
+                    <span>Enterprise Guarantee</span>
+                  </button>
                 </div>
+
                 <div class="footer-nav-col">
-                  <div class="footer-col-title">Application</div>
-                  <button class="footer-link" onclick="App.Router.go('dashboard')">Dashboard</button>
-                  <button class="footer-link" onclick="App.Router.go('inventory')">Inventory Table</button>
-                  <button class="footer-link" onclick="App.Router.go('quality')">Data Quality</button>
-                  <button class="footer-link" onclick="App.Router.go('uploads')">Upload Manifest</button>
+                  <div class="footer-col-title">Intelligence Modules</div>
+                  <button class="footer-link" onclick="App.Router.go('dashboard')">
+                    <span>Live Dashboard</span>
+                  </button>
+                  <button class="footer-link" onclick="App.Router.go('brands')">
+                    <span>Brand Analytics</span>
+                  </button>
+                  <button class="footer-link" onclick="App.Router.go('warehouses')">
+                    <span>Warehouse Breakdown</span>
+                  </button>
+                  <button class="footer-link" onclick="App.Router.go('quality')">
+                    <span>Data Reconciliation</span>
+                  </button>
+                </div>
+
+                <div class="footer-nav-col">
+                  <div class="footer-col-title">Actions & Tools</div>
+                  <button class="footer-link" onclick="App.Router.go('uploads')">
+                    <span>Upload New Manifest</span>
+                  </button>
+                  <button class="footer-link" onclick="App.Router.go('dashboard')">
+                    <span>NL Query Engine</span>
+                  </button>
+                  <button class="footer-link" onclick="App.Router.go('dashboard')">
+                    <span>1-Click XLSX Export</span>
+                  </button>
                 </div>
               </div>
+
             </div>
 
+            <!-- Footer Bottom Bar -->
             <div class="landing-footer-bottom">
-              <div class="copyright-text">© 2026 Liquidation IQ. All rights reserved.</div>
-              <div class="footer-bottom-meta">Enterprise Inventory Intelligence Engine v2.0</div>
+              <div class="copyright-text">
+                © 2026 <strong>Liquidation IQ</strong>. Built for high-volume manifest intelligence.
+              </div>
+              <div class="footer-bottom-actions">
+                <span class="footer-bottom-meta">Engine Build v2.4.0</span>
+                <button class="footer-back-to-top" onclick="App.Views.Landing.scrollTo('hero-track')" title="Back to top">
+                  <span>Back to top ↑</span>
+                </button>
+              </div>
             </div>
           </div>
         </footer>
