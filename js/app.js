@@ -35,10 +35,10 @@ App.Router = {
   },
 
   parse() {
-    const rawHash = window.location.hash.slice(2) || 'dashboard';
+    const rawHash = window.location.hash.slice(2) || 'landing';
     const [page, qs] = rawHash.split('?');
     const params = Object.fromEntries(new URLSearchParams(qs));
-    App.State.route  = page || 'dashboard';
+    App.State.route  = page || 'landing';
     App.State.params = params;
 
     const currentHash = rawHash;
@@ -83,6 +83,13 @@ App.UI = {
     const main = document.getElementById('main-content');
     if (!main) return;
 
+    // Toggle Landing Mode layout on document.body
+    if (route === 'landing' || route === 'home') {
+      document.body.classList.add('is-landing');
+    } else {
+      document.body.classList.remove('is-landing');
+    }
+
     // Clear previous charts
     ['_statusChart','_catValueChart','_catUnitsChart','_whChart'].forEach(k => {
       if (window[k]) { try { window[k].destroy(); } catch(e){} window[k]=null; }
@@ -101,6 +108,8 @@ App.UI = {
 
     // Route dispatch
     switch (route) {
+      case 'landing':
+      case 'home':        await App.Views.Landing.render(main); break;
       case 'dashboard':   await App.Views.Dashboard.render(main, dataset_id); break;
       case 'category':    await App.Views.CategoryDetail.render(main, params, dataset_id); break;
       case 'brand':       await App.Views.BrandDetail.render(main, params, dataset_id); break;
