@@ -10,3 +10,7 @@ scratch/
 Thumbs.db
 .vscode/
 .idea/
+
+# Large temporary archives
+*.zip
+*.mp4
