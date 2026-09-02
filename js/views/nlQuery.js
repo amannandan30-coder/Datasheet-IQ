@@ -38,7 +38,7 @@ App.Views.NLQuery = (() => {
       if (e.key !== 'Enter') return;
       const q = input.value.trim();
       if (!q) return;
-      result.innerHTML = `<div class="nl-result flex items-center gap-10"><div class="spinner"></div><span class="text-muted">Searching…</span></div>`;
+      result.innerHTML = `<div class="nl-result flex items-center gap-10"><div class="spinner"></div><span class="text-muted">Analyzing your question…</span></div>`;
 
       const res = await App.NLEngine.query(q, dataset_id);
       renderNLResult(result, res);
@@ -60,18 +60,67 @@ App.Views.NLQuery = (() => {
         <div class="text-xl font-bold">${res.headline}</div>
       </div>`;
 
-    if (res.data?.brands) {
-      html += `<div class="mb-12">${res.data.brands.map(b => `
+    // ── KPI Summary Cards (for SUMMARY and FILTERED_SEARCH) ──
+    if (res.data && (res.data.total_units != null || res.data.total_value != null)) {
+      html += `<div class="grid-4 mb-16" style="gap:10px">`;
+      if (res.data.total_units != null) {
+        html += nlKpi('📦', 'Units', App.Fmt.number(res.data.total_units));
+      }
+      if (res.data.total_value != null) {
+        html += nlKpi('💰', 'Value', App.Fmt.currency(res.data.total_value));
+      }
+      if (res.data.total_weight != null && res.data.total_weight > 0) {
+        html += nlKpi('⚖️', 'Weight', App.Fmt.weight(res.data.total_weight));
+      }
+      if (res.data.brand_count != null) {
+        html += nlKpi('🏷️', 'Brands', App.Fmt.number(res.data.brand_count));
+      }
+      if (res.data.sku_count != null) {
+        html += nlKpi('📊', 'SKUs', App.Fmt.number(res.data.sku_count));
+      }
+      if (res.data.record_count != null) {
+        html += nlKpi('📋', 'Records', App.Fmt.number(res.data.record_count));
+      }
+      if (res.data.warehouse_count != null && res.data.warehouse_count > 0) {
+        html += nlKpi('🏭', 'Warehouses', App.Fmt.number(res.data.warehouse_count));
+      }
+      html += `</div>`;
+    }
+
+    // ── Category list ──
+    if (res.data?.categories) {
+      html += `<div class="mb-12">
+        <div class="data-table-wrap"><div class="data-table-scroll"><table class="data-table">
+          <thead><tr><th>#</th><th>Category</th><th>Units</th><th>Value</th><th>Brands</th><th>SKUs</th></tr></thead>
+          <tbody>${res.data.categories.map((c,i) => `
+            <tr style="cursor:pointer" onclick="App.Router.go('category',{name:encodeURIComponent('${c.name}')})">
+              <td>${i+1}</td><td><strong>${c.name}</strong></td>
+              <td>${App.Fmt.number(c.qty)}</td><td>${App.Fmt.currency(c.value)}</td>
+              <td>${c.brand_count || '—'}</td><td>${c.sku_count || '—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table></div></div></div>`;
+    }
+
+    // ── Brand list ──
+    if (res.data?.brands && !res.data?.categories) {
+      html += `<div class="mb-12">${res.data.brands.map((b,i) => `
         <div class="brand-row" onclick="App.Router.go('brand',{id:encodeURIComponent('${b.name}')})">
+          <div class="brand-rank">${i+1}</div>
           <div class="brand-avatar">${(b.name||'?')[0].toUpperCase()}</div>
-          <div class="brand-name-block"><div class="brand-name">${b.name}</div></div>
+          <div class="brand-name-block">
+            <div class="brand-name">${b.name}</div>
+            <div class="brand-aliases">${b.sku_count || b.skus?.size || '—'} SKUs</div>
+          </div>
           <div class="brand-stats">
             <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.number(b.qty)}</div><div class="brand-stat-lbl">Units</div></div>
+            <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.weight(b.weight)}</div><div class="brand-stat-lbl">Weight</div></div>
             <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.currency(b.value)}</div><div class="brand-stat-lbl">Value</div></div>
           </div>
         </div>`).join('')}</div>`;
     }
 
+    // ── Product table ──
     if (res.data?.products) {
       html += `<div class="mb-12">
         <div class="data-table-wrap"><div class="data-table-scroll"><table class="data-table">
@@ -83,6 +132,7 @@ App.Views.NLQuery = (() => {
         </table></div></div></div>`;
     }
 
+    // ── Raw records (for search/filtered results) ──
     if (res.records?.length) {
       html += `<div class="text-xs text-muted mb-6">Showing ${Math.min(10,res.records.length)} of ${res.records.length} matching records</div>
         <div class="data-table-wrap"><div class="data-table-scroll"><table class="data-table">
@@ -98,8 +148,23 @@ App.Views.NLQuery = (() => {
         </table></div></div>`;
     }
 
+    // ── Follow-up suggestions ──
+    if (res.followUp?.length) {
+      html += `<div class="nl-examples mt-12" style="padding-top:8px;border-top:1px solid var(--border)">
+        ${res.followUp.map(f => `<span class="nl-example-chip" onclick="setNLQuery(this.textContent)">${f}</span>`).join('')}
+      </div>`;
+    }
+
     html += `</div>`;
     wrap.innerHTML = html;
+  }
+
+  function nlKpi(icon, label, value) {
+    return `<div style="background:var(--bg-surface-2);padding:10px 14px;border-radius:8px;text-align:center">
+      <div style="font-size:14px">${icon}</div>
+      <div class="font-bold text-base mt-4">${value}</div>
+      <div class="text-xs text-muted">${label}</div>
+    </div>`;
   }
 
   function statusBadge(type) {

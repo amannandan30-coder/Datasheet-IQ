@@ -1,274 +1,1006 @@
 window.App = window.App || {};
 
 /* ============================================================
-   NL ENGINE — Pattern-matching natural language query
-   No hallucination possible — only queries actual data
+   NL ENGINE — Intelligent Natural Language Inventory Query
+   3-layer architecture:
+     1. Query Understanding (parseQuery)
+     2. Entity Resolution   (resolveEntity)
+     3. Aggregation Engine   (executeQuery)
+
+   ALL calculations use the SAME record fields as the dashboard:
+     r.qty               — quantity
+     r.source_value      — inventory value
+     r.total_weight      — weight in KG
+     r.normalized_category  — category
+     r.subcategory          — subcategory
+     r.normalized_brand     — brand
+     r.product_family_id    — product family / SKU
+     r.raw_bad_inventory_type — inventory status
+     r.normalized_warehouse   — warehouse
+     r.normalized_product_name — product name
    ============================================================ */
 App.NLEngine = (() => {
 
-  const PATTERNS = [
-    // "how much atta do we have" | "total atta"
-    { re: /(?:how much|total|how many units? of)\s+(.+?)(?:\s+do we have|$)/i,
-      handler: 'categoryOrProduct' },
+  /* ── Conversational context ──────────────────────────────── */
+  let _context = {
+    lastEntity: null,      // last resolved entity string
+    lastCategory: null,    // last matched category
+    lastSubcategory: null, // last matched subcategory
+    lastBrand: null,       // last matched brand
+    lastWarehouse: null,   // last matched warehouse
+    lastQuery: null,
+  };
 
-    // "show all atta brands" | "atta brands"
-    { re: /(?:show all\s+)?(.+?)\s+brands?(?:\s+list)?$/i,
-      handler: 'brandsInCategory' },
+  function resetContext() {
+    _context = { lastEntity:null, lastCategory:null, lastSubcategory:null, lastBrand:null, lastWarehouse:null, lastQuery:null };
+  }
 
-    // "which atta brand has the most units" | "top atta brand"
-    { re: /(?:which|top)\s+(.+?)\s+brand(?:s)?\s+(?:has|have|with|by)?\s+(?:most|highest|maximum|max)\s+(?:units?|qty|quantity)/i,
-      handler: 'topBrandInCategory' },
+  /* ── Synonym map for natural-language → category/subcategory ── */
+  const ENTITY_SYNONYMS = {
+    // Grocery subcategories
+    'atta':            { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'flour':           { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'flours':          { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'wheat flour':     { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'whole wheat flour':{ type:'subcategory', name:'Atta & Flours',       category:'Grocery' },
+    'wheat':           { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'chakki atta':     { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'maida':           { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'besan':           { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'suji':            { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'rava':            { type:'subcategory', name:'Atta & Flours',        category:'Grocery' },
+    'rice':            { type:'subcategory', name:'Rice',                  category:'Grocery' },
+    'basmati':         { type:'subcategory', name:'Rice',                  category:'Grocery' },
+    'poha':            { type:'subcategory', name:'Rice',                  category:'Grocery' },
+    'dal':             { type:'subcategory', name:'Pulses & Lentils',     category:'Grocery' },
+    'daal':            { type:'subcategory', name:'Pulses & Lentils',     category:'Grocery' },
+    'lentil':          { type:'subcategory', name:'Pulses & Lentils',     category:'Grocery' },
+    'lentils':         { type:'subcategory', name:'Pulses & Lentils',     category:'Grocery' },
+    'pulses':          { type:'subcategory', name:'Pulses & Lentils',     category:'Grocery' },
+    'moong':           { type:'subcategory', name:'Pulses & Lentils',     category:'Grocery' },
+    'rajma':           { type:'subcategory', name:'Pulses & Lentils',     category:'Grocery' },
+    'chana':           { type:'subcategory', name:'Pulses & Lentils',     category:'Grocery' },
+    'oil':             { type:'subcategory', name:'Oils & Ghee',          category:'Grocery' },
+    'oils':            { type:'subcategory', name:'Oils & Ghee',          category:'Grocery' },
+    'ghee':            { type:'subcategory', name:'Oils & Ghee',          category:'Grocery' },
+    'cooking oil':     { type:'subcategory', name:'Oils & Ghee',          category:'Grocery' },
+    'edible oil':      { type:'subcategory', name:'Oils & Ghee',          category:'Grocery' },
+    'mustard oil':     { type:'subcategory', name:'Oils & Ghee',          category:'Grocery' },
+    'sunflower oil':   { type:'subcategory', name:'Oils & Ghee',          category:'Grocery' },
+    'sugar':           { type:'subcategory', name:'Sugar & Salt',         category:'Grocery' },
+    'salt':            { type:'subcategory', name:'Sugar & Salt',         category:'Grocery' },
+    'jaggery':         { type:'subcategory', name:'Sugar & Salt',         category:'Grocery' },
+    'spices':          { type:'subcategory', name:'Spices & Masalas',     category:'Grocery' },
+    'masala':          { type:'subcategory', name:'Spices & Masalas',     category:'Grocery' },
+    'masalas':         { type:'subcategory', name:'Spices & Masalas',     category:'Grocery' },
+    'tea':             { type:'subcategory', name:'Tea & Coffee',         category:'Grocery' },
+    'coffee':          { type:'subcategory', name:'Tea & Coffee',         category:'Grocery' },
+    'chai':            { type:'subcategory', name:'Tea & Coffee',         category:'Grocery' },
+    'snacks':          { type:'subcategory', name:'Snacks & Biscuits',    category:'Grocery' },
+    'biscuits':        { type:'subcategory', name:'Snacks & Biscuits',    category:'Grocery' },
+    'biscuit':         { type:'subcategory', name:'Snacks & Biscuits',    category:'Grocery' },
+    'chips':           { type:'subcategory', name:'Snacks & Biscuits',    category:'Grocery' },
+    'namkeen':         { type:'subcategory', name:'Snacks & Biscuits',    category:'Grocery' },
+    'cookies':         { type:'subcategory', name:'Snacks & Biscuits',    category:'Grocery' },
+    'noodles':         { type:'subcategory', name:'Noodles & Pasta',      category:'Grocery' },
+    'pasta':           { type:'subcategory', name:'Noodles & Pasta',      category:'Grocery' },
+    'maggi':           { type:'subcategory', name:'Noodles & Pasta',      category:'Grocery' },
+    'sauce':           { type:'subcategory', name:'Sauces & Condiments',  category:'Grocery' },
+    'sauces':          { type:'subcategory', name:'Sauces & Condiments',  category:'Grocery' },
+    'ketchup':         { type:'subcategory', name:'Sauces & Condiments',  category:'Grocery' },
+    'pickle':          { type:'subcategory', name:'Sauces & Condiments',  category:'Grocery' },
+    'jam':             { type:'subcategory', name:'Sauces & Condiments',  category:'Grocery' },
+    'juice':           { type:'subcategory', name:'Beverages',            category:'Grocery' },
+    'beverages':       { type:'subcategory', name:'Beverages',            category:'Grocery' },
+    'drinks':          { type:'subcategory', name:'Beverages',            category:'Grocery' },
+    'cold drinks':     { type:'subcategory', name:'Beverages',            category:'Grocery' },
+    'milk':            { type:'subcategory', name:'Dairy Products',       category:'Grocery' },
+    'dairy':           { type:'subcategory', name:'Dairy Products',       category:'Grocery' },
+    'paneer':          { type:'subcategory', name:'Dairy Products',       category:'Grocery' },
+    'curd':            { type:'subcategory', name:'Dairy Products',       category:'Grocery' },
+    'butter':          { type:'subcategory', name:'Dairy Products',       category:'Grocery' },
+    'cheese':          { type:'subcategory', name:'Dairy Products',       category:'Grocery' },
+    'chocolate':       { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'chocolates':      { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'sweets':          { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'candy':           { type:'subcategory', name:'Chocolates & Sweets',  category:'Grocery' },
+    'oats':            { type:'subcategory', name:'Breakfast Cereals',    category:'Grocery' },
+    'cereal':          { type:'subcategory', name:'Breakfast Cereals',    category:'Grocery' },
+    'cereals':         { type:'subcategory', name:'Breakfast Cereals',    category:'Grocery' },
 
-    // "how many philips products" | "philips inventory"
-    { re: /(?:how many|show|list)\s+(.+?)\s+(?:products?|items?|inventory|records?)/i,
-      handler: 'brandProducts' },
+    // Cleaning subcategories
+    'detergent':       { type:'subcategory', name:'Detergents & Laundry', category:'Cleaning Essentials' },
+    'detergents':      { type:'subcategory', name:'Detergents & Laundry', category:'Cleaning Essentials' },
+    'surf':            { type:'subcategory', name:'Detergents & Laundry', category:'Cleaning Essentials' },
+    'laundry':         { type:'subcategory', name:'Detergents & Laundry', category:'Cleaning Essentials' },
+    'dishwash':        { type:'subcategory', name:'Dishwash',             category:'Cleaning Essentials' },
+    'vim':             { type:'subcategory', name:'Dishwash',             category:'Cleaning Essentials' },
+    'toilet cleaner':  { type:'subcategory', name:'Toilet Cleaners',      category:'Cleaning Essentials' },
+    'harpic':          { type:'subcategory', name:'Toilet Cleaners',      category:'Cleaning Essentials' },
+    'mosquito':        { type:'subcategory', name:'Repellents',           category:'Cleaning Essentials' },
+    'repellent':       { type:'subcategory', name:'Repellents',           category:'Cleaning Essentials' },
 
-    // "which category has the highest value"
-    { re: /which\s+categor(?:y|ies)\s+(?:has|have)\s+(?:highest|most|maximum|max)\s+(?:value|worth)/i,
-      handler: 'topCategory' },
+    // Electronics subcategories
+    'bulb':            { type:'subcategory', name:'Lighting',             category:'Electronics & Electricals' },
+    'bulbs':           { type:'subcategory', name:'Lighting',             category:'Electronics & Electricals' },
+    'led':             { type:'subcategory', name:'Lighting',             category:'Electronics & Electricals' },
+    'lighting':        { type:'subcategory', name:'Lighting',             category:'Electronics & Electricals' },
+    'fan':             { type:'subcategory', name:'Fans',                 category:'Electronics & Electricals' },
+    'fans':            { type:'subcategory', name:'Fans',                 category:'Electronics & Electricals' },
+    'battery':         { type:'subcategory', name:'Batteries',            category:'Electronics & Electricals' },
+    'batteries':       { type:'subcategory', name:'Batteries',            category:'Electronics & Electricals' },
+    'charger':         { type:'subcategory', name:'Mobile Accessories',   category:'Electronics & Electricals' },
+    'earphone':        { type:'subcategory', name:'Mobile Accessories',   category:'Electronics & Electricals' },
 
-    // "show damaged electronics in BCPL"
-    { re: /(?:show|list|find)\s+(?:all\s+)?(.+?)\s+(?:in|at|from)\s+(.+)$/i,
-      handler: 'filteredSearch' },
+    // Category-level synonyms
+    'grocery':         { type:'category', name:'Grocery' },
+    'groceries':       { type:'category', name:'Grocery' },
+    'electronics':     { type:'category', name:'Electronics & Electricals' },
+    'electrical':      { type:'category', name:'Electronics & Electricals' },
+    'electricals':     { type:'category', name:'Electronics & Electricals' },
+    'cleaning':        { type:'category', name:'Cleaning Essentials' },
+    'cleaning essentials': { type:'category', name:'Cleaning Essentials' },
+    'home care':       { type:'category', name:'Home Care' },
+    'home':            { type:'category', name:'Home Care' },
+    'toys':            { type:'category', name:'Toys & Games' },
+    'games':           { type:'category', name:'Toys & Games' },
+    'personal care':   { type:'category', name:'Personal Care' },
+    'cosmetics':       { type:'category', name:'Personal Care' },
+    'beauty':          { type:'category', name:'Personal Care' },
+    'stationery':      { type:'category', name:'Stationery & Office' },
+    'office':          { type:'category', name:'Stationery & Office' },
+  };
 
-    // "top 20 products by value" | "top products by value"
-    { re: /top\s+(\d+)?\s*products?\s+by\s+(value|units?|weight|qty)/i,
-      handler: 'topProducts' },
+  /* ── Metric synonyms ─────────────────────────────────────── */
+  const METRIC_TERMS = {
+    quantity: ['units','unit','quantity','qty','pieces','piece','count','amount','stock','inventory','items','how much','how many','total','number'],
+    value:    ['value','worth','price','cost','money','rupees','rs','₹','amount worth','inventory value','mrp'],
+    weight:   ['weight','kg','kilogram','kilograms','ton','tons','heavy','heaviest','lightest'],
+  };
 
-    // "show damaged" | "all damaged"
-    { re: /(?:show|list|find)?\s*(?:all\s+)?(\w+)\s+(?:inventory|items?|products?|records?)?$/i,
-      handler: 'statusFilter' },
-  ];
+  /* ── Status synonyms ─────────────────────────────────────── */
+  const STATUS_TERMS = {
+    'damaged':    ['damaged','damage','broken','defective'],
+    'expired':    ['expired','expire','expiry'],
+    'near_expiry':['near expiry','near-expiry','nearexpiry','about to expire','expiring soon','expiring'],
+    'saleable':   ['saleable','salable','good','sellable','ok'],
+  };
 
-  function normLower(s) { return (s||'').toLowerCase().trim(); }
+  /* ────────────────────────────────────────────────────────────
+     LAYER 1: Query Understanding — parseQuery
+     ──────────────────────────────────────────────────────────── */
+  function parseQuery(text) {
+    const q = text.toLowerCase().trim().replace(/[?!.]+$/g, '');
+    const parsed = {
+      raw: text,
+      normalized: q,
+      intent: null,
+      entityTerms: [],     // raw terms user typed for entity
+      metric: 'quantity',  // default metric
+      sortDir: 'desc',
+      limit: null,
+      statusFilter: null,
+      warehouseFilter: null,
+      brandFilter: null,
+    };
 
-  async function query(text, dataset_id) {
-    if (!text || !dataset_id) return null;
+    // ── Detect metric ──
+    if (/\b(value|worth|cost|price|money|rupees?|₹|rs\b)/i.test(q)) {
+      parsed.metric = 'value';
+    } else if (/\b(weight|kg|kilogram|ton)/i.test(q)) {
+      parsed.metric = 'weight';
+    }
 
-    const records = await App.DB.getAllByIndex('inventory_records', 'dataset_id', dataset_id);
-    if (!records.length) return { type:'error', message: 'No data loaded. Please upload an inventory file first.' };
+    // ── Detect status filter ──
+    for (const [status, terms] of Object.entries(STATUS_TERMS)) {
+      for (const term of terms) {
+        if (q.includes(term)) {
+          parsed.statusFilter = status;
+          break;
+        }
+      }
+      if (parsed.statusFilter) break;
+    }
 
-    for (const { re, handler } of PATTERNS) {
-      const m = text.match(re);
-      if (m) {
-        try {
-          return await handlers[handler](m, records, dataset_id, text);
-        } catch(e) {
-          return { type:'error', message: `Could not process query: ${e.message}` };
+    // ── Detect limit (e.g., "top 5", "top 10") ──
+    const limitMatch = q.match(/\btop\s+(\d+)/);
+    if (limitMatch) parsed.limit = parseInt(limitMatch[1]);
+    else if (/\btop\b/.test(q) && !parsed.limit) parsed.limit = 10;
+
+    // ── Detect sort direction ──
+    if (/\b(lowest|least|minimum|min|bottom|fewest|smallest)\b/.test(q)) parsed.sortDir = 'asc';
+
+    // ── Detect warehouse filter (e.g., "in BCPL", "at BCPL") ──
+    const whMatch = q.match(/\b(?:in|at|from|warehouse)\s+([a-z0-9][a-z0-9\s]*?)(?:\s*$|\s+(?:warehouse|wh))/i);
+    if (whMatch) {
+      parsed.warehouseFilter = whMatch[1].trim();
+    } else {
+      // Try "in XXXX" at end of sentence
+      const whEnd = q.match(/\b(?:in|at|from)\s+([a-z][a-z0-9\s]{1,20})$/i);
+      if (whEnd) parsed.warehouseFilter = whEnd[1].trim();
+    }
+
+    // ── INTENT DETECTION (ordered by specificity) ──
+
+    // "How much Aashirvaad atta do we have?" — brand + entity
+    if (/\bhow (?:much|many)\s+(\w[\w\s]*?)\s+(?:do we|have|is there|are there|available|in stock)/i.test(q) ||
+        /\bhow (?:much|many)\s+(?:units?\s+of\s+)?(\w[\w\s]*)/i.test(q) ||
+        /\bwhat(?:'s| is| are)\s+(?:the\s+)?(?:total\s+)?(?:amount|quantity|units?|value|weight|stock|inventory|number)\s+(?:of\s+)?(\w[\w\s]*)/i.test(q) ||
+        /\btotal\s+(\w[\w\s]*?)(?:\s+(?:stock|inventory|units?|value))?$/i.test(q) ||
+        /\bshow (?:me\s+)?(?:total\s+)?(\w[\w\s]*?)\s+(?:stock|inventory)/i.test(q)) {
+      const entityM = q.match(
+        /how (?:much|many)\s+(?:units?\s+of\s+)?(.+?)(?:\s+(?:do we|have|is there|are there|available|in stock)|\s*$)/i
+      ) || q.match(
+        /what(?:'s| is| are)\s+(?:the\s+)?(?:total\s+)?(?:amount|quantity|units?|value|weight|stock|inventory|number)\s+(?:of\s+)?(.+)/i
+      ) || q.match(
+        /total\s+(.+?)(?:\s+(?:stock|inventory|units?|value))?$/i
+      ) || q.match(
+        /show (?:me\s+)?(?:total\s+)?(.+?)\s+(?:stock|inventory)/i
+      );
+      if (entityM) {
+        parsed.intent = 'SUMMARY';
+        parsed.entityTerms = cleanEntityTerms(entityM[1]);
+      }
+    }
+
+    // "Show all atta brands" / "atta brands list"
+    if (!parsed.intent && (/\b(?:show|list|all|find)\s+(?:all\s+)?(.+?)\s+brands?\b/i.test(q) ||
+        /\b(.+?)\s+brands?\s*(?:list)?$/i.test(q))) {
+      const brandM = q.match(/(?:show|list|all|find)\s+(?:all\s+)?(.+?)\s+brands?/i) ||
+                     q.match(/(.+?)\s+brands?\s*(?:list)?$/i);
+      if (brandM) {
+        parsed.intent = 'TOP_BRANDS';
+        parsed.entityTerms = cleanEntityTerms(brandM[1]);
+        if (!parsed.limit) parsed.limit = 20;
+      }
+    }
+
+    // "Which atta brand has the most units?" / "Top atta brands by value"
+    if (!parsed.intent && (/\b(?:which|top|best|biggest|largest)\s+(.+?)\s+brands?\b/i.test(q) ||
+        /\btop\s+\d*\s*(.+?)\s+brands?\b/i.test(q))) {
+      const topM = q.match(/(?:which|top|best|biggest|largest)\s+(.+?)\s+brands?\s+(?:has|have|with|by)?\s*(?:most|highest|maximum|max|lowest|least|minimum)?\s*(units?|value|weight|qty|quantity)?/i) ||
+                   q.match(/top\s+\d*\s*(.+?)\s+brands?\s+(?:by\s+)?(value|units?|weight|qty|quantity)?/i);
+      if (topM) {
+        parsed.intent = 'TOP_BRANDS';
+        parsed.entityTerms = cleanEntityTerms(topM[1]);
+        if (topM[2]) {
+          const m2 = topM[2].toLowerCase();
+          if (/value|worth|price/.test(m2)) parsed.metric = 'value';
+          else if (/weight/.test(m2)) parsed.metric = 'weight';
+          else parsed.metric = 'quantity';
+        }
+        if (!parsed.limit) parsed.limit = 1; // "which brand" implies top 1
+        // If "top N" was detected, keep that limit; "which" implies 1
+        if (/\bwhich\b/i.test(q) && !limitMatch) parsed.limit = 1;
+      }
+    }
+
+    // "Which category has the highest value?" / "Top categories"
+    if (!parsed.intent && /\bcategor(?:y|ies)\b/i.test(q)) {
+      parsed.intent = 'TOP_CATEGORIES';
+      if (!parsed.limit) parsed.limit = 10;
+    }
+
+    // "Top 20 products by value"
+    if (!parsed.intent && /\btop\s+\d*\s*products?\s+(?:by\s+)?(value|units?|weight|qty|quantity)?/i.test(q)) {
+      const pM = q.match(/top\s+(\d*)\s*products?\s+(?:by\s+)?(value|units?|weight|qty|quantity)?/i);
+      parsed.intent = 'TOP_PRODUCTS';
+      if (pM[1]) parsed.limit = parseInt(pM[1]);
+      if (!parsed.limit) parsed.limit = 20;
+      if (pM[2]) {
+        const m2 = pM[2].toLowerCase();
+        if (/value/.test(m2)) parsed.metric = 'value';
+        else if (/weight/.test(m2)) parsed.metric = 'weight';
+        else parsed.metric = 'quantity';
+      }
+    }
+
+    // "Show Aashirvaad variants" / "Aashirvaad products"
+    if (!parsed.intent && /\b(.+?)\s+(?:variants?|products?|items?|skus?)\s*$/i.test(q)) {
+      const vM = q.match(/(?:show\s+)?(.+?)\s+(?:variants?|products?|items?|skus?)\s*$/i);
+      if (vM) {
+        parsed.intent = 'BRAND_PRODUCTS';
+        parsed.entityTerms = cleanEntityTerms(vM[1]);
+      }
+    }
+
+    // "Show damaged inventory" / "Show damaged electronics" / "Show damaged electronics in BCPL"
+    if (!parsed.intent && parsed.statusFilter) {
+      parsed.intent = 'FILTERED_SEARCH';
+      // Extract entity after status term
+      const statusText = Object.values(STATUS_TERMS).flat().find(t => q.includes(t)) || '';
+      const afterStatus = q.substring(q.indexOf(statusText) + statusText.length).trim();
+      // Remove warehouse filter portion
+      let entityPart = afterStatus;
+      if (parsed.warehouseFilter) {
+        entityPart = entityPart.replace(new RegExp('\\b(?:in|at|from)\\s+' + escapeRegex(parsed.warehouseFilter) + '\\s*$', 'i'), '').trim();
+      }
+      // Remove common suffix words
+      entityPart = entityPart.replace(/\b(inventory|items?|products?|records?|stock)\b/gi, '').trim();
+      if (entityPart) {
+        parsed.entityTerms = cleanEntityTerms(entityPart);
+      }
+    }
+
+    // "How many units are in BCPL?" — warehouse query
+    if (!parsed.intent && parsed.warehouseFilter && !parsed.entityTerms.length) {
+      parsed.intent = 'SUMMARY';
+      // No entity terms, but warehouse filter exists — will aggregate entire warehouse
+    }
+
+    // Follow-up: "What about Aashirvaad?" / "And rice?"
+    if (!parsed.intent && /\b(?:what about|and|how about|also)\s+(.+)/i.test(q)) {
+      const fuM = q.match(/(?:what about|and|how about|also)\s+(.+)/i);
+      if (fuM) {
+        parsed.intent = _context.lastQuery ? 'SUMMARY' : 'SUMMARY';
+        parsed.entityTerms = cleanEntityTerms(fuM[1]);
+        // Inherit context if applicable
+        if (_context.lastCategory && !parsed.entityTerms.length) {
+          parsed.entityTerms = [_context.lastEntity];
         }
       }
     }
 
-    // Fallback: generic search
-    return await handlers.genericSearch(text, records, dataset_id);
+    // "Which brand has the most?" — follow-up context
+    if (!parsed.intent && /\bwhich brand\b/i.test(q) && _context.lastSubcategory) {
+      parsed.intent = 'TOP_BRANDS';
+      parsed.entityTerms = [_context.lastEntity || _context.lastSubcategory.toLowerCase()];
+      parsed.limit = 1;
+    }
+
+    // If no intent detected but we have a simple term, try SUMMARY
+    if (!parsed.intent) {
+      // Strip common filler words to extract entity
+      const stripped = q
+        .replace(/\b(show|list|find|get|display|give|tell|me|all|the|a|an|of|in|at|from|do|we|have|is|are|there|our|my|what|how|much|many|total|inventory|stock|please|sir|okay|ok)\b/gi, '')
+        .replace(/\s+/g, ' ').trim();
+      if (stripped.length >= 2) {
+        parsed.intent = 'SUMMARY';
+        parsed.entityTerms = cleanEntityTerms(stripped);
+      }
+    }
+
+    // Final fallback — generic search
+    if (!parsed.intent) {
+      parsed.intent = 'RECORD_SEARCH';
+    }
+
+    return parsed;
   }
 
-  const handlers = {
+  /* Remove metric/noise words from entity terms */
+  function cleanEntityTerms(raw) {
+    if (!raw) return [];
+    return raw
+      .replace(/\b(total|amount|quantity|units?|value|worth|weight|stock|inventory|items?|products?|records?|number|count|of|the|our|all|show|list|how|much|many|me|do|we|have|is|are|there|please)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter(t => t.length >= 2);
+  }
 
-    categoryOrProduct: async (m, records, dataset_id, text) => {
-      const term = normLower(m[1]);
-      // Check if term matches a category or product type
-      const matching = records.filter(r =>
-        normLower(r.normalized_category).includes(term) ||
-        normLower(r.subcategory).includes(term) ||
-        normLower(r.normalized_product_name).includes(term) ||
-        normLower(r.raw_brand).includes(term)
-      );
-      if (!matching.length) return { type:'not_found', message:`No records found matching "${m[1]}"` };
+  function escapeRegex(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
 
-      const totalQty    = matching.reduce((s,r) => s+(r.qty||0), 0);
-      const totalValue  = matching.reduce((s,r) => s+(r.source_value||0), 0);
-      const totalWeight = matching.reduce((s,r) => s+(r.total_weight||0), 0);
-      const brands      = [...new Set(matching.map(r => r.normalized_brand))];
+  /* ────────────────────────────────────────────────────────────
+     LAYER 2: Entity Resolution — resolveEntity
+     Uses the app's existing taxonomy from App.Categorizer
+     ──────────────────────────────────────────────────────────── */
+  function resolveEntity(entityTerms, records) {
+    if (!entityTerms || !entityTerms.length) return null;
 
-      return {
-        type: 'summary',
-        query: text,
-        headline: `${App.Fmt.number(totalQty)} units of "${m[1].trim()}"`,
-        data: {
-          total_units:  totalQty,
-          total_value:  totalValue,
-          total_weight: totalWeight,
-          brand_count:  brands.length,
-          brands:       brands.slice(0,10),
-        },
-        records: matching.slice(0,50),
-      };
-    },
+    const termStr = entityTerms.join(' ').toLowerCase().trim();
 
-    brandsInCategory: async (m, records, dataset_id, text) => {
-      const term = normLower(m[1]);
-      const matching = records.filter(r =>
-        normLower(r.normalized_category).includes(term) ||
-        normLower(r.subcategory).includes(term)
-      );
-      if (!matching.length) return { type:'not_found', message:`No records found for category "${m[1]}"` };
+    // 1. Try exact synonym match (multi-word first, then single word)
+    if (ENTITY_SYNONYMS[termStr]) {
+      return { ...ENTITY_SYNONYMS[termStr], matchedTerm: termStr };
+    }
 
-      // Group by brand
-      const brandMap = new Map();
-      for (const r of matching) {
-        const b = r.normalized_brand || 'Unknown';
-        if (!brandMap.has(b)) brandMap.set(b, { name:b, qty:0, value:0, weight:0 });
-        const bm = brandMap.get(b);
-        bm.qty    += (r.qty||0);
-        bm.value  += (r.source_value||0);
-        bm.weight += (r.total_weight||0);
+    // 2. Try each term individually in synonyms
+    for (const term of entityTerms) {
+      const tl = term.toLowerCase();
+      if (ENTITY_SYNONYMS[tl]) {
+        return { ...ENTITY_SYNONYMS[tl], matchedTerm: tl };
       }
-      const brandList = [...brandMap.values()].sort((a,b) => b.qty - a.qty);
+    }
 
-      return {
-        type: 'brand_list',
-        query: text,
-        headline: `${brandList.length} brands in "${m[1].trim()}"`,
-        data: { brands: brandList },
-        records: matching.slice(0,50),
-      };
-    },
-
-    topBrandInCategory: async (m, records, dataset_id, text) => {
-      const term = normLower(m[1]);
-      const matching = records.filter(r =>
-        normLower(r.normalized_category).includes(term) ||
-        normLower(r.subcategory).includes(term)
-      );
-      if (!matching.length) return { type:'not_found', message:`No records for "${m[1]}"` };
-
-      const brandMap = new Map();
-      for (const r of matching) {
-        const b = r.normalized_brand || 'Unknown';
-        if (!brandMap.has(b)) brandMap.set(b, { name:b, qty:0, value:0 });
-        brandMap.get(b).qty += (r.qty||0);
-        brandMap.get(b).value += (r.source_value||0);
+    // 3. Try fuzzy match against actual category names from the dataset
+    const categories = [...new Set(records.map(r => r.normalized_category).filter(Boolean))];
+    for (const cat of categories) {
+      if (cat.toLowerCase().includes(termStr) || termStr.includes(cat.toLowerCase())) {
+        return { type: 'category', name: cat, matchedTerm: termStr };
       }
-      const top = [...brandMap.values()].sort((a,b) => b.qty - a.qty)[0];
+    }
 
+    // 4. Try fuzzy match against actual subcategory names from the dataset
+    const subcats = [...new Set(records.map(r => r.subcategory).filter(Boolean))];
+    for (const sc of subcats) {
+      if (sc.toLowerCase().includes(termStr) || termStr.includes(sc.toLowerCase())) {
+        const catForSc = records.find(r => r.subcategory === sc)?.normalized_category;
+        return { type: 'subcategory', name: sc, category: catForSc, matchedTerm: termStr };
+      }
+    }
+
+    // 5. Try fuzzy match against actual brand names in the dataset
+    const brands = [...new Set(records.map(r => r.normalized_brand).filter(Boolean))];
+    for (const brand of brands) {
+      const bl = brand.toLowerCase();
+      if (bl === termStr || bl.includes(termStr) || termStr.includes(bl)) {
+        return { type: 'brand', name: brand, matchedTerm: termStr };
+      }
+    }
+
+    // 6. Try individual words against brands (for multi-word queries like "aashirvaad atta")
+    for (const term of entityTerms) {
+      const tl = term.toLowerCase();
+      for (const brand of brands) {
+        if (brand.toLowerCase() === tl || (tl.length >= 4 && brand.toLowerCase().includes(tl))) {
+          return { type: 'brand', name: brand, matchedTerm: tl };
+        }
+      }
+    }
+
+    // 7. Try warehouse match
+    const warehouses = [...new Set(records.map(r => r.normalized_warehouse).filter(Boolean))];
+    for (const wh of warehouses) {
+      if (wh.toLowerCase().includes(termStr) || termStr.includes(wh.toLowerCase())) {
+        return { type: 'warehouse', name: wh, matchedTerm: termStr };
+      }
+    }
+
+    return null;
+  }
+
+  /* Resolve a brand filter term against actual brands */
+  function resolveBrand(brandTerm, records) {
+    if (!brandTerm) return null;
+    const bl = brandTerm.toLowerCase();
+    const brands = [...new Set(records.map(r => r.normalized_brand).filter(Boolean))];
+    for (const brand of brands) {
+      if (brand.toLowerCase() === bl || brand.toLowerCase().includes(bl) || bl.includes(brand.toLowerCase())) {
+        return brand;
+      }
+    }
+    return null;
+  }
+
+  /* Resolve a warehouse filter term against actual warehouses */
+  function resolveWarehouse(whTerm, records) {
+    if (!whTerm) return null;
+    const wl = whTerm.toLowerCase();
+    const warehouses = [...new Set(records.map(r => r.normalized_warehouse).filter(Boolean))];
+    for (const wh of warehouses) {
+      if (wh.toLowerCase().includes(wl) || wl.includes(wh.toLowerCase())) {
+        return wh;
+      }
+    }
+    // Also check raw_entity_name
+    const rawNames = [...new Set(records.map(r => r.raw_entity_name).filter(Boolean))];
+    for (const rn of rawNames) {
+      if (rn.toLowerCase().includes(wl) || wl.includes(rn.toLowerCase())) {
+        // Find corresponding normalized name
+        const rec = records.find(r => r.raw_entity_name === rn);
+        return rec?.normalized_warehouse || rn;
+      }
+    }
+    return null;
+  }
+
+  /* ────────────────────────────────────────────────────────────
+     LAYER 3: Aggregation Engine — executeQuery
+     Uses SAME fields as Dashboard: r.qty, r.source_value,
+     r.total_weight, r.normalized_category, r.subcategory,
+     r.normalized_brand, r.product_family_id
+     ──────────────────────────────────────────────────────────── */
+  function filterRecords(records, entity, parsed) {
+    let filtered = records;
+
+    // Apply entity filter
+    if (entity) {
+      if (entity.type === 'category') {
+        filtered = filtered.filter(r => r.normalized_category === entity.name);
+      } else if (entity.type === 'subcategory') {
+        filtered = filtered.filter(r => r.subcategory === entity.name);
+      } else if (entity.type === 'brand') {
+        filtered = filtered.filter(r => r.normalized_brand === entity.name);
+      } else if (entity.type === 'warehouse') {
+        filtered = filtered.filter(r => r.normalized_warehouse === entity.name);
+      }
+    }
+
+    // Apply status filter
+    if (parsed.statusFilter) {
+      filtered = filtered.filter(r => {
+        const st = (r.raw_bad_inventory_type || '').toLowerCase();
+        if (parsed.statusFilter === 'near_expiry') {
+          return st === 'near_expiry' || st === 'nearexpiry' || st === 'near expiry';
+        }
+        return st === parsed.statusFilter || st.includes(parsed.statusFilter);
+      });
+    }
+
+    // Apply warehouse filter
+    if (parsed.warehouseFilter) {
+      const resolvedWh = resolveWarehouse(parsed.warehouseFilter, records);
+      if (resolvedWh) {
+        filtered = filtered.filter(r => r.normalized_warehouse === resolvedWh);
+      } else {
+        // Fallback: fuzzy match
+        const wl = parsed.warehouseFilter.toLowerCase();
+        filtered = filtered.filter(r =>
+          (r.normalized_warehouse || '').toLowerCase().includes(wl) ||
+          (r.raw_entity_name || '').toLowerCase().includes(wl)
+        );
+      }
+    }
+
+    return filtered;
+  }
+
+  function aggregate(records) {
+    // Same calculation logic as Dashboard and Aggregator
+    const totalQty    = records.reduce((s, r) => s + (r.qty || 0), 0);
+    const totalValue  = records.reduce((s, r) => s + (r.source_value || 0), 0);
+    const totalWeight = records.reduce((s, r) => s + (r.total_weight || 0), 0);
+    const brands      = new Set(records.map(r => r.normalized_brand).filter(Boolean));
+    const skus        = new Set(records.map(r => r.product_family_id).filter(Boolean));
+    const warehouses  = new Set(records.map(r => r.normalized_warehouse).filter(Boolean));
+    const categories  = new Set(records.map(r => r.normalized_category).filter(Boolean));
+
+    // Status breakdown
+    const statusBreakdown = {};
+    for (const r of records) {
+      const st = (r.raw_bad_inventory_type || 'unknown').toLowerCase();
+      if (!statusBreakdown[st]) statusBreakdown[st] = { count: 0, qty: 0, value: 0 };
+      statusBreakdown[st].count++;
+      statusBreakdown[st].qty += (r.qty || 0);
+      statusBreakdown[st].value += (r.source_value || 0);
+    }
+
+    return {
+      record_count: records.length,
+      total_qty: totalQty,
+      total_value: totalValue,
+      total_weight: totalWeight,
+      brand_count: brands.size,
+      sku_count: skus.size,
+      warehouse_count: warehouses.size,
+      category_count: categories.size,
+      status_breakdown: statusBreakdown,
+    };
+  }
+
+  function groupByBrand(records, sortBy = 'quantity', limit = null, sortDir = 'desc') {
+    const brandMap = new Map();
+    for (const r of records) {
+      const b = r.normalized_brand || 'Unknown';
+      if (!brandMap.has(b)) brandMap.set(b, { name: b, qty: 0, value: 0, weight: 0, skus: new Set() });
+      const bm = brandMap.get(b);
+      bm.qty    += (r.qty || 0);
+      bm.value  += (r.source_value || 0);
+      bm.weight += (r.total_weight || 0);
+      bm.skus.add(r.product_family_id);
+    }
+
+    let brands = [...brandMap.values()].map(b => ({ ...b, sku_count: b.skus.size }));
+    const field = sortBy === 'value' ? 'value' : sortBy === 'weight' ? 'weight' : 'qty';
+    const dir = sortDir === 'asc' ? 1 : -1;
+    brands.sort((a, b) => dir * (b[field] - a[field]));
+    if (limit) brands = brands.slice(0, limit);
+    return brands;
+  }
+
+  function groupByCategory(records, sortBy = 'value', limit = null) {
+    const catMap = new Map();
+    for (const r of records) {
+      const c = r.normalized_category || 'Unknown';
+      if (!catMap.has(c)) catMap.set(c, { name: c, qty: 0, value: 0, weight: 0, brands: new Set(), skus: new Set() });
+      const cm = catMap.get(c);
+      cm.qty    += (r.qty || 0);
+      cm.value  += (r.source_value || 0);
+      cm.weight += (r.total_weight || 0);
+      cm.brands.add(r.normalized_brand);
+      cm.skus.add(r.product_family_id);
+    }
+    let cats = [...catMap.values()].map(c => ({
+      ...c, brand_count: c.brands.size, sku_count: c.skus.size
+    }));
+    const field = sortBy === 'quantity' ? 'qty' : sortBy === 'weight' ? 'weight' : 'value';
+    cats.sort((a, b) => b[field] - a[field]);
+    if (limit) cats = cats.slice(0, limit);
+    return cats;
+  }
+
+  function groupByProduct(records, sortBy = 'value', limit = 20) {
+    const famMap = new Map();
+    for (const r of records) {
+      const fid = r.product_family_id;
+      if (!famMap.has(fid)) famMap.set(fid, {
+        name: r.normalized_product_name, brand: r.normalized_brand,
+        qty: 0, value: 0, weight: 0
+      });
+      const f = famMap.get(fid);
+      f.qty    += (r.qty || 0);
+      f.value  += (r.source_value || 0);
+      f.weight += (r.total_weight || 0);
+    }
+    let products = [...famMap.values()];
+    const field = sortBy === 'quantity' ? 'qty' : sortBy === 'weight' ? 'weight' : 'value';
+    products.sort((a, b) => b[field] - a[field]);
+    if (limit) products = products.slice(0, limit);
+    return products;
+  }
+
+  /* ────────────────────────────────────────────────────────────
+     MAIN QUERY FUNCTION
+     ──────────────────────────────────────────────────────────── */
+  async function query(text, dataset_id) {
+    if (!text || !dataset_id) return null;
+
+    const records = await App.DB.getAllByIndex('inventory_records', 'dataset_id', dataset_id);
+    if (!records.length) return { type: 'error', message: 'No data loaded. Please upload an inventory file first.' };
+
+    const parsed = parseQuery(text);
+
+    // Resolve entity from the parsed terms
+    let entity = resolveEntity(parsed.entityTerms, records);
+
+    // If entity terms contain both a brand and a category/subcategory, handle combination
+    // e.g., "Aashirvaad atta" → brand=Aashirvaad, subcategory=Atta & Flours
+    let combinedBrand = null;
+    if (entity && entity.type === 'brand' && parsed.entityTerms.length > 1) {
+      // Check if other terms resolve to a category/subcategory
+      const otherTerms = parsed.entityTerms.filter(t => t.toLowerCase() !== entity.matchedTerm);
+      const otherEntity = resolveEntity(otherTerms, records);
+      if (otherEntity && (otherEntity.type === 'category' || otherEntity.type === 'subcategory')) {
+        combinedBrand = entity.name;
+        entity = otherEntity;
+        parsed.brandFilter = combinedBrand;
+      }
+    } else if (entity && (entity.type === 'category' || entity.type === 'subcategory') && parsed.entityTerms.length > 1) {
+      // Check if other terms resolve to a brand
+      const otherTerms = parsed.entityTerms.filter(t => t.toLowerCase() !== entity.matchedTerm);
+      const otherEntity = resolveEntity(otherTerms, records);
+      if (otherEntity && otherEntity.type === 'brand') {
+        combinedBrand = otherEntity.name;
+        parsed.brandFilter = combinedBrand;
+      }
+    }
+
+    // Apply brand filter from entity terms
+    if (parsed.brandFilter) {
+      const resolved = resolveBrand(parsed.brandFilter, records);
+      if (resolved) parsed.brandFilter = resolved;
+    }
+
+    // Update context
+    if (entity) {
+      _context.lastEntity = entity.matchedTerm;
+      if (entity.type === 'category') _context.lastCategory = entity.name;
+      if (entity.type === 'subcategory') { _context.lastSubcategory = entity.name; _context.lastCategory = entity.category; }
+      if (entity.type === 'brand') _context.lastBrand = entity.name;
+    }
+    _context.lastQuery = text;
+
+    // Execute based on intent
+    try {
+      switch (parsed.intent) {
+        case 'SUMMARY':          return executeSummary(records, entity, parsed);
+        case 'TOP_BRANDS':       return executeTopBrands(records, entity, parsed);
+        case 'TOP_CATEGORIES':   return executeTopCategories(records, parsed);
+        case 'TOP_PRODUCTS':     return executeTopProducts(records, entity, parsed);
+        case 'BRAND_PRODUCTS':   return executeBrandProducts(records, entity, parsed);
+        case 'FILTERED_SEARCH':  return executeFilteredSearch(records, entity, parsed);
+        case 'RECORD_SEARCH':    return executeRecordSearch(text, records);
+        default:                 return executeRecordSearch(text, records);
+      }
+    } catch (e) {
+      return { type: 'error', message: `Could not process query: ${e.message}` };
+    }
+  }
+
+  /* ── Intent handlers ─────────────────────────────────────── */
+
+  function executeSummary(records, entity, parsed) {
+    let filtered = filterRecords(records, entity, parsed);
+
+    // Apply brand filter if present
+    if (parsed.brandFilter) {
+      filtered = filtered.filter(r => r.normalized_brand === parsed.brandFilter);
+    }
+
+    if (!filtered.length) {
+      const suggestion = entity ? ` Try browsing the ${entity.name || 'category'} section in the sidebar.` : '';
+      return { type: 'not_found', message: `No inventory records found for "${parsed.entityTerms.join(' ')}".${suggestion}` };
+    }
+
+    const agg = aggregate(filtered);
+    const topBrands = groupByBrand(filtered, parsed.metric, 5);
+
+    // Build descriptive label
+    let label = 'Your inventory';
+    if (parsed.brandFilter && entity) label = `${parsed.brandFilter} ${entity.name || ''}`.trim();
+    else if (entity) label = entity.name;
+    if (parsed.warehouseFilter) {
+      const resolvedWh = resolveWarehouse(parsed.warehouseFilter, records);
+      label += ` in ${resolvedWh || parsed.warehouseFilter}`;
+    }
+    if (parsed.statusFilter) label = `${capitalize(parsed.statusFilter)} ${label}`;
+
+    return {
+      type: 'summary',
+      intent: 'SUMMARY',
+      query: parsed.raw,
+      resolvedEntity: entity,
+      headline: label,
+      data: {
+        total_units: agg.total_qty,
+        total_value: agg.total_value,
+        total_weight: agg.total_weight,
+        brand_count: agg.brand_count,
+        sku_count: agg.sku_count,
+        record_count: agg.record_count,
+        warehouse_count: agg.warehouse_count,
+        status_breakdown: agg.status_breakdown,
+        brands: topBrands,
+      },
+      followUp: entity ? [
+        `Show all ${entity.name} brands`,
+        `Top ${entity.name} brands by value`,
+        `Which ${entity.name} brand has the most units?`,
+      ] : [],
+    };
+  }
+
+  function executeTopBrands(records, entity, parsed) {
+    let filtered = filterRecords(records, entity, parsed);
+    if (!filtered.length) {
+      return { type: 'not_found', message: `No records found for "${parsed.entityTerms.join(' ')}".` };
+    }
+
+    const brands = groupByBrand(filtered, parsed.metric, parsed.limit || 10, parsed.sortDir);
+    const label = entity ? entity.name : 'All Inventory';
+
+    // If limit=1, give a direct answer
+    if (parsed.limit === 1 && brands.length > 0) {
+      const top = brands[0];
+      const metricLabel = parsed.metric === 'value' ? `${App.Fmt.currency(top.value)} value` :
+                          parsed.metric === 'weight' ? `${App.Fmt.weight(top.weight)} weight` :
+                          `${App.Fmt.number(top.qty)} units`;
       return {
         type: 'answer',
-        query: text,
-        headline: `${top.name} has the most ${m[1]} — ${App.Fmt.number(top.qty)} units`,
-        data: { top_brand: top },
-        records: matching.filter(r => r.normalized_brand === top.name).slice(0,50),
+        intent: 'TOP_BRANDS',
+        query: parsed.raw,
+        resolvedEntity: entity,
+        headline: `${top.name} has the most ${label.toLowerCase()} — ${metricLabel}`,
+        data: { brands: brands.slice(0, 5), top_brand: top },
+        followUp: [
+          `How much ${top.name} do we have?`,
+          `Show ${top.name} variants`,
+        ],
       };
-    },
+    }
 
-    brandProducts: async (m, records, dataset_id, text) => {
-      const term = normLower(m[1]);
-      const matching = records.filter(r =>
-        normLower(r.normalized_brand).includes(term) ||
-        normLower(r.raw_brand).includes(term)
-      );
-      if (!matching.length) return { type:'not_found', message:`No records for brand "${m[1]}"` };
+    return {
+      type: 'brand_list',
+      intent: 'TOP_BRANDS',
+      query: parsed.raw,
+      resolvedEntity: entity,
+      headline: `${brands.length} brands in ${label}`,
+      data: { brands },
+      followUp: entity ? [`How much ${entity.name} do we have?`] : [],
+    };
+  }
 
-      const totalQty   = matching.reduce((s,r) => s+(r.qty||0), 0);
-      const totalValue = matching.reduce((s,r) => s+(r.source_value||0), 0);
-      const skus       = new Set(matching.map(r => r.product_family_id)).size;
+  function executeTopCategories(records, parsed) {
+    let filtered = records;
+    if (parsed.statusFilter) {
+      filtered = filterRecords(records, null, parsed);
+    }
+    const cats = groupByCategory(filtered, parsed.metric, parsed.limit || 10);
+    if (!cats.length) {
+      return { type: 'not_found', message: 'No categories found in the dataset.' };
+    }
 
-      return {
-        type: 'summary',
-        query: text,
-        headline: `${m[1].trim()} — ${App.Fmt.number(totalQty)} units, ${skus} SKUs`,
-        data: { total_units: totalQty, total_value: totalValue, sku_count: skus },
-        records: matching.slice(0,50),
-      };
-    },
+    const top = cats[0];
+    const metricLabel = parsed.metric === 'weight' ? `${App.Fmt.weight(top.weight)} weight` :
+                        parsed.metric === 'quantity' ? `${App.Fmt.number(top.qty)} units` :
+                        `${App.Fmt.currency(top.value)} value`;
 
-    topCategory: async (m, records, dataset_id, text) => {
-      const catMap = new Map();
-      for (const r of records) {
-        const c = r.normalized_category || 'Unknown';
-        if (!catMap.has(c)) catMap.set(c, { name:c, value:0, qty:0 });
-        catMap.get(c).value += (r.source_value||0);
-        catMap.get(c).qty   += (r.qty||0);
+    return {
+      type: 'category_list',
+      intent: 'TOP_CATEGORIES',
+      query: parsed.raw,
+      headline: `${top.name} has the highest ${parsed.metric === 'quantity' ? 'units' : parsed.metric} — ${metricLabel}`,
+      data: { categories: cats },
+      followUp: [`How much ${top.name.toLowerCase()} do we have?`],
+    };
+  }
+
+  function executeTopProducts(records, entity, parsed) {
+    let filtered = filterRecords(records, entity, parsed);
+    if (!filtered.length) {
+      return { type: 'not_found', message: `No product records found.` };
+    }
+    const products = groupByProduct(filtered, parsed.metric, parsed.limit || 20);
+    return {
+      type: 'product_list',
+      intent: 'TOP_PRODUCTS',
+      query: parsed.raw,
+      headline: `Top ${products.length} products by ${parsed.metric}`,
+      data: { products },
+    };
+  }
+
+  function executeBrandProducts(records, entity, parsed) {
+    // Resolve as brand
+    let brandName = null;
+    if (entity && entity.type === 'brand') {
+      brandName = entity.name;
+    } else {
+      // Try resolving entity terms as brand
+      brandName = resolveBrand(parsed.entityTerms.join(' '), records);
+      if (!brandName) {
+        for (const term of parsed.entityTerms) {
+          brandName = resolveBrand(term, records);
+          if (brandName) break;
+        }
       }
-      const sorted = [...catMap.values()].sort((a,b) => b.value-a.value);
-      const top = sorted[0];
-      return {
-        type: 'answer',
-        query: text,
-        headline: `${top.name} has the highest value — ${App.Fmt.currency(top.value)}`,
-        data: { categories: sorted.slice(0,10) },
-        records: records.filter(r => r.normalized_category === top.name).slice(0,50),
-      };
-    },
+    }
 
-    filteredSearch: async (m, records, dataset_id, text) => {
-      const what   = normLower(m[1]);
-      const where  = normLower(m[2]);
-      const matching = records.filter(r =>
-        (normLower(r.normalized_category).includes(what) ||
-         normLower(r.subcategory).includes(what) ||
-         normLower(r.normalized_brand).includes(what) ||
-         normLower(r.raw_bad_inventory_type).includes(what)) &&
-        (normLower(r.normalized_warehouse).includes(where) ||
-         normLower(r.raw_entity_name).includes(where))
+    if (!brandName) {
+      return { type: 'not_found', message: `Brand "${parsed.entityTerms.join(' ')}" not found in inventory.` };
+    }
+
+    let filtered = records.filter(r => r.normalized_brand === brandName);
+    if (parsed.statusFilter) filtered = filterRecords(filtered, null, parsed);
+
+    const products = groupByProduct(filtered, 'value', 50);
+    const agg = aggregate(filtered);
+
+    return {
+      type: 'product_list',
+      intent: 'BRAND_PRODUCTS',
+      query: parsed.raw,
+      resolvedEntity: { type: 'brand', name: brandName },
+      headline: `${brandName} — ${App.Fmt.number(agg.total_qty)} units, ${products.length} products`,
+      data: {
+        products,
+        total_units: agg.total_qty,
+        total_value: agg.total_value,
+        total_weight: agg.total_weight,
+      },
+      followUp: [`How much ${brandName} do we have?`],
+    };
+  }
+
+  function executeFilteredSearch(records, entity, parsed) {
+    let filtered = filterRecords(records, entity, parsed);
+
+    // Apply brand filter
+    if (parsed.brandFilter) {
+      filtered = filtered.filter(r => r.normalized_brand === parsed.brandFilter);
+    }
+
+    if (!filtered.length) {
+      return { type: 'not_found', message: `No matching ${parsed.statusFilter || ''} records found.` };
+    }
+
+    const agg = aggregate(filtered);
+    let label = parsed.statusFilter ? capitalize(parsed.statusFilter) : '';
+    if (entity) label += ` ${entity.name}`;
+    if (parsed.warehouseFilter) {
+      const resolvedWh = resolveWarehouse(parsed.warehouseFilter, records);
+      label += ` in ${resolvedWh || parsed.warehouseFilter}`;
+    }
+    label = label.trim();
+
+    return {
+      type: 'summary',
+      intent: 'FILTERED_SEARCH',
+      query: parsed.raw,
+      resolvedEntity: entity,
+      headline: label || 'Filtered Results',
+      data: {
+        total_units: agg.total_qty,
+        total_value: agg.total_value,
+        total_weight: agg.total_weight,
+        brand_count: agg.brand_count,
+        sku_count: agg.sku_count,
+        record_count: agg.record_count,
+        warehouse_count: agg.warehouse_count,
+        status_breakdown: agg.status_breakdown,
+      },
+      records: filtered.slice(0, 50),
+    };
+  }
+
+  function executeRecordSearch(text, records) {
+    const term = text.toLowerCase().trim();
+    const matching = records.filter(r =>
+      (r.normalized_product_name || '').toLowerCase().includes(term) ||
+      (r.normalized_brand || '').toLowerCase().includes(term) ||
+      (r.normalized_category || '').toLowerCase().includes(term) ||
+      (r.normalized_warehouse || '').toLowerCase().includes(term) ||
+      (r.item_id || '').toString().toLowerCase().includes(term) ||
+      (r.upc || '').toString().toLowerCase().includes(term)
+    );
+    if (!matching.length) {
+      return { type: 'not_found', message: `No results for "${text}". Try asking about a category (e.g., "How much atta do we have?") or a brand name.` };
+    }
+    const agg = aggregate(matching);
+    return {
+      type: 'search',
+      intent: 'RECORD_SEARCH',
+      query: text,
+      headline: `${matching.length} records matching "${text}" — ${App.Fmt.number(agg.total_qty)} units total`,
+      records: matching.slice(0, 50),
+    };
+  }
+
+  /* ── Helpers ─────────────────────────────────────────────── */
+  function capitalize(s) {
+    if (!s) return '';
+    return s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
+  }
+
+  /* ── Built-in Test Suite ─────────────────────────────────── */
+  async function runTests(dataset_id) {
+    if (!dataset_id) dataset_id = App.State?.dataset_id;
+    if (!dataset_id) { console.error('No dataset_id. Load a dataset first.'); return; }
+
+    const tests = [
+      { q: 'What is the total amount of flour?',    expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
+      { q: 'How much atta do we have?',             expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
+      { q: 'How many units of atta?',               expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
+      { q: 'What is the value of atta?',            expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
+      { q: 'Show all atta brands',                  expectIntent: 'TOP_BRANDS',expectEntity: 'Atta & Flours' },
+      { q: 'Which atta brand has the most units?',  expectIntent: 'TOP_BRANDS',expectEntity: 'Atta & Flours' },
+      { q: 'Top 5 atta brands by value',            expectIntent: 'TOP_BRANDS',expectEntity: 'Atta & Flours' },
+      { q: 'How much Aashirvaad atta do we have?',  expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
+      { q: 'Show Aashirvaad variants',              expectIntent: 'BRAND_PRODUCTS', expectEntity: null },
+      { q: 'How much rice do we have?',             expectIntent: 'SUMMARY',   expectEntity: 'Rice' },
+      { q: 'Which category has the highest value?',  expectIntent: 'TOP_CATEGORIES', expectEntity: null },
+      { q: 'Show damaged inventory',                expectIntent: 'FILTERED_SEARCH', expectEntity: null },
+      { q: 'Show damaged electronics',              expectIntent: 'FILTERED_SEARCH', expectEntity: 'Electronics & Electricals' },
+      { q: 'Show damaged electronics in BCPL',      expectIntent: 'FILTERED_SEARCH', expectEntity: 'Electronics & Electricals' },
+      { q: 'How many units are in BCPL?',           expectIntent: 'SUMMARY',   expectEntity: null },
+      { q: 'What is the total weight of atta?',     expectIntent: 'SUMMARY',   expectEntity: 'Atta & Flours' },
+    ];
+
+    console.log('=== NL ENGINE TEST SUITE ===');
+    let passed = 0, failed = 0;
+
+    for (const t of tests) {
+      resetContext(); // Reset context between tests
+      const result = await query(t.q, dataset_id);
+      const parsed = parseQuery(t.q);
+      const records = await App.DB.getAllByIndex('inventory_records', 'dataset_id', dataset_id);
+      const entity = resolveEntity(parsed.entityTerms, records);
+
+      const intentOk = result.intent === t.expectIntent;
+      const entityOk = t.expectEntity === null ||
+        (entity && (entity.name === t.expectEntity)) ||
+        (result.resolvedEntity && result.resolvedEntity.name === t.expectEntity);
+      const notFallback = result.type !== 'not_found' || t.expectIntent === 'RECORD_SEARCH';
+
+      const pass = intentOk && entityOk && notFallback;
+
+      console.log(
+        `${pass ? '✅' : '❌'} "${t.q}"\n` +
+        `   Intent: ${result.intent || 'NONE'} (expected: ${t.expectIntent}) ${intentOk ? '✓' : '✗'}\n` +
+        `   Entity: ${entity?.name || result.resolvedEntity?.name || 'NONE'} (expected: ${t.expectEntity || 'any'}) ${entityOk ? '✓' : '✗'}\n` +
+        `   Type: ${result.type} | Headline: ${result.headline || 'N/A'}\n` +
+        `   Data: units=${result.data?.total_units ?? 'N/A'}, value=${result.data?.total_value ?? 'N/A'}, weight=${result.data?.total_weight ?? 'N/A'}`
       );
-      const totalQty = matching.reduce((s,r) => s+(r.qty||0),0);
-      return {
-        type: 'filtered',
-        query: text,
-        headline: `${App.Fmt.number(matching.length)} records — ${App.Fmt.number(totalQty)} units`,
-        records: matching.slice(0,50),
-      };
-    },
 
-    topProducts: async (m, records, dataset_id, text) => {
-      const N    = parseInt(m[1]) || 20;
-      const by   = normLower(m[2]);
-      const field= by.includes('value') ? 'source_value' : by.includes('weight') ? 'total_weight' : 'qty';
+      if (pass) passed++; else failed++;
+    }
 
-      const famMap = new Map();
-      for (const r of records) {
-        const fid = r.product_family_id;
-        if (!famMap.has(fid)) famMap.set(fid, { name: r.normalized_product_name, brand: r.normalized_brand, qty:0, value:0, weight:0 });
-        const f = famMap.get(fid);
-        f.qty    += (r.qty||0);
-        f.value  += (r.source_value||0);
-        f.weight += (r.total_weight||0);
-      }
-      const sorted = [...famMap.values()].sort((a,b) => b[field]-a[field]).slice(0,N);
+    console.log(`\n=== RESULTS: ${passed}/${tests.length} passed, ${failed} failed ===`);
+    return { passed, failed, total: tests.length };
+  }
 
-      return {
-        type: 'product_list',
-        query: text,
-        headline: `Top ${N} products by ${by}`,
-        data: { products: sorted },
-        records: [],
-      };
-    },
-
-    statusFilter: async (m, records, dataset_id, text) => {
-      const term = normLower(m[1]);
-      const matching = records.filter(r => normLower(r.raw_bad_inventory_type).includes(term));
-      if (!matching.length) return await handlers.genericSearch(text, records, dataset_id);
-      const totalQty = matching.reduce((s,r) => s+(r.qty||0),0);
-      const totalVal = matching.reduce((s,r) => s+(r.source_value||0),0);
-      return {
-        type: 'filtered',
-        query: text,
-        headline: `${App.Fmt.number(matching.length)} "${m[1]}" records — ${App.Fmt.number(totalQty)} units — ${App.Fmt.currency(totalVal)}`,
-        records: matching.slice(0,50),
-      };
-    },
-
-    genericSearch: async (text, records, dataset_id) => {
-      const term = normLower(text);
-      const matching = records.filter(r =>
-        normLower(r.normalized_product_name).includes(term) ||
-        normLower(r.normalized_brand).includes(term) ||
-        normLower(r.normalized_category).includes(term) ||
-        normLower(r.normalized_warehouse).includes(term) ||
-        normLower(r.item_id||'').includes(term)
-      );
-      if (!matching.length) return { type:'not_found', message: `No results for "${text}". Try searching for a brand, category, or product name.` };
-      const totalQty = matching.reduce((s,r) => s+(r.qty||0),0);
-      return {
-        type: 'search',
-        query: text,
-        headline: `${matching.length} records matching "${text}" — ${App.Fmt.number(totalQty)} units total`,
-        records: matching.slice(0,50),
-      };
-    },
-  };
-
-  return { query };
+  return { query, parseQuery, resolveEntity, runTests, resetContext };
 })();
