@@ -83,11 +83,15 @@ App.UI = {
     const main = document.getElementById('main-content');
     if (!main) return;
 
-    // Toggle Landing Mode layout on document.body
+    // Toggle Landing Mode layout on document.body AND html element
+    // CRITICAL: overflow must be set at the html level, NOT on any
+    // intermediate wrapper, otherwise position:sticky breaks.
     if (route === 'landing' || route === 'home') {
       document.body.classList.add('is-landing');
+      document.documentElement.classList.add('is-landing-html');
     } else {
       document.body.classList.remove('is-landing');
+      document.documentElement.classList.remove('is-landing-html');
     }
 
     // Clear previous charts

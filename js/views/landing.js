@@ -80,12 +80,6 @@ App.Views.Landing = (() => {
             <div class="landing-canvas-vignette"></div>
             <div class="landing-canvas-gradient-bottom"></div>
 
-            <!-- Scroll Progress Indicator Bar -->
-            <div class="landing-scrub-indicator" id="scrub-indicator">
-              <div class="landing-scrub-bar" id="scrub-bar"></div>
-              <div class="landing-scrub-label" id="scrub-label">FRAME 001 / 240</div>
-            </div>
-
             <!-- ── SYNCHRONIZED STORYBOARD STAGES ─────────────────── -->
             <div class="landing-stage-overlay">
 
@@ -117,13 +111,6 @@ App.Views.Landing = (() => {
                     <button class="btn btn-secondary btn-lg" onclick="App.Views.Landing.scrollTo('features')">
                       <span>Explore System ↓</span>
                     </button>
-                  </div>
-
-                  <div class="landing-scroll-prompt" onclick="window.scrollBy({top: 400, behavior:'smooth'})">
-                    <div class="scroll-mouse-icon">
-                      <div class="scroll-mouse-wheel"></div>
-                    </div>
-                    <span>Scroll to explore the neural pipeline</span>
                   </div>
                 </div>
               </div>
@@ -632,7 +619,7 @@ App.Views.Landing = (() => {
       return (frames[1] && frames[1].complete) ? frames[1] : null;
     }
 
-    // Draw the image filling the canvas (aspect cover)
+    // Draw the image filling the canvas (aspect cover, top-aligned)
     function drawImageCover(img) {
       if (!ctx || !img || !img.complete || img.naturalWidth === 0) return;
       const cw = canvas.width;
@@ -645,7 +632,7 @@ App.Views.Landing = (() => {
         drawW = cw;
         drawH = cw / FRAME_ASPECT;
         drawX = 0;
-        drawY = (ch - drawH) / 2;
+        drawY = 0; // top-aligned: never crop the top
       } else {
         drawH = ch;
         drawW = ch * FRAME_ASPECT;
