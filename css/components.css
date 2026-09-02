@@ -3308,34 +3308,213 @@ body.is-landing .main-content {
   transform: translateY(-2px);
 }
 
-/* ── RESPONSIVE ADAPTATIONS ────────────────────────────── */
+/* ── COMPREHENSIVE MOBILE RESPONSIVENESS ENGINE ─────────── */
 @media (max-width: 1024px) {
-  .landing-hero-title { font-size: 42px; }
+  .landing-hero-title { font-size: 40px; }
   .bento-grid { grid-template-columns: repeat(2, 1fr); }
   .bento-col-2 { grid-column: span 2; }
-  .manifesto-guarantees { grid-template-columns: 1fr; }
+  .manifesto-guarantees { grid-template-columns: repeat(2, 1fr); }
   .pipeline-flow { flex-wrap: wrap; justify-content: center; }
   .pipeline-connector { display: none; }
   .pipeline-node { min-width: 220px; }
+  .command-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
+  /* Global Layout Constraints */
+  html, body {
+    overflow-x: hidden;
+  }
+
+  .landing-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* Navigation Bar */
+  .landing-nav-container {
+    padding: 0 16px;
+  }
   .landing-links { display: none; }
   .landing-mobile-toggle { display: block; }
-  .landing-hero-title { font-size: 34px; }
-  .landing-hero-sub { font-size: 15px; }
-  .launch-title { font-size: 30px; }
-  .bento-grid { grid-template-columns: 1fr; }
-  .bento-col-2 { grid-column: span 1; }
-  .landing-footer-top { flex-direction: column; gap: 32px; }
-  .landing-footer-nav { gap: 40px; }
-  .manifesto-card { padding: 32px 24px; }
-  .closing-cta-card { padding: 40px 24px; }
-  .closing-cta-title { font-size: 26px; }
-  .hud-glass-card { padding: 24px; }
-  .hud-metrics-row { grid-template-columns: repeat(2, 1fr); }
-  .stage-2-layout, .stage-3-layout { justify-content: center; padding: 0 16px; }
-  .landing-scrub-indicator { bottom: 16px; right: 16px; padding: 5px 12px; }
+
+  /* Hero Section */
+  .landing-hero-section {
+    padding: 100px 16px 50px;
+    min-height: auto;
+  }
+  .landing-hero-title {
+    font-size: 30px;
+    line-height: 1.25;
+  }
+  .landing-hero-sub {
+    font-size: 14.5px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .landing-stage-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+  .landing-stage-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .hero-metrics-pill {
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 18px;
+    width: 100%;
+    border-radius: 18px;
+  }
+  .stat-sep { display: none; }
+
+  /* Bento Grid */
+  .landing-section {
+    padding: 60px 0;
+  }
+  .landing-section-title {
+    font-size: 28px;
+  }
+  .landing-section-sub {
+    font-size: 14px;
+  }
+  .bento-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .bento-col-2 {
+    grid-column: span 1;
+  }
+  .bento-card {
+    padding: 22px 18px;
+    border-radius: 18px;
+  }
+  .bento-title {
+    font-size: 19px;
+  }
+  .bento-privacy-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Pipeline Ingestion Flow */
+  .pipeline-flow {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .pipeline-node {
+    width: 100%;
+  }
+
+  /* Command & Control Matrix */
+  .hud-command-center {
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+  .command-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .command-headline {
+    font-size: 24px;
+  }
+  .command-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .command-card-left, .command-card-right {
+    padding: 16px;
+  }
+  .command-quick-tools {
+    grid-template-columns: 1fr;
+  }
+  .command-footer-ticker {
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    text-align: center;
+  }
+  .ticker-divider { display: none; }
+
+  /* Enterprise Guarantee Manifesto */
+  .manifesto-card {
+    padding: 28px 18px;
+    border-radius: 20px;
+  }
+  .manifesto-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .manifesto-title {
+    font-size: 24px;
+    line-height: 1.3;
+  }
+  .manifesto-callout-box {
+    padding: 16px;
+  }
+  .manifesto-lead {
+    font-size: 14.5px;
+  }
+  .manifesto-guarantees {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .guarantee-item {
+    padding: 16px;
+  }
+
+  /* Closing CTA */
+  .closing-cta-card {
+    padding: 36px 20px;
+    border-radius: 20px;
+  }
+  .closing-cta-title {
+    font-size: 24px;
+  }
+
+  /* Footer */
+  .landing-footer {
+    padding: 48px 0 28px;
+  }
+  .landing-footer-top {
+    flex-direction: column;
+    gap: 36px;
+  }
+  .landing-footer-brand {
+    max-width: 100%;
+  }
+  .landing-footer-nav {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+  }
+  .landing-footer-bottom {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  .footer-bottom-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-hero-title {
+    font-size: 25px;
+  }
+  .landing-brand-title {
+    font-size: 15px;
+  }
+  .landing-brand-sub {
+    display: none;
+  }
+  .landing-footer-nav {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── PREFERS REDUCED MOTION ─────────────────────────────── */
