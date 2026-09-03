@@ -27,11 +27,12 @@ App.Auth = (() => {
   function init() {
     if (_initPromise) return _initPromise;
 
-    console.log('[AUTH] initialization started');
+    console.log('[AUTH-FORENSIC] initializeApp execution started');
+    console.log('[AUTH-FORENSIC] current URL:', window.location.href);
 
     _initPromise = new Promise((resolve) => {
       if (typeof firebase === 'undefined' || !firebase.initializeApp) {
-        console.warn('[AUTH] Firebase Web SDK not loaded. Operating in fallback state.');
+        console.warn('[AUTH-FORENSIC] Firebase Web SDK not loaded. Operating in fallback state.');
         state.isInitialized = true;
         _notifyListeners();
         resolve(state);
@@ -41,35 +42,44 @@ App.Auth = (() => {
       try {
         // Initialize Firebase App if not already initialized (Single Shared App)
         if (!firebase.apps || !firebase.apps.length) {
+          console.log('[AUTH-FORENSIC] initializeApp executing');
           firebase.initializeApp(App.Config.Firebase);
         }
+        
+        console.log('[AUTH-FORENSIC] getAuth execution');
         _auth = firebase.auth();
 
         // 1. Explicitly configure browserLocalPersistence to avoid session loss across redirects
-        _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
-          console.warn('[AUTH] Error setting persistence:', err.message);
+        console.log('[AUTH-FORENSIC] setPersistence execution (browserLocalPersistence)');
+        _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+          console.log('[AUTH-FORENSIC] setPersistence result: SUCCESS (LOCAL)');
+        }).catch(err => {
+          console.warn('[AUTH-FORENSIC] setPersistence result: ERROR', err.message);
         });
 
         // 2. Process Redirect Result if returning from Google signInWithRedirect
+        console.log('[AUTH-FORENSIC] getRedirectResult start');
         _auth.getRedirectResult().then((result) => {
           if (result && result.user) {
-            console.log('[AUTH] redirect result processed: signed-in via Google redirect');
+            console.log('[AUTH-FORENSIC] getRedirectResult success, hasUser:', true);
           } else {
-            console.log('[AUTH] redirect result processed');
+            console.log('[AUTH-FORENSIC] getRedirectResult result: null (no pending redirect)');
           }
         }).catch((err) => {
-          console.error('[AUTH] redirect result processing error:', err.message);
+          console.error('[AUTH-FORENSIC] getRedirectResult error:', err.message);
         });
 
         // 3. Register Single Source of Truth Auth State Listener (Only Once)
         if (!_unsubscribeAuthState) {
+          console.log('[AUTH-FORENSIC] onAuthStateChanged listener registration');
           _unsubscribeAuthState = _auth.onAuthStateChanged((user) => {
+            console.log('[AUTH-FORENSIC] onAuthStateChanged callback, hasUser:', !!user);
             _handleAuthStateChange(user);
             resolve(state);
           });
         }
       } catch (err) {
-        console.error('[AUTH] Initialization error:', err);
+        console.error('[AUTH-FORENSIC] Initialization error:', err);
         state.isInitialized = true;
         _notifyListeners();
         resolve(state);
@@ -81,7 +91,7 @@ App.Auth = (() => {
 
   function _handleAuthStateChange(user) {
     if (user) {
-      console.log('[AUTH] state changed: signed-in');
+      console.log('[AUTH-FORENSIC] auth state changed = SIGNED_IN, hasUser:', true);
       state.currentUser = {
         uid: user.uid,
         email: user.email || '',
@@ -97,7 +107,7 @@ App.Auth = (() => {
       state.context.tenantId = user.tenantId || null;
       state.context.shopId = null; // Reserved for multi-shop data isolation
     } else {
-      console.log('[AUTH] state changed: signed-out');
+      console.log('[AUTH-FORENSIC] auth state changed = SIGNED_OUT, hasUser:', false);
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
@@ -117,7 +127,7 @@ App.Auth = (() => {
 
   function _notifyListeners() {
     _authListeners.forEach(cb => {
-      try { cb(state); } catch (e) { console.error('[AUTH] Listener Error', e); }
+      try { cb(state); } catch (e) { console.error('[AUTH-FORENSIC] Listener Error', e); }
     });
   }
 
@@ -140,14 +150,15 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
     
     try {
-      console.log('[AUTH] Email signup started');
+      console.log('[AUTH-FORENSIC] Email signup start');
       const cred = await _auth.createUserWithEmailAndPassword(email, password);
       if (displayName && cred.user) {
         await cred.user.updateProfile({ displayName: displayName.trim() });
       }
-      console.log('[AUTH] Email signup success');
+      console.log('[AUTH-FORENSIC] Email signup success, hasUser:', true);
       return cred.user;
     } catch (err) {
+      console.error('[AUTH-FORENSIC] Email signup error:', err.message);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -157,11 +168,12 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
-      console.log('[AUTH] Email sign-in started');
+      console.log('[AUTH-FORENSIC] Email sign-in start');
       const cred = await _auth.signInWithEmailAndPassword(email, password);
-      console.log('[AUTH] Email sign-in success');
+      console.log('[AUTH-FORENSIC] Email sign-in success, hasUser:', true);
       return cred.user;
     } catch (err) {
+      console.error('[AUTH-FORENSIC] Email sign-in error:', err.message);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -170,24 +182,31 @@ App.Auth = (() => {
   async function signInWithGoogle() {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
+    if (window.location.protocol === 'file:') {
+      throw new Error('Google Sign-In requires running over an HTTP web server (e.g. http://127.0.0.1:8080). Opening index.html directly from a local file (file://) is not supported by Google OAuth.');
+    }
+
     try {
-      console.log('[AUTH] Google sign-in started');
+      console.log('[AUTH-FORENSIC] Google sign-in START');
+      console.log('[AUTH-FORENSIC] Google popup start');
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
       
       const cred = await _auth.signInWithPopup(provider);
-      console.log('[AUTH] Google sign-in success');
+      console.log('[AUTH-FORENSIC] Google sign-in SUCCESS, hasUser:', true);
       return cred.user;
     } catch (err) {
-      // Fallback for popup blocked environments
-      if (err.code === 'auth/popup-blocked') {
-        console.warn('[AUTH] Google popup blocked, falling back to redirect flow');
+      console.error('[AUTH-FORENSIC] Google sign-in ERROR:', err.code || err.message);
+      // Fallback for popup blocked environments (ONLY if on http/https)
+      if (err.code === 'auth/popup-blocked' && window.location.protocol !== 'file:') {
+        console.warn('[AUTH-FORENSIC] Google popup blocked, starting signInWithRedirect');
         try {
           const provider = new firebase.auth.GoogleAuthProvider();
           await _auth.signInWithRedirect(provider);
           return null;
         } catch (redirErr) {
+          console.error('[AUTH-FORENSIC] Google redirect error:', redirErr.message);
           throw new Error(mapErrorMessage(redirErr));
         }
       }
@@ -200,11 +219,12 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
-      console.log('[AUTH] Password reset requested');
+      console.log('[AUTH-FORENSIC] Password reset start');
       await _auth.sendPasswordResetEmail(email);
-      console.log('[AUTH] Password reset email sent');
+      console.log('[AUTH-FORENSIC] Password reset email sent success');
       return true;
     } catch (err) {
+      console.error('[AUTH-FORENSIC] Password reset error:', err.message);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -214,16 +234,16 @@ App.Auth = (() => {
     if (!_auth) return;
 
     try {
-      console.log('[AUTH] Sign out requested');
+      console.log('[AUTH-FORENSIC] logout execution start');
       await _auth.signOut();
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
       state.context.tenantId = null;
       state.context.shopId = null;
-      console.log('[AUTH] Sign out success');
+      console.log('[AUTH-FORENSIC] logout execution success');
     } catch (err) {
-      console.error('[AUTH] Sign out error:', err);
+      console.error('[AUTH-FORENSIC] logout execution error:', err.message);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -260,6 +280,10 @@ App.Auth = (() => {
         return 'This sign-in method is not enabled in Firebase Console. Please contact the system administrator.';
       case 'auth/requires-recent-login':
         return 'Please sign in again to perform this security sensitive action.';
+      case 'auth/unauthorized-domain':
+        return 'This domain is not authorized in Firebase Console for Google Sign-In. Please authorize this domain in Firebase Console Authentication settings.';
+      case 'auth/operation-not-supported-in-this-environment':
+        return 'Google Sign-In requires running the app over HTTP/HTTPS (e.g. http://127.0.0.1:8080). Opening index.html directly as a local file (file://) is not supported by Google OAuth.';
       default:
         if (typeof code === 'string' && code.startsWith('auth/')) {
           return code.replace('auth/', '').replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase());
