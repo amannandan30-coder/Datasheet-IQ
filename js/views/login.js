@@ -7,7 +7,6 @@ App.Views = App.Views || {};
 App.Views.Login = (() => {
 
   function render(container) {
-    console.log('[AUTH-FORENSIC] login page initialization');
     container.innerHTML = `
       <div class="auth-wrapper animate-fade-in">
         <div class="auth-card">
@@ -171,7 +170,6 @@ App.Views.Login = (() => {
   async function handleGoogleSignIn() {
     const googleBtn = document.getElementById('google-signin-btn');
     hideError();
-    console.log(`[FORENSIC 1: BEFORE_GOOGLE_CLICK] route="${App.State?.route}" hash="${window.location.hash}" isInitialized=${App.Auth?.isInitialized} isAuthenticated=${App.Auth?.isAuthenticated} firebaseUser=${firebase?.auth?.()?.currentUser?.email || 'null'}`);
 
     if (googleBtn) {
       googleBtn.disabled = true;
@@ -179,27 +177,16 @@ App.Views.Login = (() => {
     }
 
     try {
-      console.log(`[FORENSIC 2: SIGNIN_WITH_GOOGLE_START] Calling App.Auth.signInWithGoogle()`);
       const user = await App.Auth.signInWithGoogle();
-      console.log(`[FORENSIC 8: SIGNIN_WITH_GOOGLE_RETURN] Returned user=${user?.email || 'null'} (UID: ${user?.uid || 'null'}) isAuthenticated=${App.Auth?.isAuthenticated} currentRoute="${App.State?.route}"`);
-      
       if (user) {
         App.UI.toast('Signed in with Google! 🌐');
-        const currentRoute = App.State.route;
-        console.log(`[FORENSIC 9: POST_LOGIN_NAV] currentRoute="${currentRoute}", target="dashboard"`);
-        if (currentRoute === 'login' || currentRoute === 'signup') {
-          console.log(`[FORENSIC 9: EXECUTING_ROUTER_GO] App.Router.go('dashboard')`);
+        if (App.State.route === 'login' || App.State.route === 'signup') {
           App.Router.go('dashboard');
-        } else {
-          console.log(`[FORENSIC 9: SKIP_ROUTER_GO] Already on "${currentRoute}"`);
         }
-      } else {
-        console.log(`[FORENSIC 8: REDIRECT_IN_PROGRESS] signInWithGoogle returned null (top-level redirect initiated)`);
       }
     } catch (err) {
-      console.error(`[FORENSIC 9: GOOGLE_ERROR_CAUGHT] code=${err.code} msg=${err.message} stack=`, err.stack);
+      // If user became authenticated despite popup close event
       if (App.Auth?.isAuthenticated) {
-        console.log(`[FORENSIC 9: RECOVERED_AUTH] User is authenticated despite error, navigating to dashboard`);
         App.Router.go('dashboard');
         return;
       }
