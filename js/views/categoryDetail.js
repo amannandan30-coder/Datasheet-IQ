@@ -26,6 +26,14 @@ App.Views.CategoryDetail = (() => {
     const totalSKUs  = new Set(catRecords.map(r => r.product_family_id)).size;
     const brandSet   = new Set(catRecords.map(r => r.normalized_brand));
 
+    // Ensure accurate real-time subcategory classification
+    for (const r of catRecords) {
+      if (!r.subcategory || r.subcategory.includes(' & ') || r.subcategory === 'Atta & Flours' || r.subcategory === 'Oils & Ghee' || r.subcategory === 'Sugar & Salt' || r.subcategory === 'Tea & Coffee' || r.subcategory === 'Snacks & Biscuits' || r.subcategory === 'Noodles & Pasta' || r.subcategory === 'Chocolates & Sweets' || r.subcategory === 'Sauces & Condiments' || r.subcategory === 'Detergents & Laundry') {
+        const res = App.Categorizer.classify(r.source_category || catName, r.normalized_product_name, r.normalized_brand);
+        r.subcategory = res.subcategory;
+      }
+    }
+
     // Group by subcategory
     const subcatMap = new Map();
     for (const r of catRecords) {

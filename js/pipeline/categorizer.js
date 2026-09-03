@@ -12,20 +12,28 @@ App.Categorizer = (() => {
       color: '#f59e0b',
       subcategories: {
         'General Staples':     { kw: ['staple','grocery','food'] },
-        'Atta & Flours':       { kw: ['\\batta\\b','\\bflour\\b','\\bflours\\b','\\bmaida\\b','\\bbesan\\b','\\bsuji\\b','\\brava\\b','\\bchakki\\b','multigrain atta','multigrain flour'] },
+        'Atta':                { kw: ['\\batta\\b','\\bchakki\\b','multigrain atta','wheat atta','gehun'] },
+        'Flours':              { kw: ['\\bflour\\b','\\bflours\\b','\\bmaida\\b','\\bbesan\\b','\\bsuji\\b','\\brava\\b','\\bsooji\\b','multigrain flour','rice flour','corn flour','gram flour','wheat flour'] },
         'Rice':                { kw: ['\\brice\\b','\\bbasmati\\b','\\bsella\\b','\\bmogra\\b','\\bpoha\\b'] },
         'Pulses & Lentils':    { kw: ['\\bdal\\b','\\bdaal\\b','\\bmoong\\b','\\bmasoor\\b','\\burad\\b','\\bchana\\b','\\brajma\\b','\\barhar\\b','\\btoor\\b','\\blentil\\b','\\bpulses\\b'] },
-        'Oils & Ghee':         { kw: ['\\boil\\b','\\boils\\b','\\bghee\\b','\\bdalda\\b','sunflower','mustard','olive','refined'] },
-        'Sugar & Salt':        { kw: ['\\bsugar\\b','\\bsalt\\b','\\bjaggery\\b','\\bnamak\\b','\\bcheeni\\b','\\bshakkar\\b'] },
+        'Oils':                { kw: ['\\boil\\b','\\boils\\b','sunflower','mustard','olive','refined','groundnut','sesame','canola','coconut oil','rice bran','cooking oil','edible oil'] },
+        'Ghee':                { kw: ['\\bghee\\b','\\bdalda\\b','vanaspati','cow ghee','desi ghee'] },
+        'Sugar':               { kw: ['\\bsugar\\b','\\bjaggery\\b','\\bcheeni\\b','\\bshakkar\\b','\\bgur\\b','brown sugar','white sugar','mishri','boora','bura'] },
+        'Salt':                { kw: ['\\bsalt\\b','\\bnamak\\b','sendha','rock salt','black salt','iodized salt','table salt','tata salt'] },
         'Spices & Masalas':    { kw: ['\\bmasala\\b','\\bmasalas\\b','\\bspice\\b','\\bspices\\b','chilli','turmeric','cumin','coriander','garam masala','pepper','haldi','jeera'] },
-        'Tea & Coffee':        { kw: ['\\btea\\b','\\bcoffee\\b','\\bchai\\b','green tea','tata tea','brooke bond','bru','nescafe'] },
-        'Snacks & Biscuits':   { kw: ['biscuit','biscuits','cookie','cookies','snack','chips','namkeen','cracker','rusk','wafer','popcorn','munchies'] },
+        'Tea':                 { kw: ['\\btea\\b','\\bchai\\b','green tea','tata tea','brooke bond','black tea','tea bags','red label','taj mahal','wagh bakri','lipton'] },
+        'Coffee':              { kw: ['\\bcoffee\\b','bru','nescafe','instant coffee','ground coffee','cappuccino','espresso','davidoff'] },
+        'Biscuits & Cookies':  { kw: ['biscuit','biscuits','cookie','cookies','rusk','wafer','bourbon','good day','parle','oreo','marie','cracker','krackjack','monaco','hide & seek','hide and seek'] },
+        'Snacks & Namkeen':    { kw: ['snack','snacks','chips','namkeen','popcorn','munchies','bhujia','kurkure','lays','bingo','nachos','sev','mixture','gathiya','chanachur'] },
         'Breakfast Cereals':   { kw: ['oats','cornflakes','muesli','cereal','quaker','kellogg','upma','daliya','dalia'] },
-        'Noodles & Pasta':     { kw: ['noodle','noodles','pasta','maggi','macaroni','spaghetti','vermicelli'] },
-        'Sauces & Condiments': { kw: ['sauce','ketchup','pickle','chutney','jam','jelly','vinegar','mayonnaise','spread'] },
+        'Noodles':             { kw: ['noodle','noodles','maggi','yippee','ramen','chowmein','hakka noodles','wai wai','top ramen'] },
+        'Pasta & Macaroni':    { kw: ['pasta','macaroni','spaghetti','vermicelli','fusilli','penne','lasagna','sewai','seviyan'] },
+        'Sauces & Ketchups':   { kw: ['sauce','sauces','ketchup','ketchups','mayonnaise','spread','chilli sauce','soya sauce','schezwan','tomato sauce'] },
+        'Pickles & Chutneys':  { kw: ['pickle','pickles','achar','aachar','chutney','chutneys','jam','jelly','vinegar'] },
         'Beverages':           { kw: ['juice','drink','squash','syrup','sharbat','cold drink','energy drink','nimbu','cola'] },
         'Dairy Products':      { kw: ['milk','curd','paneer','butter','cheese','yogurt','lassi','khoa','cream'] },
-        'Chocolates & Sweets': { kw: ['chocolate','candy','toffee','sweet','mithai','barfi','halwa','gum','laddu','ladoo','laddoo','burfi'] },
+        'Chocolates':          { kw: ['chocolate','chocolates','cadbury','dairy milk','kitkat','snickers','gems','candy','toffee','lollipop','gum','eclairs','perk','5 star','munch'] },
+        'Sweets & Mithai':     { kw: ['sweet','sweets','mithai','barfi','burfi','halwa','laddu','ladoo','laddoo','gulab jamun','rasgulla','soan papdi','peda','kaju katli','sonpapdi'] },
       }
     },
     'Cleaning Essentials': {
@@ -181,32 +189,83 @@ App.Categorizer = (() => {
     }
 
     // 3. Product keyword checks (Precedence-aware signal rules)
-    const isSweet = /\b(laddu|ladoo|laddoo|burfi|barfi|halwa|sweet|mithai|toffee|candy|chocolate)\b/i.test(prodLower);
+    const isChocolate = /\b(chocolate|chocolates|cadbury|dairy milk|kitkat|snickers|gems|candy|toffee|lollipop|gum|eclairs|perk|5 star|munch|ferrero)\b/i.test(prodLower);
+    const isMithai = /\b(laddu|ladoo|laddoo|burfi|barfi|halwa|mithai|gulab jamun|rasgulla|soan papdi|peda|kaju katli|sonpapdi|sweet|sweets)\b/i.test(prodLower) && !isChocolate;
     const isCereal = /\b(daliya|dalia|oats|muesli|cornflakes)\b/i.test(prodLower);
-    const isSnack = /\b(chips|namkeen|munchies|popcorn|rusk|wafer|biscuit|cookie)\b/i.test(prodLower);
-    const isNoodle = /\b(noodle|noodles|pasta|maggi|macaroni|spaghetti|vermicelli)\b/i.test(prodLower);
+    const isBiscuit = /\b(biscuit|biscuits|cookie|cookies|rusk|wafer|bourbon|good day|parle|oreo|marie|cracker|krackjack|monaco)\b/i.test(prodLower);
+    const isNamkeen = /\b(chips|namkeen|munchies|popcorn|bhujia|kurkure|lays|bingo|nachos|sev|mixture|gathiya|chanachur|snack|snacks)\b/i.test(prodLower) && !isBiscuit;
+    const isNoodle = /\b(noodle|noodles|maggi|yippee|ramen|chowmein|hakka noodles|wai wai|top ramen)\b/i.test(prodLower);
+    const isPasta = /\b(pasta|macaroni|spaghetti|vermicelli|fusilli|penne|lasagna|sewai|seviyan)\b/i.test(prodLower);
 
-    const attaKeywordMatch = /\b(atta|flour|flours|chakki|maida|besan|suji|rava)\b/i.test(prodLower);
+    const isTea = /\b(tea|chai|green tea|tea bags|red label|taj mahal|wagh bakri)\b/i.test(prodLower) && !/\b(tree oil|tree|cookie|biscuit)\b/i.test(prodLower);
+    const isCoffee = /\b(coffee|bru|nescafe|cappuccino|espresso|davidoff)\b/i.test(prodLower);
+
+    const isGhee = /\b(ghee|dalda|vanaspati)\b/i.test(prodLower);
+    const isOil = /\b(oil|oils|sunflower|mustard|olive|refined|groundnut|sesame|canola)\b/i.test(prodLower) && !isGhee && !/\b(hair oil|body oil|engine|massage)\b/i.test(prodLower);
+
+    const isSugar = /\b(sugar|jaggery|cheeni|shakkar|gur|mishri|boora|bura)\b/i.test(prodLower);
+    const isSalt = /\b(salt|namak|sendha)\b/i.test(prodLower) && !isSugar;
+
+    const isSauce = /\b(ketchup|mayonnaise|spread|chilli sauce|soya sauce|schezwan|tomato sauce)\b/i.test(prodLower) || (/\bsauce\b/i.test(prodLower) && !/\b(pasta|noodle)\b/i.test(prodLower));
+    const isPickle = /\b(pickle|pickles|achar|aachar|chutney|chutneys|jam|jelly|vinegar)\b/i.test(prodLower);
+
     const attaExclude = /\b(sunflower|batteries|attract|rattan|flourish|flower)\b/i.test(prodLower) ||
                         /\b(zero|no|no[\s-]added)\s+maida\b/i.test(prodLower) ||
-                        isSweet || isCereal || isSnack || isNoodle;
-    const isAtta = attaKeywordMatch && !attaExclude;
+                        isChocolate || isMithai || isCereal || isBiscuit || isNamkeen || isNoodle || isPasta;
+    const isAtta = /\b(atta|chakki|multigrain atta|gehun)\b/i.test(prodLower) && !attaExclude;
+    const isFlour = /\b(flour|flours|maida|besan|suji|rava|sooji)\b/i.test(prodLower) && !attaExclude && !isAtta;
 
-    if (isSweet) {
+    if (isChocolate) {
       mainCat = 'Grocery';
-      subCat  = 'Chocolates & Sweets';
+      subCat  = 'Chocolates';
+    } else if (isMithai) {
+      mainCat = 'Grocery';
+      subCat  = 'Sweets & Mithai';
     } else if (isCereal) {
       mainCat = 'Grocery';
       subCat  = 'Breakfast Cereals';
-    } else if (isSnack) {
+    } else if (isBiscuit) {
       mainCat = 'Grocery';
-      subCat  = 'Snacks & Biscuits';
+      subCat  = 'Biscuits & Cookies';
+    } else if (isNamkeen) {
+      mainCat = 'Grocery';
+      subCat  = 'Snacks & Namkeen';
     } else if (isNoodle) {
       mainCat = 'Grocery';
-      subCat  = 'Noodles & Pasta';
+      subCat  = 'Noodles';
+    } else if (isPasta) {
+      mainCat = 'Grocery';
+      subCat  = 'Pasta & Macaroni';
+    } else if (isSauce) {
+      mainCat = 'Grocery';
+      subCat  = 'Sauces & Ketchups';
+    } else if (isPickle) {
+      mainCat = 'Grocery';
+      subCat  = 'Pickles & Chutneys';
+    } else if (isTea) {
+      mainCat = 'Grocery';
+      subCat  = 'Tea';
+    } else if (isCoffee) {
+      mainCat = 'Grocery';
+      subCat  = 'Coffee';
+    } else if (isGhee) {
+      mainCat = 'Grocery';
+      subCat  = 'Ghee';
+    } else if (isOil) {
+      mainCat = 'Grocery';
+      subCat  = 'Oils';
+    } else if (isSugar) {
+      mainCat = 'Grocery';
+      subCat  = 'Sugar';
+    } else if (isSalt) {
+      mainCat = 'Grocery';
+      subCat  = 'Salt';
     } else if (isAtta) {
       mainCat = 'Grocery';
-      subCat  = 'Atta & Flours';
+      subCat  = 'Atta';
+    } else if (isFlour) {
+      mainCat = 'Grocery';
+      subCat  = 'Flours';
     } else if (/\b(basmati|rice|poha)\b/i.test(prodLower)) {
       mainCat = 'Grocery';
       subCat  = 'Rice';
@@ -230,7 +289,7 @@ App.Categorizer = (() => {
       let bestMatch = null;
       let bestScore = 0;
       for (const [sc, { kw }] of Object.entries(catCfg.subcategories)) {
-        if (sc === 'Atta & Flours' && attaExclude) continue;
+        if ((sc === 'Atta' || sc === 'Flours') && attaExclude) continue;
         let score = 0;
         for (const k of kw) {
           if (matchWord(combinedText, k)) score += k.length;
