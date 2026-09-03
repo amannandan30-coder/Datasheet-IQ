@@ -8,6 +8,7 @@ App.Auth = (() => {
   let _authListeners = [];
   let _initPromise = null;
   let _unsubscribeAuthState = null;
+  let _isProcessingRedirect = false;
   const _t0 = performance.now();
 
   function _ts() { return (performance.now() - _t0).toFixed(1) + 'ms'; }
@@ -33,7 +34,7 @@ App.Auth = (() => {
     console.log(`[AUTH-FLOW] ${_ts()} CURRENT ORIGIN: ${window.location.origin}`);
     console.log(`[AUTH-FLOW] ${_ts()} CURRENT HOSTNAME: ${window.location.hostname}`);
 
-    _initPromise = new Promise((resolve) => {
+    _initPromise = new Promise(async (resolve) => {
       if (typeof firebase === 'undefined' || !firebase.initializeApp) {
         console.warn(`[AUTH-FLOW] ${_ts()} Firebase Web SDK not loaded. Fallback state.`);
         state.isInitialized = true;
@@ -56,31 +57,45 @@ App.Auth = (() => {
 
         // 1. Explicitly configure browserLocalPersistence
         console.log(`[AUTH-FLOW] ${_ts()} PERSISTENCE START`);
-        _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+        try {
+          await _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
           console.log(`[AUTH-FLOW] ${_ts()} PERSISTENCE RESULT: SUCCESS (LOCAL)`);
-        }).catch(err => {
+        } catch (err) {
           console.warn(`[AUTH-FLOW] ${_ts()} PERSISTENCE RESULT: ERROR - ${err.code} ${err.message}`);
-        });
+        }
 
-        // 2. Process Redirect Result if returning from Google signInWithRedirect
-        console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT START`);
-        _auth.getRedirectResult().then((result) => {
-          if (result && result.user) {
-            console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT: SUCCESS, user: ${result.user.email}`);
+        // 2. Process Redirect Result BEFORE registering onAuthStateChanged
+        //    This prevents the race condition where onAuthStateChanged fires with null
+        //    before the redirect result is processed, causing a false "signed out" state.
+        console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT START (awaiting)`);
+        _isProcessingRedirect = true;
+        try {
+          const redirectResult = await _auth.getRedirectResult();
+          if (redirectResult && redirectResult.user) {
+            console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT: SUCCESS, user: ${redirectResult.user.email}`);
           } else {
             console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT: NULL (no pending redirect)`);
           }
-        }).catch((err) => {
+        } catch (err) {
+          // auth/credential-already-in-use or other redirect errors
           console.error(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT ERROR: ${err.code} ${err.message}`);
-        });
+        }
+        _isProcessingRedirect = false;
+        console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT COMPLETE`);
 
-        // 3. Register Single Source of Truth Auth State Listener (Only Once)
+        // 3. NOW register the onAuthStateChanged listener (after redirect is processed)
+        //    This guarantees the first onAuthStateChanged call reflects the true auth state
+        //    including any redirect-based sign-in.
+        let _resolved = false;
         if (!_unsubscribeAuthState) {
-          console.log(`[AUTH-FLOW] ${_ts()} AUTH STATE INITIALIZING (registering onAuthStateChanged)`);
+          console.log(`[AUTH-FLOW] ${_ts()} REGISTERING onAuthStateChanged listener`);
           _unsubscribeAuthState = _auth.onAuthStateChanged((user) => {
-            console.log(`[AUTH-FLOW] ${_ts()} onAuthStateChanged FIRED, user: ${user ? user.email : 'null'}, wasInitialized: ${state.isInitialized}`);
+            console.log(`[AUTH-FLOW] ${_ts()} onAuthStateChanged FIRED, user: ${user ? user.email : 'null'}, wasInitialized: ${state.isInitialized}, alreadyResolved: ${_resolved}`);
             _handleAuthStateChange(user);
-            resolve(state);
+            if (!_resolved) {
+              _resolved = true;
+              resolve(state);
+            }
           });
         }
       } catch (err) {
@@ -124,11 +139,12 @@ App.Auth = (() => {
     _notifyListeners();
 
     // Re-render UI on auth state change if app is already initialized
-    if (wasInitialized && window.App && window.App.UI && typeof window.App.UI.render === 'function') {
-      console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange TRIGGERING App.UI.render() (wasInitialized=true)`);
+    // (Skip during redirect processing to prevent premature renders)
+    if (wasInitialized && !_isProcessingRedirect && window.App && window.App.UI && typeof window.App.UI.render === 'function') {
+      console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange TRIGGERING App.UI.render()`);
       window.App.UI.render();
     } else {
-      console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange SKIPPING App.UI.render() (wasInitialized=${wasInitialized})`);
+      console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange SKIPPING App.UI.render() (wasInitialized=${wasInitialized}, isProcessingRedirect=${_isProcessingRedirect})`);
     }
   }
 
@@ -309,7 +325,7 @@ App.Auth = (() => {
     signOut,
     getCurrentUser,
     mapErrorMessage,
-    _ts,   // Expose timestamp function for app.js
+    _ts,
     get isInitialized() { return state.isInitialized; },
     get isAuthenticated() { return state.isAuthenticated; },
     get currentUser() { return state.currentUser; }

@@ -205,6 +205,7 @@ App.Views.Signup = (() => {
   async function handleGoogleSignIn() {
     const googleBtn = document.getElementById('google-signup-btn');
     hideError();
+    console.log(`[AUTH-FLOW] SIGNUP.handleGoogleSignIn START`);
 
     if (googleBtn) {
       googleBtn.disabled = true;
@@ -213,13 +214,16 @@ App.Views.Signup = (() => {
 
     try {
       const user = await App.Auth.signInWithGoogle();
+      console.log(`[AUTH-FLOW] SIGNUP.handleGoogleSignIn RESOLVED, user=${user?.email}, route=${App.State?.route}`);
       if (user) {
         App.UI.toast('Signed up with Google! 🌐');
-        if (App.State.route === 'login' || App.State.route === 'signup') {
+        const currentRoute = App.State.route;
+        if (currentRoute === 'login' || currentRoute === 'signup') {
           App.Router.go('dashboard');
         }
       }
     } catch (err) {
+      console.error(`[AUTH-FLOW] SIGNUP.handleGoogleSignIn ERROR: ${err.message}`);
       showError(err.message);
       if (googleBtn) {
         googleBtn.disabled = false;

@@ -182,17 +182,21 @@ App.Views.Login = (() => {
       console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn calling App.Auth.signInWithGoogle()`);
       const user = await App.Auth.signInWithGoogle();
       console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn signInWithGoogle() RESOLVED, user=${user?.email}, currentRoute=${App.State?.route}, hash=${window.location.hash}`);
+      
       if (user) {
         App.UI.toast('Signed in with Google! 🌐');
-        console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn checking route: App.State.route="${App.State.route}"`);
-        if (App.State.route === 'login' || App.State.route === 'signup') {
-          console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn calling Router.go('dashboard')`);
+        // Only navigate if we're still on an auth page
+        // (onAuthStateChanged may have already redirected us to dashboard)
+        const currentRoute = App.State.route;
+        console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn post-login route check: "${currentRoute}"`);
+        if (currentRoute === 'login' || currentRoute === 'signup') {
+          console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn navigating to dashboard`);
           App.Router.go('dashboard');
         } else {
-          console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn NOT navigating (route already changed to "${App.State.route}")`);
+          console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn SKIP navigation (already on "${currentRoute}")`);
         }
       } else {
-        console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn user is null (redirect flow?)`);
+        console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn user is null (redirect flow started)`);
       }
     } catch (err) {
       console.error(`[AUTH-FLOW] LOGIN.handleGoogleSignIn ERROR: ${err.message}`);
