@@ -3784,6 +3784,7 @@ body.is-landing .main-content {
 }
 
 .auth-submit-btn {
+  width: 100% !important;
   height: 48px;
   font-size: 15px;
   font-weight: 700;
@@ -3826,8 +3827,9 @@ body.is-landing .main-content {
   padding: 0 12px;
 }
 
-/* Premium Google Sign-In Button */
+/* Premium Google Sign-In Button — Full Width matching Sign In button */
 .google-btn {
+  width: 100% !important;
   height: 48px;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -3849,6 +3851,10 @@ body.is-landing .main-content {
   color: #ffffff;
   transform: translateY(-1px);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 0 16px rgba(99, 102, 241, 0.15);
+}
+
+.w-full {
+  width: 100% !important;
 }
 
 .google-icon {
