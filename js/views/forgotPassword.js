@@ -12,8 +12,16 @@ App.Views.ForgotPassword = (() => {
         <div class="auth-card">
           <div class="auth-card-glow"></div>
           
+          <!-- Close / Back to Landing Button -->
+          <button type="button" class="auth-close-btn" onclick="App.Router.go('landing')" title="Back to Home Page" aria-label="Close and go to Landing Page">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+
           <!-- Brand Header -->
-          <div class="auth-brand" onclick="App.Router.go('landing')" role="button" tabindex="0">
+          <div class="auth-brand" onclick="App.Router.go('landing')" role="button" tabindex="0" title="Go to Landing Page">
             <div class="auth-brand-icon">📦</div>
             <div>
               <div class="auth-brand-name">Liquidation IQ</div>
@@ -62,7 +70,7 @@ App.Views.ForgotPassword = (() => {
 
           <!-- Footer Link -->
           <div class="auth-footer text-center mt-24">
-            <a href="#/login" class="auth-link font-semibold" onclick="event.preventDefault(); App.Router.go('login')">
+            <a href="#/login" class="auth-link font-bold" onclick="event.preventDefault(); App.Router.go('login')">
               ← Back to Sign In
             </a>
           </div>
