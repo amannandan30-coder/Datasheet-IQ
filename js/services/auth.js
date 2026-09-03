@@ -59,9 +59,26 @@ App.Auth = (() => {
 
         // 3. Register Single Shared onAuthStateChanged listener
         let _resolved = false;
+        let _authEventCount = 0;
         if (!_unsubscribeAuthState) {
           _unsubscribeAuthState = _auth.onAuthStateChanged((user) => {
+            _authEventCount++;
+            const t = performance.now().toFixed(1);
+            console.log(
+              `[POPUP-DIAG] [T+${t}ms] onAuthStateChanged #${_authEventCount}` +
+              ` | user=${user ? 'EXISTS' : 'NULL'}` +
+              ` | uid=${user ? user.uid : 'null'}` +
+              ` | email=${user ? user.email : 'null'}` +
+              ` | provider=${user && user.providerData && user.providerData[0] ? user.providerData[0].providerId : 'null'}` +
+              ` | route=${window.App?.State?.route}` +
+              ` | hash=${window.location.hash}` +
+              ` | isAuthenticated_BEFORE=${state.isAuthenticated}`
+            );
             _handleAuthStateChange(user);
+            console.log(
+              `[POPUP-DIAG] [T+${performance.now().toFixed(1)}ms] onAuthStateChanged #${_authEventCount} HANDLED` +
+              ` | isAuthenticated_AFTER=${state.isAuthenticated}`
+            );
             if (!_resolved) {
               _resolved = true;
               resolve(state);
@@ -170,11 +187,62 @@ App.Auth = (() => {
     provider.addScope('email');
     provider.addScope('profile');
 
+    // ── DIAGNOSTIC: detect when main window regains focus (popup closed) ──────
+    let _focusTime = null;
+    function _onWindowFocus() {
+      _focusTime = performance.now();
+      console.log(`[POPUP-DIAG] [T+${_focusTime.toFixed(1)}ms] WINDOW_FOCUS_RESTORED (popup likely closed or user returned to main window)`);
+    }
+    window.addEventListener('focus', _onWindowFocus, { once: true });
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const t0 = performance.now();
+    console.log(`[POPUP-DIAG] [T+${t0.toFixed(1)}ms] signInWithPopup START | authDomain=${App.Config?.Firebase?.authDomain} | origin=${window.location.origin}`);
+
     try {
       const cred = await _auth.signInWithPopup(provider);
+      window.removeEventListener('focus', _onWindowFocus);
+
+      const t1 = performance.now();
+      const syncUser = _auth.currentUser;
+      console.log(
+        `[POPUP-DIAG] [T+${t1.toFixed(1)}ms] signInWithPopup RESOLVED` +
+        ` | elapsed=${((t1 - t0) / 1000).toFixed(2)}s` +
+        ` | cred.user=${cred.user ? 'EXISTS' : 'NULL'}` +
+        ` | cred.user.uid=${cred.user ? cred.user.uid : 'null'}` +
+        ` | cred.user.email=${cred.user ? cred.user.email : 'null'}` +
+        ` | cred.credential=${cred.credential ? 'EXISTS' : 'NULL'}` +
+        ` | firebase.auth().currentUser_SYNC=${syncUser ? syncUser.email : 'NULL'}` +
+        ` | state.isAuthenticated=${state.isAuthenticated}`
+      );
+
+      // Poll firebase.auth().currentUser 5 times over 5 seconds after resolve
+      [100, 500, 1000, 2000, 5000].forEach(delay => {
+        setTimeout(() => {
+          const u = _auth.currentUser;
+          console.log(
+            `[POPUP-DIAG] [T+${(performance.now()).toFixed(1)}ms] POST_RESOLVE_POLL +${delay}ms` +
+            ` | firebase.auth().currentUser=${u ? u.email : 'NULL'}` +
+            ` | state.isAuthenticated=${state.isAuthenticated}` +
+            ` | route=${window.App?.State?.route}`
+          );
+        }, delay);
+      });
+
       return cred.user;
     } catch (err) {
-      // If user already authenticated in memory
+      window.removeEventListener('focus', _onWindowFocus);
+      const t1 = performance.now();
+      console.error(
+        `[POPUP-DIAG] [T+${t1.toFixed(1)}ms] signInWithPopup REJECTED` +
+        ` | elapsed=${((t1 - t0) / 1000).toFixed(2)}s` +
+        ` | code=${err.code}` +
+        ` | message=${err.message}` +
+        ` | firebase.auth().currentUser_SYNC=${_auth.currentUser ? _auth.currentUser.email : 'NULL'}` +
+        ` | state.isAuthenticated=${state.isAuthenticated}`
+      );
+
+      // If user already authenticated in memory despite the error
       if (_auth.currentUser) {
         return _auth.currentUser;
       }
