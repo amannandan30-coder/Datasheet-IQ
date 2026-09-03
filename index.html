@@ -89,7 +89,7 @@
       </div>
 
       <!-- Actions -->
-      <div class="topbar-actions flex gap-8">
+      <div class="topbar-actions flex gap-8 items-center">
         <button class="btn btn-secondary" onclick="App.UI.exportDataset('csv')" title="Export Dataset to CSV">
           <span>📥</span> Export CSV
         </button>
@@ -104,6 +104,9 @@
           </svg>
           Upload
         </button>
+
+        <!-- User Profile Control (Populated dynamically when authenticated) -->
+        <div class="user-header-control" id="user-header-control"></div>
       </div>
 
     </header>
@@ -128,6 +131,14 @@
 <script src="vendor/fuse.min.js"></script>
 <script src="vendor/chart.umd.min.js"></script>
 
+<!-- ── FIREBASE WEB SDK (v10.12.0) ────────────────────────── -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<!-- ── FIREBASE CONFIG & AUTH SERVICE ──────────────────────── -->
+<script src="js/config/firebase.js"></script>
+<script src="js/services/auth.js"></script>
+
 <!-- ── CORE UTILS ──────────────────────────────────────────── -->
 <script src="js/utils/formatters.js"></script>
 <script src="js/utils/nlEngine.js"></script>
@@ -148,6 +159,9 @@
 
 <!-- ── VIEWS ───────────────────────────────────────────────── -->
 <script src="js/views/landing.js"></script>
+<script src="js/views/login.js"></script>
+<script src="js/views/signup.js"></script>
+<script src="js/views/forgotPassword.js"></script>
 <script src="js/views/dashboard.js"></script>
 <script src="js/views/categoryDetail.js"></script>
 <script src="js/views/brandDetail.js"></script>

@@ -83,16 +83,46 @@ App.UI = {
     const main = document.getElementById('main-content');
     if (!main) return;
 
-    // Toggle Landing Mode layout on document.body AND html element
-    // CRITICAL: overflow must be set at the html level, NOT on any
-    // intermediate wrapper, otherwise position:sticky breaks.
-    if (route === 'landing' || route === 'home') {
+    // ── FIREBASE AUTHENTICATION ROUTE GUARD ──────────────────
+    const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
+    const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
+
+    // 1. If Auth service is initializing, render clean loading state
+    if (window.App.Auth && !App.Auth.isInitialized) {
+      main.innerHTML = `
+        <div class="flex flex-col items-center justify-center" style="height:70vh">
+          <div class="spinner mb-16" style="width:36px;height:36px"></div>
+          <div class="text-muted font-medium text-sm">Authenticating Liquidation IQ…</div>
+        </div>`;
+      return;
+    }
+
+    const isAuthenticated = App.Auth ? App.Auth.isAuthenticated : false;
+
+    // 2. Guard: Authenticated user attempting to visit Login, Signup, or Forgot Password
+    if (isAuthenticated && AUTH_PAGES.includes(route)) {
+      App.Router.go('dashboard');
+      return;
+    }
+
+    // 3. Guard: Unauthenticated user attempting to access a protected route
+    if (!isAuthenticated && !PUBLIC_ROUTES.includes(route)) {
+      App.Router.go('login');
+      return;
+    }
+
+    // Toggle Landing / Auth Fullscreen Mode layout on document.body AND html element
+    const isFullScreenPage = PUBLIC_ROUTES.includes(route);
+    if (isFullScreenPage) {
       document.body.classList.add('is-landing');
       document.documentElement.classList.add('is-landing-html');
     } else {
       document.body.classList.remove('is-landing');
       document.documentElement.classList.remove('is-landing-html');
     }
+
+    // Update Topbar User Header Control
+    App.UI.updateUserHeader();
 
     // Clear previous charts
     ['_statusChart','_catValueChart','_catUnitsChart','_whChart'].forEach(k => {
@@ -113,19 +143,27 @@ App.UI = {
     // Route dispatch
     switch (route) {
       case 'landing':
-      case 'home':        await App.Views.Landing.render(main); break;
-      case 'dashboard':   await App.Views.Dashboard.render(main, dataset_id); break;
-      case 'category':    await App.Views.CategoryDetail.render(main, params, dataset_id); break;
-      case 'brand':       await App.Views.BrandDetail.render(main, params, dataset_id); break;
-      case 'brands':      await App.Views.AllBrands.render(main, params, dataset_id); break;
+      case 'home':            await App.Views.Landing.render(main); break;
+      case 'login':           await App.Views.Login.render(main); break;
+      case 'signup':          await App.Views.Signup.render(main); break;
+      case 'forgot-password': await App.Views.ForgotPassword.render(main); break;
+      case 'dashboard':       await App.Views.Dashboard.render(main, dataset_id); break;
+      case 'category':        await App.Views.CategoryDetail.render(main, params, dataset_id); break;
+      case 'brand':           await App.Views.BrandDetail.render(main, params, dataset_id); break;
+      case 'brands':          await App.Views.AllBrands.render(main, params, dataset_id); break;
       case 'warehouses':
-      case 'warehouse':   await App.Views.WarehouseView.render(main, params, dataset_id); break;
-      case 'quality':     await App.Views.DataQuality.render(main, params, dataset_id); break;
-      case 'uploads':     await App.Views.UploadsHistory.render(main); break;
-      case 'inventory':   await App.Views.InventoryTable.render(main, params, dataset_id); break;
-      case 'suggestions': await App.Views.DataQuality.render(main, params, dataset_id); break;
-      case 'about':       await App.Views.About.render(main); break;
-      default:            await App.Views.Dashboard.render(main, dataset_id);
+      case 'warehouse':       await App.Views.WarehouseView.render(main, params, dataset_id); break;
+      case 'quality':         await App.Views.DataQuality.render(main, params, dataset_id); break;
+      case 'uploads':         await App.Views.UploadsHistory.render(main); break;
+      case 'inventory':       await App.Views.InventoryTable.render(main, params, dataset_id); break;
+      case 'suggestions':     await App.Views.DataQuality.render(main, params, dataset_id); break;
+      case 'about':           await App.Views.About.render(main); break;
+      default:                
+        if (isAuthenticated) {
+          await App.Views.Dashboard.render(main, dataset_id);
+        } else {
+          await App.Views.Login.render(main);
+        }
     }
   },
 
@@ -512,6 +550,71 @@ App.UI = {
     const a    = document.createElement('a'); a.href=url; a.download='reconciliation.csv'; a.click();
     URL.revokeObjectURL(url);
   },
+
+  /* ── User Header Control (Dashboard Topbar) ───────────── */
+  updateUserHeader() {
+    const container = document.getElementById('user-header-control');
+    if (!container) return;
+
+    if (!window.App.Auth || !App.Auth.isAuthenticated || !App.Auth.currentUser) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const user = App.Auth.currentUser;
+    const initial = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
+    const photoURL = user.photoURL;
+    const name = user.displayName || user.email.split('@')[0] || 'User';
+    const email = user.email || 'authenticated_user';
+    const providerLabel = user.providerId === 'google.com' ? '🌐 Google' : '🔑 Email';
+
+    container.innerHTML = `
+      <div class="user-profile-badge" id="user-profile-toggle" onclick="App.UI.toggleUserDropdown(event)" title="User Profile: ${name}">
+        <div class="user-avatar-circle">
+          ${photoURL ? `<img src="${photoURL}" alt="${name}" class="user-avatar-img">` : `<span>${initial}</span>`}
+        </div>
+        <span class="user-header-name">${name}</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+
+      <div class="user-dropdown-menu" id="user-dropdown-menu">
+        <div class="user-dropdown-header">
+          <div class="user-dropdown-name">${name}</div>
+          <div class="user-dropdown-email">${email}</div>
+          <span class="user-dropdown-provider">${providerLabel}</span>
+        </div>
+        <button class="user-signout-btn" onclick="App.UI.handleSignOut()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    `;
+  },
+
+  toggleUserDropdown(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('user-dropdown-menu');
+    if (menu) menu.classList.toggle('active');
+  },
+
+  async handleSignOut() {
+    try {
+      if (App.Auth) {
+        await App.Auth.signOut();
+      }
+      App.UI.toast('Signed out successfully 👋');
+      App.Router.go('login');
+    } catch (err) {
+      console.error('[SignOut Failed]', err);
+      App.UI.toast('Sign out failed: ' + err.message);
+    }
+  },
 };
 
 function drawerField(label, value, icon) {
@@ -542,6 +645,11 @@ App.GlobalSearch = {
 (async function init() {
   await App.DB.open();
 
+  // Initialize Firebase Authentication Service
+  if (window.App && window.App.Auth) {
+    App.Auth.init();
+  }
+
   // Restore active dataset
   const savedId = localStorage.getItem('liq_active_dataset');
   if (savedId) {
@@ -557,6 +665,18 @@ App.GlobalSearch = {
       localStorage.setItem('liq_active_dataset', all[0].id);
     }
   }
+
+  // Close dropdown menu on outside click
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('user-dropdown-menu');
+    const toggle = document.getElementById('user-profile-toggle');
+    if (dropdown && dropdown.classList.contains('active')) {
+      if (toggle && (toggle.contains(e.target) || toggle === e.target)) return;
+      if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove('active');
+      }
+    }
+  });
 
   // Listen for hash changes
   window.addEventListener('hashchange', () => App.UI.render());
