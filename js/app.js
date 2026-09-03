@@ -87,11 +87,11 @@ App.UI = {
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
     const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
 
-    console.log(`[AUTH-PRODUCTION] ROUTE GUARD START for route: "${route}", isInitialized: ${App.Auth?.isInitialized}, isAuthenticated: ${App.Auth?.isAuthenticated}`);
+    console.log(`[AUTH-FORENSIC] ROUTE GUARD START for route: "${route}", isInitialized: ${App.Auth?.isInitialized}, isAuthenticated: ${App.Auth?.isAuthenticated}`);
 
     // 1. If Auth service is initializing, render clean loading state (NEVER redirect while pending)
     if (window.App.Auth && !App.Auth.isInitialized) {
-      console.log('[AUTH-PRODUCTION] AUTH STATE = INITIALIZING (waiting for auth state before route evaluation)');
+      console.log('[AUTH-FORENSIC] ROUTE GUARD DECISION: WAITING for auth state initialization (no redirect)');
       main.innerHTML = `
         <div class="flex flex-col items-center justify-center" style="height:70vh">
           <div class="spinner mb-16" style="width:36px;height:36px"></div>
@@ -104,19 +104,22 @@ App.UI = {
 
     // 2. Guard: Authenticated user attempting to visit Login, Signup, or Forgot Password
     if (isAuthenticated && AUTH_PAGES.includes(route)) {
-      console.log(`[AUTH-PRODUCTION] NAVIGATING TO DASHBOARD (authenticated user visiting auth page "${route}")`);
+      console.log(`[AUTH-FORENSIC] ROUTE GUARD DECISION: REDIRECT TO DASHBOARD (authenticated user visiting auth page "${route}")`);
+      console.log(`[AUTH-FORENSIC] NAVIGATION TARGET: dashboard`);
       App.Router.go('dashboard');
       return;
     }
 
     // 3. Guard: Unauthenticated user attempting to access a protected route
     if (!isAuthenticated && !PUBLIC_ROUTES.includes(route)) {
-      console.log(`[AUTH-PRODUCTION] ROUTE GUARD = REDIRECT LOGIN (unauthenticated user on protected "${route}")`);
+      console.log(`[AUTH-FORENSIC] ROUTE GUARD DECISION: REDIRECT TO LOGIN (unauthenticated user on protected "${route}")`);
+      console.log(`[AUTH-FORENSIC] NAVIGATION TARGET: login`);
       App.Router.go('login');
       return;
     }
 
-    console.log(`[AUTH-PRODUCTION] ROUTE GUARD = ALLOW page "${route}"`);
+    console.log(`[AUTH-FORENSIC] ROUTE GUARD DECISION: ALLOW page "${route}"`);
+    console.log(`[AUTH-FORENSIC] NAVIGATION TARGET: ${route}`);
 
     // Toggle Landing / Auth Fullscreen Mode layout on document.body AND html element
     const isFullScreenPage = PUBLIC_ROUTES.includes(route);
@@ -650,10 +653,10 @@ App.GlobalSearch = {
 
 /* ── Boot ────────────────────────────────────────────────── */
 (async function init() {
-  console.log('[AUTH-PRODUCTION] APP START');
-  console.log('[AUTH-PRODUCTION] CURRENT URL:', window.location.href);
-  console.log('[AUTH-PRODUCTION] CURRENT ORIGIN:', window.location.origin);
-  console.log('[AUTH-PRODUCTION] CURRENT HOSTNAME:', window.location.hostname);
+  console.log('[AUTH-FORENSIC] APP START');
+  console.log('[AUTH-FORENSIC] CURRENT URL:', window.location.href);
+  console.log('[AUTH-FORENSIC] CURRENT ORIGIN:', window.location.origin);
+  console.log('[AUTH-FORENSIC] CURRENT HOSTNAME:', window.location.hostname);
   await App.DB.open();
 
   // Initialize Firebase Authentication Service & await first auth state resolution

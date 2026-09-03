@@ -32,10 +32,15 @@ App.Views.Dashboard = (() => {
   }
 
   async function render(container, dataset_id) {
+    console.log('[AUTH-FORENSIC] DASHBOARD RENDER START');
     container.innerHTML = `<div class="animate-fade-in"><div class="flex items-center gap-12 mb-24" style="padding:4px 0">
       <div class="spinner"></div><span class="text-muted">Loading dashboard…</span></div></div>`;
 
-    if (!dataset_id) { renderWelcome(container); return; }
+    if (!dataset_id) {
+      renderWelcome(container);
+      console.log('[AUTH-FORENSIC] DASHBOARD RENDER COMPLETE (welcome state)');
+      return;
+    }
 
     const dataset = await App.DB.getDataset(dataset_id);
     if (!dataset)   { renderWelcome(container); return; }

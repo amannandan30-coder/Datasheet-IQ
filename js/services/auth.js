@@ -27,14 +27,14 @@ App.Auth = (() => {
   function init() {
     if (_initPromise) return _initPromise;
 
-    console.log('[AUTH-PRODUCTION] APP START');
-    console.log('[AUTH-PRODUCTION] CURRENT URL:', window.location.href);
-    console.log('[AUTH-PRODUCTION] CURRENT ORIGIN:', window.location.origin);
-    console.log('[AUTH-PRODUCTION] CURRENT HOSTNAME:', window.location.hostname);
+    console.log('[AUTH-FORENSIC] APP START');
+    console.log('[AUTH-FORENSIC] CURRENT URL:', window.location.href);
+    console.log('[AUTH-FORENSIC] CURRENT ORIGIN:', window.location.origin);
+    console.log('[AUTH-FORENSIC] CURRENT HOSTNAME:', window.location.hostname);
 
     _initPromise = new Promise((resolve) => {
       if (typeof firebase === 'undefined' || !firebase.initializeApp) {
-        console.warn('[AUTH-PRODUCTION] Firebase Web SDK not loaded. Operating in fallback state.');
+        console.warn('[AUTH-FORENSIC] Firebase Web SDK not loaded. Operating in fallback state.');
         state.isInitialized = true;
         _notifyListeners();
         resolve(state);
@@ -44,43 +44,43 @@ App.Auth = (() => {
       try {
         // Initialize Firebase App if not already initialized (Single Shared App)
         if (!firebase.apps || !firebase.apps.length) {
-          console.log('[AUTH-PRODUCTION] FIREBASE INITIALIZED');
+          console.log('[AUTH-FORENSIC] FIREBASE INITIALIZED (projectId:', App.Config?.Firebase?.projectId, ')');
           firebase.initializeApp(App.Config.Firebase);
         }
         
-        console.log('[AUTH-PRODUCTION] AUTH INSTANCE CREATED');
+        console.log('[AUTH-FORENSIC] AUTH INSTANCE CREATED');
         _auth = firebase.auth();
 
         // 1. Explicitly configure browserLocalPersistence to avoid session loss across redirects
-        console.log('[AUTH-PRODUCTION] PERSISTENCE CONFIGURED (browserLocalPersistence)');
+        console.log('[AUTH-FORENSIC] PERSISTENCE START');
         _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
-          console.log('[AUTH-PRODUCTION] PERSISTENCE RESULT: SUCCESS (LOCAL)');
+          console.log('[AUTH-FORENSIC] PERSISTENCE RESULT: SUCCESS (LOCAL)');
         }).catch(err => {
-          console.warn('[AUTH-PRODUCTION] PERSISTENCE RESULT: ERROR', err.message);
+          console.warn('[AUTH-FORENSIC] PERSISTENCE RESULT: ERROR -', err.code, err.message);
         });
 
         // 2. Process Redirect Result if returning from Google signInWithRedirect
-        console.log('[AUTH-PRODUCTION] REDIRECT RESULT START');
+        console.log('[AUTH-FORENSIC] REDIRECT RESULT START');
         _auth.getRedirectResult().then((result) => {
           if (result && result.user) {
-            console.log('[AUTH-PRODUCTION] REDIRECT RESULT SUCCESS, hasUser:', true);
+            console.log('[AUTH-FORENSIC] REDIRECT RESULT RESULT: SUCCESS, hasUser:', true);
           } else {
-            console.log('[AUTH-PRODUCTION] REDIRECT RESULT SUCCESS: null (no pending redirect)');
+            console.log('[AUTH-FORENSIC] REDIRECT RESULT RESULT: NULL (no pending redirect)');
           }
         }).catch((err) => {
-          console.error('[AUTH-PRODUCTION] REDIRECT RESULT ERROR:', err.message);
+          console.error('[AUTH-FORENSIC] REDIRECT RESULT ERROR:', err.code, err.message, 'URL:', window.location.href);
         });
 
         // 3. Register Single Source of Truth Auth State Listener (Only Once)
         if (!_unsubscribeAuthState) {
-          console.log('[AUTH-PRODUCTION] AUTH STATE = INITIALIZING');
+          console.log('[AUTH-FORENSIC] AUTH STATE INITIALIZING');
           _unsubscribeAuthState = _auth.onAuthStateChanged((user) => {
             _handleAuthStateChange(user);
             resolve(state);
           });
         }
       } catch (err) {
-        console.error('[AUTH-PRODUCTION] Initialization error:', err);
+        console.error('[AUTH-FORENSIC] Initialization error:', err);
         state.isInitialized = true;
         _notifyListeners();
         resolve(state);
@@ -92,7 +92,7 @@ App.Auth = (() => {
 
   function _handleAuthStateChange(user) {
     if (user) {
-      console.log('[AUTH-PRODUCTION] AUTH STATE = SIGNED_IN, hasUser:', true);
+      console.log('[AUTH-FORENSIC] AUTH STATE SIGNED_IN, hasUser:', true, 'email:', user.email || 'N/A');
       state.currentUser = {
         uid: user.uid,
         email: user.email || '',
@@ -108,7 +108,7 @@ App.Auth = (() => {
       state.context.tenantId = user.tenantId || null;
       state.context.shopId = null; // Reserved for multi-shop data isolation
     } else {
-      console.log('[AUTH-PRODUCTION] AUTH STATE = SIGNED_OUT, hasUser:', false);
+      console.log('[AUTH-FORENSIC] AUTH STATE SIGNED_OUT, hasUser:', false);
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
@@ -128,7 +128,7 @@ App.Auth = (() => {
 
   function _notifyListeners() {
     _authListeners.forEach(cb => {
-      try { cb(state); } catch (e) { console.error('[AUTH-PRODUCTION] Listener Error', e); }
+      try { cb(state); } catch (e) { console.error('[AUTH-FORENSIC] Listener Error', e); }
     });
   }
 
@@ -151,15 +151,15 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
     
     try {
-      console.log('[AUTH-PRODUCTION] Email signup start');
+      console.log('[AUTH-FORENSIC] Email signup start');
       const cred = await _auth.createUserWithEmailAndPassword(email, password);
       if (displayName && cred.user) {
         await cred.user.updateProfile({ displayName: displayName.trim() });
       }
-      console.log('[AUTH-PRODUCTION] Email signup success, hasUser:', true);
+      console.log('[AUTH-FORENSIC] Email signup success, hasUser:', true);
       return cred.user;
     } catch (err) {
-      console.error('[AUTH-PRODUCTION] Email signup error:', err.message);
+      console.error('[AUTH-FORENSIC] Email signup error:', err.code, err.message, 'URL:', window.location.href);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -169,12 +169,12 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
-      console.log('[AUTH-PRODUCTION] Email sign-in start');
+      console.log('[AUTH-FORENSIC] Email sign-in start');
       const cred = await _auth.signInWithEmailAndPassword(email, password);
-      console.log('[AUTH-PRODUCTION] Email sign-in success, hasUser:', true);
+      console.log('[AUTH-FORENSIC] Email sign-in success, hasUser:', true);
       return cred.user;
     } catch (err) {
-      console.error('[AUTH-PRODUCTION] Email sign-in error:', err.message);
+      console.error('[AUTH-FORENSIC] Email sign-in error:', err.code, err.message, 'URL:', window.location.href);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -188,25 +188,26 @@ App.Auth = (() => {
     }
 
     try {
-      console.log('[AUTH-PRODUCTION] GOOGLE SIGN-IN START');
+      console.log('[AUTH-FORENSIC] GOOGLE SIGN-IN START');
+      console.log('[AUTH-FORENSIC] GOOGLE POPUP/REDIRECT START');
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
       
       const cred = await _auth.signInWithPopup(provider);
-      console.log('[AUTH-PRODUCTION] GOOGLE SIGN-IN SUCCESS, hasUser:', true);
+      console.log('[AUTH-FORENSIC] GOOGLE SIGN-IN SUCCESS, hasUser:', true);
       return cred.user;
     } catch (err) {
-      console.error('[AUTH-PRODUCTION] GOOGLE SIGN-IN ERROR:', err.code || err.message);
+      console.error('[AUTH-FORENSIC] GOOGLE SIGN-IN ERROR:', err.code, err.message, 'URL:', window.location.href, 'route:', App.State?.route, 'hasUser:', !!_auth?.currentUser, 'isInitialized:', state.isInitialized);
       // Fallback for popup blocked environments (ONLY if on http/https)
       if (err.code === 'auth/popup-blocked' && window.location.protocol !== 'file:') {
-        console.warn('[AUTH-PRODUCTION] Google popup blocked, starting signInWithRedirect');
+        console.warn('[AUTH-FORENSIC] Google popup blocked, starting signInWithRedirect');
         try {
           const provider = new firebase.auth.GoogleAuthProvider();
           await _auth.signInWithRedirect(provider);
           return null;
         } catch (redirErr) {
-          console.error('[AUTH-PRODUCTION] REDIRECT RESULT ERROR:', redirErr.message);
+          console.error('[AUTH-FORENSIC] GOOGLE REDIRECT ERROR:', redirErr.code, redirErr.message);
           throw new Error(mapErrorMessage(redirErr));
         }
       }
@@ -219,12 +220,12 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
-      console.log('[AUTH-PRODUCTION] Password reset start');
+      console.log('[AUTH-FORENSIC] Password reset start');
       await _auth.sendPasswordResetEmail(email);
-      console.log('[AUTH-PRODUCTION] Password reset email sent success');
+      console.log('[AUTH-FORENSIC] Password reset email sent success');
       return true;
     } catch (err) {
-      console.error('[AUTH-PRODUCTION] Password reset error:', err.message);
+      console.error('[AUTH-FORENSIC] Password reset error:', err.code, err.message);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -234,16 +235,16 @@ App.Auth = (() => {
     if (!_auth) return;
 
     try {
-      console.log('[AUTH-PRODUCTION] logout execution start');
+      console.log('[AUTH-FORENSIC] logout execution start');
       await _auth.signOut();
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
       state.context.tenantId = null;
       state.context.shopId = null;
-      console.log('[AUTH-PRODUCTION] logout execution success');
+      console.log('[AUTH-FORENSIC] logout execution success');
     } catch (err) {
-      console.error('[AUTH-PRODUCTION] logout execution error:', err.message);
+      console.error('[AUTH-FORENSIC] logout execution error:', err.code, err.message);
       throw new Error(mapErrorMessage(err));
     }
   }
