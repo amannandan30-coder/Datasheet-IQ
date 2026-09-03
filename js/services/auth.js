@@ -234,13 +234,10 @@ App.Auth = (() => {
     }
 
     try {
-      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_START: signInWithPopup with prompt: select_account`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_START: signInWithPopup`);
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
       
       const cred = await _auth.signInWithPopup(provider);
       console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_SUCCESS: user=${cred?.user?.email} uid=${cred?.user?.uid}`);
