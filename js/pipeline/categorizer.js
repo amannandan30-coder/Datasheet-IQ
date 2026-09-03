@@ -318,5 +318,5 @@ App.Categorizer = (() => {
 
   function processAll(records) { return records.map(processRecord); }
 
-  return { processRecord, processAll, getCategoryConfig, getAllCategoryConfigs: () => CATEGORY_RULES, DEFAULT_CATEGORY };
+  return { classify, processRecord, processAll, getCategoryConfig, getAllCategoryConfigs: () => CATEGORY_RULES, DEFAULT_CATEGORY };
 })();
