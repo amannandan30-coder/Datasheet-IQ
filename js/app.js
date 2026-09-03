@@ -164,8 +164,35 @@ App.UI = {
 
     // 3. Guard: Unauthenticated user attempting to access a protected route
     if (!isAuthenticated && !PUBLIC_ROUTES.includes(route)) {
-      console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE\n  FROM: ${route}\n  TO: login\n  REASON: unauthenticated user on protected route\n  CALLER/FUNCTION: App.UI.render()\n  AUTH_USER: null`);
-      App.Router.go('login');
+      console.error(`[FORENSIC-ROUTE-BLOCKED] 🛑 AUTOMATIC REDIRECT TO /login TEMPORARILY DISABLED:
+  currentRoute: "${route}"
+  hash: "${window.location.hash}"
+  isAuthenticated: ${isAuthenticated}
+  isInitialized: ${App.Auth?.isInitialized}
+  App.Auth.currentUser: ${App.Auth?.currentUser?.email || 'null'} (UID: ${App.Auth?.currentUser?.uid || 'null'})
+  firebase.auth().currentUser: ${firebase?.auth?.()?.currentUser?.email || 'null'} (UID: ${firebase?.auth?.()?.currentUser?.uid || 'null'})
+  sessionStorage(liq_auth_active): ${sessionStorage.getItem('liq_auth_active')}
+  localStorage(liq_auth_cached_user): ${localStorage.getItem('liq_auth_cached_user')}`);
+      
+      // DIAGNOSTIC SCREEN: Keeps the page from resetting/looping back to login
+      main.innerHTML = `
+        <div style="padding:32px;margin:32px auto;max-width:850px;background:#181b24;border:2px solid #ef4444;border-radius:12px;color:#f1f5f9;font-family:monospace;line-height:1.6;">
+          <h2 style="color:#ef4444;font-size:18px;margin-bottom:12px;">🛑 [FORENSIC STATE DIAGNOSTIC] Automatic Redirect to /login was INTERCEPTED</h2>
+          <p style="color:#94a3b8;margin-bottom:16px;">The route guard caught an unauthenticated state on protected route "<strong>${route}</strong>". Redirect has been paused for inspection.</p>
+          <div style="background:#0f1117;padding:16px;border-radius:8px;border:1px solid #2d3244;font-size:13px;overflow-x:auto;">
+            <div><strong>Target Route:</strong> ${route}</div>
+            <div><strong>Window Hash:</strong> ${window.location.hash}</div>
+            <div><strong>App.Auth.isAuthenticated:</strong> <span style="color:${isAuthenticated ? '#10b981' : '#ef4444'}">${isAuthenticated}</span></div>
+            <div><strong>App.Auth.isInitialized:</strong> ${App.Auth?.isInitialized}</div>
+            <div><strong>App.Auth.currentUser:</strong> ${App.Auth?.currentUser ? App.Auth.currentUser.email + ' (UID: ' + App.Auth.currentUser.uid + ')' : '<span style="color:#ef4444">NULL</span>'}</div>
+            <div><strong>firebase.auth().currentUser:</strong> ${firebase?.auth?.()?.currentUser ? firebase.auth().currentUser.email + ' (UID: ' + firebase.auth().currentUser.uid + ')' : '<span style="color:#ef4444">NULL</span>'}</div>
+            <div><strong>sessionStorage (liq_auth_active):</strong> ${sessionStorage.getItem('liq_auth_active')}</div>
+          </div>
+          <div style="margin-top:20px;display:flex;gap:12px;">
+            <button class="btn btn-primary" onclick="App.UI.render()">🔄 Re-render Current Route</button>
+            <button class="btn btn-secondary" onclick="App.Router.go('login')">⬅️ Go to Login Page</button>
+          </div>
+        </div>`;
       return;
     }
 

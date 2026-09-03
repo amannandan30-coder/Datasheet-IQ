@@ -171,7 +171,7 @@ App.Views.Login = (() => {
   async function handleGoogleSignIn() {
     const googleBtn = document.getElementById('google-signin-btn');
     hideError();
-    console.log(`[EDGE-LOOP] GOOGLE_START on login page, currentRoute=${App.State?.route} hash=${window.location.hash}`);
+    console.log(`[FORENSIC 1: BEFORE_GOOGLE_CLICK] route="${App.State?.route}" hash="${window.location.hash}" isInitialized=${App.Auth?.isInitialized} isAuthenticated=${App.Auth?.isAuthenticated} firebaseUser=${firebase?.auth?.()?.currentUser?.email || 'null'}`);
 
     if (googleBtn) {
       googleBtn.disabled = true;
@@ -179,27 +179,27 @@ App.Views.Login = (() => {
     }
 
     try {
-      console.log(`[EDGE-LOOP] GOOGLE_START calling App.Auth.signInWithGoogle()`);
+      console.log(`[FORENSIC 2: SIGNIN_WITH_GOOGLE_START] Calling App.Auth.signInWithGoogle()`);
       const user = await App.Auth.signInWithGoogle();
-      console.log(`[EDGE-LOOP] GOOGLE_SUCCESS returned to login handler: user_exists=${!!user} email=${user?.email} currentRoute=${App.State?.route}`);
+      console.log(`[FORENSIC 8: SIGNIN_WITH_GOOGLE_RETURN] Returned user=${user?.email || 'null'} (UID: ${user?.uid || 'null'}) isAuthenticated=${App.Auth?.isAuthenticated} currentRoute="${App.State?.route}"`);
       
       if (user) {
         App.UI.toast('Signed in with Google! 🌐');
         const currentRoute = App.State.route;
-        console.log(`[EDGE-LOOP] GOOGLE_SUCCESS post-login route check: "${currentRoute}"`);
+        console.log(`[FORENSIC 9: POST_LOGIN_NAV] currentRoute="${currentRoute}", target="dashboard"`);
         if (currentRoute === 'login' || currentRoute === 'signup') {
-          console.log(`[EDGE-LOOP] GOOGLE_SUCCESS navigating to dashboard`);
+          console.log(`[FORENSIC 9: EXECUTING_ROUTER_GO] App.Router.go('dashboard')`);
           App.Router.go('dashboard');
         } else {
-          console.log(`[EDGE-LOOP] GOOGLE_SUCCESS SKIP navigation (already on "${currentRoute}")`);
+          console.log(`[FORENSIC 9: SKIP_ROUTER_GO] Already on "${currentRoute}"`);
         }
       } else {
-        console.log(`[EDGE-LOOP] GOOGLE_SUCCESS user is null (redirect flow started)`);
+        console.log(`[FORENSIC 8: REDIRECT_IN_PROGRESS] signInWithGoogle returned null (top-level redirect initiated)`);
       }
     } catch (err) {
-      console.error(`[EDGE-LOOP] GOOGLE_ERROR in login handler: ${err.message}`);
+      console.error(`[FORENSIC 9: GOOGLE_ERROR_CAUGHT] code=${err.code} msg=${err.message} stack=`, err.stack);
       if (App.Auth?.isAuthenticated) {
-        console.log(`[EDGE-LOOP] GOOGLE_ERROR recovered: user is authenticated, navigating to dashboard`);
+        console.log(`[FORENSIC 9: RECOVERED_AUTH] User is authenticated despite error, navigating to dashboard`);
         App.Router.go('dashboard');
         return;
       }
