@@ -84,6 +84,7 @@ App.Auth = (() => {
           const redirectResult = await _auth.getRedirectResult();
           if (redirectResult && redirectResult.user) {
             console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} REDIRECT_RESULT_SUCCESS: user=${redirectResult.user.email} uid=${redirectResult.user.uid}`);
+            _handleAuthStateChange(redirectResult.user);
             _startUserStabilityMonitor('REDIRECT_RESULT_SUCCESS');
           } else {
             console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} REDIRECT_RESULT_NULL (no pending redirect)`);
@@ -225,7 +226,7 @@ App.Auth = (() => {
     }
   }
 
-  // Google Sign-In with prompt: 'select_account'
+  // Google Sign-In (Edge redirect + Chrome popup support)
   async function signInWithGoogle() {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
@@ -233,12 +234,23 @@ App.Auth = (() => {
       throw new Error('Google Sign-In requires running over an HTTP web server (e.g. https://liquidation-iq.vercel.app or http://127.0.0.1:8080). Opening index.html directly from a local file (file://) is not supported by Google OAuth.');
     }
 
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('email');
+    provider.addScope('profile');
+
+    const isEdge = /Edg\//i.test(navigator.userAgent);
+
+    // In Microsoft Edge (where cross-origin popup postMessage is blocked by Tracking Prevention), use top-level signInWithRedirect
+    if (isEdge && window.location.protocol.startsWith('http')) {
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} Microsoft Edge detected, using top-level signInWithRedirect`);
+      sessionStorage.setItem('liq_auth_active', 'true');
+      await _auth.signInWithRedirect(provider);
+      return null;
+    }
+
+    // Chrome and other standard browsers use signInWithPopup
     try {
       console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_START: signInWithPopup`);
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
-      
       const cred = await _auth.signInWithPopup(provider);
       console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_SUCCESS: user=${cred?.user?.email} uid=${cred?.user?.uid}`);
       try {
@@ -259,19 +271,10 @@ App.Auth = (() => {
         return _auth?.currentUser || state.currentUser;
       }
 
-      // If popup was closed but user is authenticated
-      if (err.code === 'auth/popup-closed-by-user' && state.isAuthenticated) {
-        console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} Popup closed after successful auth, ignoring error`);
-        return state.currentUser;
-      }
-
-      // Fallback for popup blocked environments
-      if (err.code === 'auth/popup-blocked' && window.location.protocol.startsWith('http')) {
-        console.warn(`[EDGE-AUTH-FORENSIC] ${_ts()} Google popup blocked, falling back to signInWithRedirect`);
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
-        provider.setCustomParameters({ prompt: 'select_account' });
+      // Fallback to redirect if popup fails or is blocked
+      if ((err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user') && window.location.protocol.startsWith('http')) {
+        console.warn(`[EDGE-AUTH-FORENSIC] ${_ts()} Popup failed (${err.code}), falling back to top-level signInWithRedirect`);
+        sessionStorage.setItem('liq_auth_active', 'true');
         await _auth.signInWithRedirect(provider);
         return null;
       }
