@@ -8,14 +8,14 @@ App.Auth = (() => {
   let _authListeners = [];
   let _initPromise = null;
   let _unsubscribeAuthState = null;
+  const _t0 = performance.now();
+
+  function _ts() { return (performance.now() - _t0).toFixed(1) + 'ms'; }
 
   const state = {
     isInitialized: false,
     isAuthenticated: false,
     currentUser: null,
-
-    /* Future-Ready Architecture Context:
-       Ready for future tenant, shopId, and Firestore multi-shop isolation. */
     context: {
       userId: null,
       tenantId: null,
@@ -27,14 +27,15 @@ App.Auth = (() => {
   function init() {
     if (_initPromise) return _initPromise;
 
-    console.log('[AUTH-FORENSIC] APP START');
-    console.log('[AUTH-FORENSIC] CURRENT URL:', window.location.href);
-    console.log('[AUTH-FORENSIC] CURRENT ORIGIN:', window.location.origin);
-    console.log('[AUTH-FORENSIC] CURRENT HOSTNAME:', window.location.hostname);
+    console.log(`[AUTH-FLOW] ${_ts()} AUTH INIT START`);
+    console.log(`[AUTH-FLOW] ${_ts()} CURRENT URL: ${window.location.href}`);
+    console.log(`[AUTH-FLOW] ${_ts()} CURRENT HASH: ${window.location.hash}`);
+    console.log(`[AUTH-FLOW] ${_ts()} CURRENT ORIGIN: ${window.location.origin}`);
+    console.log(`[AUTH-FLOW] ${_ts()} CURRENT HOSTNAME: ${window.location.hostname}`);
 
     _initPromise = new Promise((resolve) => {
       if (typeof firebase === 'undefined' || !firebase.initializeApp) {
-        console.warn('[AUTH-FORENSIC] Firebase Web SDK not loaded. Operating in fallback state.');
+        console.warn(`[AUTH-FLOW] ${_ts()} Firebase Web SDK not loaded. Fallback state.`);
         state.isInitialized = true;
         _notifyListeners();
         resolve(state);
@@ -44,43 +45,46 @@ App.Auth = (() => {
       try {
         // Initialize Firebase App if not already initialized (Single Shared App)
         if (!firebase.apps || !firebase.apps.length) {
-          console.log('[AUTH-FORENSIC] FIREBASE INITIALIZED (projectId:', App.Config?.Firebase?.projectId, ')');
           firebase.initializeApp(App.Config.Firebase);
+          console.log(`[AUTH-FLOW] ${_ts()} FIREBASE INITIALIZED (projectId: ${App.Config?.Firebase?.projectId})`);
+        } else {
+          console.log(`[AUTH-FLOW] ${_ts()} FIREBASE ALREADY INITIALIZED (apps.length: ${firebase.apps.length})`);
         }
         
-        console.log('[AUTH-FORENSIC] AUTH INSTANCE CREATED');
         _auth = firebase.auth();
+        console.log(`[AUTH-FLOW] ${_ts()} AUTH INSTANCE CREATED`);
 
-        // 1. Explicitly configure browserLocalPersistence to avoid session loss across redirects
-        console.log('[AUTH-FORENSIC] PERSISTENCE START');
+        // 1. Explicitly configure browserLocalPersistence
+        console.log(`[AUTH-FLOW] ${_ts()} PERSISTENCE START`);
         _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
-          console.log('[AUTH-FORENSIC] PERSISTENCE RESULT: SUCCESS (LOCAL)');
+          console.log(`[AUTH-FLOW] ${_ts()} PERSISTENCE RESULT: SUCCESS (LOCAL)`);
         }).catch(err => {
-          console.warn('[AUTH-FORENSIC] PERSISTENCE RESULT: ERROR -', err.code, err.message);
+          console.warn(`[AUTH-FLOW] ${_ts()} PERSISTENCE RESULT: ERROR - ${err.code} ${err.message}`);
         });
 
         // 2. Process Redirect Result if returning from Google signInWithRedirect
-        console.log('[AUTH-FORENSIC] REDIRECT RESULT START');
+        console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT START`);
         _auth.getRedirectResult().then((result) => {
           if (result && result.user) {
-            console.log('[AUTH-FORENSIC] REDIRECT RESULT RESULT: SUCCESS, hasUser:', true);
+            console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT: SUCCESS, user: ${result.user.email}`);
           } else {
-            console.log('[AUTH-FORENSIC] REDIRECT RESULT RESULT: NULL (no pending redirect)');
+            console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT: NULL (no pending redirect)`);
           }
         }).catch((err) => {
-          console.error('[AUTH-FORENSIC] REDIRECT RESULT ERROR:', err.code, err.message, 'URL:', window.location.href);
+          console.error(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT ERROR: ${err.code} ${err.message}`);
         });
 
         // 3. Register Single Source of Truth Auth State Listener (Only Once)
         if (!_unsubscribeAuthState) {
-          console.log('[AUTH-FORENSIC] AUTH STATE INITIALIZING');
+          console.log(`[AUTH-FLOW] ${_ts()} AUTH STATE INITIALIZING (registering onAuthStateChanged)`);
           _unsubscribeAuthState = _auth.onAuthStateChanged((user) => {
+            console.log(`[AUTH-FLOW] ${_ts()} onAuthStateChanged FIRED, user: ${user ? user.email : 'null'}, wasInitialized: ${state.isInitialized}`);
             _handleAuthStateChange(user);
             resolve(state);
           });
         }
       } catch (err) {
-        console.error('[AUTH-FORENSIC] Initialization error:', err);
+        console.error(`[AUTH-FLOW] ${_ts()} Initialization EXCEPTION:`, err);
         state.isInitialized = true;
         _notifyListeners();
         resolve(state);
@@ -92,7 +96,7 @@ App.Auth = (() => {
 
   function _handleAuthStateChange(user) {
     if (user) {
-      console.log('[AUTH-FORENSIC] AUTH STATE SIGNED_IN, hasUser:', true, 'email:', user.email || 'N/A');
+      console.log(`[AUTH-FLOW] ${_ts()} AUTH STATE SIGNED_IN, email: ${user.email}, uid: ${user.uid}`);
       state.currentUser = {
         uid: user.uid,
         email: user.email || '',
@@ -102,13 +106,11 @@ App.Auth = (() => {
         providerId: user.providerData && user.providerData[0] ? user.providerData[0].providerId : 'password'
       };
       state.isAuthenticated = true;
-
-      // Populate future-ready tenant context
       state.context.userId = user.uid;
       state.context.tenantId = user.tenantId || null;
-      state.context.shopId = null; // Reserved for multi-shop data isolation
+      state.context.shopId = null;
     } else {
-      console.log('[AUTH-FORENSIC] AUTH STATE SIGNED_OUT, hasUser:', false);
+      console.log(`[AUTH-FLOW] ${_ts()} AUTH STATE SIGNED_OUT`);
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
@@ -118,17 +120,21 @@ App.Auth = (() => {
 
     const wasInitialized = state.isInitialized;
     state.isInitialized = true;
+    console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange: wasInitialized=${wasInitialized}, isAuthenticated=${state.isAuthenticated}`);
     _notifyListeners();
 
     // Re-render UI on auth state change if app is already initialized
     if (wasInitialized && window.App && window.App.UI && typeof window.App.UI.render === 'function') {
+      console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange TRIGGERING App.UI.render() (wasInitialized=true)`);
       window.App.UI.render();
+    } else {
+      console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange SKIPPING App.UI.render() (wasInitialized=${wasInitialized})`);
     }
   }
 
   function _notifyListeners() {
     _authListeners.forEach(cb => {
-      try { cb(state); } catch (e) { console.error('[AUTH-FORENSIC] Listener Error', e); }
+      try { cb(state); } catch (e) { console.error(`[AUTH-FLOW] ${_ts()} Listener Error`, e); }
     });
   }
 
@@ -151,15 +157,15 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
     
     try {
-      console.log('[AUTH-FORENSIC] Email signup start');
+      console.log(`[AUTH-FLOW] ${_ts()} Email signup start`);
       const cred = await _auth.createUserWithEmailAndPassword(email, password);
       if (displayName && cred.user) {
         await cred.user.updateProfile({ displayName: displayName.trim() });
       }
-      console.log('[AUTH-FORENSIC] Email signup success, hasUser:', true);
+      console.log(`[AUTH-FLOW] ${_ts()} Email signup success`);
       return cred.user;
     } catch (err) {
-      console.error('[AUTH-FORENSIC] Email signup error:', err.code, err.message, 'URL:', window.location.href);
+      console.error(`[AUTH-FLOW] ${_ts()} Email signup error: ${err.code} ${err.message}`);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -169,12 +175,12 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
-      console.log('[AUTH-FORENSIC] Email sign-in start');
+      console.log(`[AUTH-FLOW] ${_ts()} Email sign-in start`);
       const cred = await _auth.signInWithEmailAndPassword(email, password);
-      console.log('[AUTH-FORENSIC] Email sign-in success, hasUser:', true);
+      console.log(`[AUTH-FLOW] ${_ts()} Email sign-in success`);
       return cred.user;
     } catch (err) {
-      console.error('[AUTH-FORENSIC] Email sign-in error:', err.code, err.message, 'URL:', window.location.href);
+      console.error(`[AUTH-FLOW] ${_ts()} Email sign-in error: ${err.code} ${err.message}`);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -188,26 +194,25 @@ App.Auth = (() => {
     }
 
     try {
-      console.log('[AUTH-FORENSIC] GOOGLE SIGN-IN START');
-      console.log('[AUTH-FORENSIC] GOOGLE POPUP/REDIRECT START');
+      console.log(`[AUTH-FLOW] ${_ts()} GOOGLE SIGN-IN START (signInWithPopup)`);
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
       
       const cred = await _auth.signInWithPopup(provider);
-      console.log('[AUTH-FORENSIC] GOOGLE SIGN-IN SUCCESS, hasUser:', true);
+      console.log(`[AUTH-FLOW] ${_ts()} GOOGLE SIGN-IN signInWithPopup RESOLVED, user: ${cred?.user?.email}`);
       return cred.user;
     } catch (err) {
-      console.error('[AUTH-FORENSIC] GOOGLE SIGN-IN ERROR:', err.code, err.message, 'URL:', window.location.href, 'route:', App.State?.route, 'hasUser:', !!_auth?.currentUser, 'isInitialized:', state.isInitialized);
+      console.error(`[AUTH-FLOW] ${_ts()} GOOGLE SIGN-IN ERROR: code=${err.code}, msg=${err.message}, url=${window.location.href}, route=${App.State?.route}, hasCurrentUser=${!!_auth?.currentUser}, isInitialized=${state.isInitialized}`);
       // Fallback for popup blocked environments (ONLY if on http/https)
       if (err.code === 'auth/popup-blocked' && window.location.protocol !== 'file:') {
-        console.warn('[AUTH-FORENSIC] Google popup blocked, starting signInWithRedirect');
+        console.warn(`[AUTH-FLOW] ${_ts()} Google popup blocked, starting signInWithRedirect`);
         try {
           const provider = new firebase.auth.GoogleAuthProvider();
           await _auth.signInWithRedirect(provider);
           return null;
         } catch (redirErr) {
-          console.error('[AUTH-FORENSIC] GOOGLE REDIRECT ERROR:', redirErr.code, redirErr.message);
+          console.error(`[AUTH-FLOW] ${_ts()} GOOGLE REDIRECT ERROR: ${redirErr.code} ${redirErr.message}`);
           throw new Error(mapErrorMessage(redirErr));
         }
       }
@@ -220,12 +225,12 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
-      console.log('[AUTH-FORENSIC] Password reset start');
+      console.log(`[AUTH-FLOW] ${_ts()} Password reset start`);
       await _auth.sendPasswordResetEmail(email);
-      console.log('[AUTH-FORENSIC] Password reset email sent success');
+      console.log(`[AUTH-FLOW] ${_ts()} Password reset email sent`);
       return true;
     } catch (err) {
-      console.error('[AUTH-FORENSIC] Password reset error:', err.code, err.message);
+      console.error(`[AUTH-FLOW] ${_ts()} Password reset error: ${err.code} ${err.message}`);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -235,16 +240,16 @@ App.Auth = (() => {
     if (!_auth) return;
 
     try {
-      console.log('[AUTH-FORENSIC] logout execution start');
+      console.log(`[AUTH-FLOW] ${_ts()} LOGOUT START`);
       await _auth.signOut();
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
       state.context.tenantId = null;
       state.context.shopId = null;
-      console.log('[AUTH-FORENSIC] logout execution success');
+      console.log(`[AUTH-FLOW] ${_ts()} LOGOUT SUCCESS`);
     } catch (err) {
-      console.error('[AUTH-FORENSIC] logout execution error:', err.code, err.message);
+      console.error(`[AUTH-FLOW] ${_ts()} LOGOUT ERROR: ${err.code} ${err.message}`);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -304,6 +309,7 @@ App.Auth = (() => {
     signOut,
     getCurrentUser,
     mapErrorMessage,
+    _ts,   // Expose timestamp function for app.js
     get isInitialized() { return state.isInitialized; },
     get isAuthenticated() { return state.isAuthenticated; },
     get currentUser() { return state.currentUser; }

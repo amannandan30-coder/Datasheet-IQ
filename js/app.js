@@ -4,6 +4,23 @@ window.App = window.App || {};
    MAIN APP — Router + State + UI helpers
    ============================================================ */
 
+// Global timestamp baseline
+const _appT0 = performance.now();
+function _appTs() { return (performance.now() - _appT0).toFixed(1) + 'ms'; }
+
+// Global error handlers for JS exceptions and unhandled promise rejections
+window.onerror = function(msg, source, line, col, error) {
+  console.error(`[AUTH-FLOW] ${_appTs()} JS ERROR: ${msg} at ${source}:${line}:${col}`, error);
+};
+window.addEventListener('unhandledrejection', function(event) {
+  console.error(`[AUTH-FLOW] ${_appTs()} UNHANDLED PROMISE: ${event.reason}`, event.reason);
+});
+
+// Detect page reload events
+window.addEventListener('beforeunload', function() {
+  console.log(`[AUTH-FLOW] ${_appTs()} BEFORE UNLOAD (page is unloading)`);
+});
+
 App.State = {
   dataset_id: null,
   route: 'dashboard',
@@ -18,10 +35,14 @@ App.Router = {
   go(page, params = {}) {
     const qs = new URLSearchParams(params).toString();
     const targetHash = '#/' + page + (qs ? '?' + qs : '');
+    const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown';
+    console.log(`[AUTH-FLOW] ${_appTs()} ROUTER.GO: target="${page}", currentHash="${window.location.hash}", targetHash="${targetHash}", caller=${caller}`);
 
     if (window.location.hash === targetHash) {
+      console.log(`[AUTH-FLOW] ${_appTs()} ROUTER.GO: same hash, calling render() directly`);
       App.UI.render();
     } else {
+      console.log(`[AUTH-FLOW] ${_appTs()} ROUTER.GO: setting hash to "${targetHash}"`);
       window.location.hash = targetHash;
     }
   },
@@ -38,8 +59,10 @@ App.Router = {
     const rawHash = window.location.hash.slice(2) || 'landing';
     const [page, qs] = rawHash.split('?');
     const params = Object.fromEntries(new URLSearchParams(qs));
+    const prevRoute = App.State.route;
     App.State.route  = page || 'landing';
     App.State.params = params;
+    console.log(`[AUTH-FLOW] ${_appTs()} ROUTER.PARSE: from="${prevRoute}" to="${App.State.route}" hash="${window.location.hash}"`);
 
     const currentHash = rawHash;
     const stack = this.historyStack;
@@ -75,7 +98,10 @@ App.UI = {
   },
 
   /* Render the current route into #main-content */
+  _renderCount: 0,
   async render() {
+    this._renderCount = (this._renderCount || 0) + 1;
+    const renderNum = this._renderCount;
     App.UI.closeMobileMenu();
     App.Router.parse();
     const { route, params } = App.State;
@@ -83,15 +109,17 @@ App.UI = {
     const main = document.getElementById('main-content');
     if (!main) return;
 
+    console.log(`[AUTH-FLOW] ${_appTs()} RENDER #${renderNum} START, route="${route}", hash="${window.location.hash}", dataset_id=${dataset_id}`);
+
     // ── FIREBASE AUTHENTICATION ROUTE GUARD ──────────────────
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
     const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
 
-    console.log(`[AUTH-FORENSIC] ROUTE GUARD START for route: "${route}", isInitialized: ${App.Auth?.isInitialized}, isAuthenticated: ${App.Auth?.isAuthenticated}`);
+    console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD START route="${route}", isInitialized=${App.Auth?.isInitialized}, isAuthenticated=${App.Auth?.isAuthenticated}`);
 
     // 1. If Auth service is initializing, render clean loading state (NEVER redirect while pending)
     if (window.App.Auth && !App.Auth.isInitialized) {
-      console.log('[AUTH-FORENSIC] ROUTE GUARD DECISION: WAITING for auth state initialization (no redirect)');
+      console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD DECISION: WAITING (auth not initialized)`);
       main.innerHTML = `
         <div class="flex flex-col items-center justify-center" style="height:70vh">
           <div class="spinner mb-16" style="width:36px;height:36px"></div>
@@ -104,22 +132,19 @@ App.UI = {
 
     // 2. Guard: Authenticated user attempting to visit Login, Signup, or Forgot Password
     if (isAuthenticated && AUTH_PAGES.includes(route)) {
-      console.log(`[AUTH-FORENSIC] ROUTE GUARD DECISION: REDIRECT TO DASHBOARD (authenticated user visiting auth page "${route}")`);
-      console.log(`[AUTH-FORENSIC] NAVIGATION TARGET: dashboard`);
+      console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD DECISION: REDIRECT authenticated user from "${route}" → dashboard`);
       App.Router.go('dashboard');
       return;
     }
 
     // 3. Guard: Unauthenticated user attempting to access a protected route
     if (!isAuthenticated && !PUBLIC_ROUTES.includes(route)) {
-      console.log(`[AUTH-FORENSIC] ROUTE GUARD DECISION: REDIRECT TO LOGIN (unauthenticated user on protected "${route}")`);
-      console.log(`[AUTH-FORENSIC] NAVIGATION TARGET: login`);
+      console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD DECISION: REDIRECT unauthenticated user from "${route}" → login`);
       App.Router.go('login');
       return;
     }
 
-    console.log(`[AUTH-FORENSIC] ROUTE GUARD DECISION: ALLOW page "${route}"`);
-    console.log(`[AUTH-FORENSIC] NAVIGATION TARGET: ${route}`);
+    console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD DECISION: ALLOW "${route}"`);
 
     // Toggle Landing / Auth Fullscreen Mode layout on document.body AND html element
     const isFullScreenPage = PUBLIC_ROUTES.includes(route);
@@ -151,6 +176,7 @@ App.UI = {
     App.UI.updateBreadcrumb(route, params);
 
     // Route dispatch
+    console.log(`[AUTH-FLOW] ${_appTs()} ROUTE DISPATCH: "${route}" (render #${renderNum})`);
     switch (route) {
       case 'landing':
       case 'home':            await App.Views.Landing.render(main); break;
@@ -175,6 +201,7 @@ App.UI = {
           await App.Views.Login.render(main);
         }
     }
+    console.log(`[AUTH-FLOW] ${_appTs()} RENDER #${renderNum} COMPLETE, final route="${App.State.route}", hash="${window.location.hash}"`);
   },
 
   updateBreadcrumb(route, params) {
@@ -615,13 +642,15 @@ App.UI = {
 
   async handleSignOut() {
     try {
+      console.log(`[AUTH-FLOW] ${_appTs()} HANDLE SIGN-OUT START`);
       if (App.Auth) {
         await App.Auth.signOut();
       }
+      console.log(`[AUTH-FLOW] ${_appTs()} HANDLE SIGN-OUT COMPLETE, navigating to login`);
       App.UI.toast('Signed out successfully 👋');
       App.Router.go('login');
     } catch (err) {
-      console.error('[SignOut Failed]', err);
+      console.error(`[AUTH-FLOW] ${_appTs()} HANDLE SIGN-OUT ERROR:`, err);
       App.UI.toast('Sign out failed: ' + err.message);
     }
   },
@@ -653,18 +682,27 @@ App.GlobalSearch = {
 
 /* ── Boot ────────────────────────────────────────────────── */
 (async function init() {
-  console.log('[AUTH-FORENSIC] APP START');
-  console.log('[AUTH-FORENSIC] CURRENT URL:', window.location.href);
-  console.log('[AUTH-FORENSIC] CURRENT ORIGIN:', window.location.origin);
-  console.log('[AUTH-FORENSIC] CURRENT HOSTNAME:', window.location.hostname);
+  console.log(`[AUTH-FLOW] ${_appTs()} ========== APP BOOT START ==========`);
+  console.log(`[AUTH-FLOW] ${_appTs()} CURRENT URL: ${window.location.href}`);
+  console.log(`[AUTH-FLOW] ${_appTs()} CURRENT HASH: ${window.location.hash}`);
+  console.log(`[AUTH-FLOW] ${_appTs()} CURRENT ORIGIN: ${window.location.origin}`);
+  console.log(`[AUTH-FLOW] ${_appTs()} CURRENT HOSTNAME: ${window.location.hostname}`);
+
+  console.log(`[AUTH-FLOW] ${_appTs()} INDEXEDDB INITIALIZATION START`);
   await App.DB.open();
+  console.log(`[AUTH-FLOW] ${_appTs()} INDEXEDDB INITIALIZATION COMPLETE`);
 
   // Initialize Firebase Authentication Service & await first auth state resolution
   if (window.App && window.App.Auth) {
+    console.log(`[AUTH-FLOW] ${_appTs()} AUTH INIT AWAIT START`);
     await App.Auth.init();
+    console.log(`[AUTH-FLOW] ${_appTs()} AUTH INIT AWAIT COMPLETE, isInitialized=${App.Auth.isInitialized}, isAuthenticated=${App.Auth.isAuthenticated}`);
+  } else {
+    console.warn(`[AUTH-FLOW] ${_appTs()} App.Auth NOT FOUND, skipping auth init`);
   }
 
   // Restore active dataset
+  console.log(`[AUTH-FLOW] ${_appTs()} DATA INITIALIZATION START`);
   const savedId = localStorage.getItem('liq_active_dataset');
   if (savedId) {
     const ds = await App.DB.getDataset(savedId);
@@ -679,6 +717,7 @@ App.GlobalSearch = {
       localStorage.setItem('liq_active_dataset', all[0].id);
     }
   }
+  console.log(`[AUTH-FLOW] ${_appTs()} DATA INITIALIZATION COMPLETE, dataset_id=${App.State.dataset_id}`);
 
   // Close dropdown menu on outside click
   document.addEventListener('click', (e) => {
@@ -693,9 +732,13 @@ App.GlobalSearch = {
   });
 
   // Listen for hash changes
-  window.addEventListener('hashchange', () => App.UI.render());
+  window.addEventListener('hashchange', () => {
+    console.log(`[AUTH-FLOW] ${_appTs()} HASHCHANGE EVENT, new hash="${window.location.hash}", isAuthenticated=${App.Auth?.isAuthenticated}`);
+    App.UI.render();
+  });
 
   // Initial render
+  console.log(`[AUTH-FLOW] ${_appTs()} INITIAL RENDER START`);
   App.UI.updateDatasetDisplay();
   App.UI.render();
 
@@ -705,7 +748,18 @@ App.GlobalSearch = {
   // Setup global search
   setupGlobalSearch();
 
-  console.log('[LiqIQ] Ready. Dataset:', App.State.dataset_id);
+  console.log(`[AUTH-FLOW] ${_appTs()} ========== APP BOOT COMPLETE ========== Dataset: ${App.State.dataset_id}`);
+
+  // Post-boot auth state monitor: watch for unexpected state changes for 15 seconds
+  let _authMonitorCount = 0;
+  const _authMonitorUnsub = App.Auth?.onAuthStateChanged?.((authState) => {
+    _authMonitorCount++;
+    console.log(`[AUTH-FLOW] ${_appTs()} POST-BOOT AUTH MONITOR #${_authMonitorCount}: isAuthenticated=${authState.isAuthenticated}, user=${authState.currentUser?.email || 'null'}`);
+  });
+  setTimeout(() => {
+    if (_authMonitorUnsub) _authMonitorUnsub();
+    console.log(`[AUTH-FLOW] ${_appTs()} POST-BOOT AUTH MONITOR ENDED after ${_authMonitorCount} events`);
+  }, 15000);
 })();
 
 function renderSidebar() {

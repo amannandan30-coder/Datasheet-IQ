@@ -171,6 +171,7 @@ App.Views.Login = (() => {
   async function handleGoogleSignIn() {
     const googleBtn = document.getElementById('google-signin-btn');
     hideError();
+    console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn START, currentRoute=${App.State?.route}, hash=${window.location.hash}`);
 
     if (googleBtn) {
       googleBtn.disabled = true;
@@ -178,14 +179,23 @@ App.Views.Login = (() => {
     }
 
     try {
+      console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn calling App.Auth.signInWithGoogle()`);
       const user = await App.Auth.signInWithGoogle();
+      console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn signInWithGoogle() RESOLVED, user=${user?.email}, currentRoute=${App.State?.route}, hash=${window.location.hash}`);
       if (user) {
         App.UI.toast('Signed in with Google! 🌐');
+        console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn checking route: App.State.route="${App.State.route}"`);
         if (App.State.route === 'login' || App.State.route === 'signup') {
+          console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn calling Router.go('dashboard')`);
           App.Router.go('dashboard');
+        } else {
+          console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn NOT navigating (route already changed to "${App.State.route}")`);
         }
+      } else {
+        console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn user is null (redirect flow?)`);
       }
     } catch (err) {
+      console.error(`[AUTH-FLOW] LOGIN.handleGoogleSignIn ERROR: ${err.message}`);
       showError(err.message);
       if (googleBtn) {
         googleBtn.disabled = false;
