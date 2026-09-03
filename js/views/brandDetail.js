@@ -27,6 +27,14 @@ App.Views.BrandDetail = (() => {
     const totalSKUs  = new Set(brandRecords.map(r => r.product_family_id)).size;
     const cats       = [...new Set(brandRecords.map(r => r.normalized_category))];
 
+    // Ensure accurate subcategory classification
+    if (window.App && window.App.Categorizer && typeof window.App.Categorizer.classify === 'function') {
+      for (const r of brandRecords) {
+        const res = App.Categorizer.classify(r.source_category || r.normalized_category, r.normalized_product_name, r.normalized_brand);
+        if (res && res.subcategory) r.subcategory = res.subcategory;
+      }
+    }
+
     // Group by product family
     const familyMap = new Map();
     for (const r of brandRecords) {

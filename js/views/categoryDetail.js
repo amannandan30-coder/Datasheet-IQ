@@ -29,11 +29,9 @@ App.Views.CategoryDetail = (() => {
     // Ensure accurate real-time subcategory classification
     if (window.App && window.App.Categorizer && typeof window.App.Categorizer.classify === 'function') {
       for (const r of catRecords) {
-        if (!r.subcategory || r.subcategory.includes(' & ') || r.subcategory === 'Atta & Flours' || r.subcategory === 'Oils & Ghee' || r.subcategory === 'Sugar & Salt' || r.subcategory === 'Tea & Coffee' || r.subcategory === 'Snacks & Biscuits' || r.subcategory === 'Noodles & Pasta' || r.subcategory === 'Chocolates & Sweets' || r.subcategory === 'Sauces & Condiments' || r.subcategory === 'Detergents & Laundry') {
-          const res = App.Categorizer.classify(r.source_category || catName, r.normalized_product_name, r.normalized_brand);
-          if (res && res.subcategory) {
-            r.subcategory = res.subcategory;
-          }
+        const res = App.Categorizer.classify(r.source_category || catName, r.normalized_product_name, r.normalized_brand);
+        if (res && res.subcategory) {
+          r.subcategory = res.subcategory;
         }
       }
     }
