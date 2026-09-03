@@ -4,22 +4,47 @@ window.App = window.App || {};
    MAIN APP — Router + State + UI helpers
    ============================================================ */
 
-// Global timestamp baseline
+// Global timestamp baseline and Boot ID
 const _appT0 = performance.now();
+const BOOT_ID = 'boot_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
 function _appTs() { return (performance.now() - _appT0).toFixed(1) + 'ms'; }
+
+console.log(`[EDGE-LOOP] ${_appTs()} APP_START (BOOT_ID = ${BOOT_ID})`);
 
 // Global error handlers for JS exceptions and unhandled promise rejections
 window.onerror = function(msg, source, line, col, error) {
-  console.error(`[EDGE-AUTH-FORENSIC] ${_appTs()} JS_ERROR: ${msg} at ${source}:${line}:${col}`, error);
+  console.error(`[EDGE-LOOP] ${_appTs()} JS_ERROR: msg="${msg}" at ${source}:${line}:${col}`, error);
 };
 window.addEventListener('unhandledrejection', function(event) {
-  console.error(`[EDGE-AUTH-FORENSIC] ${_appTs()} UNHANDLED_PROMISE: ${event.reason}`, event.reason);
+  console.error(`[EDGE-LOOP] ${_appTs()} UNHANDLED_PROMISE: reason="${event.reason}"`, event.reason);
 });
 
-// Detect page reload events
-window.addEventListener('beforeunload', function() {
-  console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} PAGE_RELOAD (page beforeunload event)`);
+// Detect page lifecycle and reload events
+window.addEventListener('DOMContentLoaded', function() {
+  console.log(`[EDGE-LOOP] ${_appTs()} DOMContentLoaded (BOOT_ID = ${BOOT_ID})`);
 });
+window.addEventListener('load', function() {
+  console.log(`[EDGE-LOOP] ${_appTs()} WINDOW_LOAD (BOOT_ID = ${BOOT_ID})`);
+});
+window.addEventListener('beforeunload', function() {
+  console.log(`[EDGE-LOOP] ${_appTs()} PAGE_RELOAD / beforeunload (BOOT_ID = ${BOOT_ID})`);
+});
+
+// Monkey-patch history pushState and replaceState to catch all programmatic navigations
+(function instrumentHistory() {
+  const origPush = history.pushState;
+  const origReplace = history.replaceState;
+  history.pushState = function(state, title, url) {
+    const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown';
+    console.log(`[EDGE-LOOP] ${_appTs()} NAVIGATION (history.pushState) FROM="${window.location.hash}" TO="${url}" CALLER="${caller}" AUTH_USER="${App.Auth?.currentUser?.email || 'null'}"`);
+    return origPush.apply(this, arguments);
+  };
+  history.replaceState = function(state, title, url) {
+    const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown';
+    console.log(`[EDGE-LOOP] ${_appTs()} NAVIGATION (history.replaceState) FROM="${window.location.hash}" TO="${url}" CALLER="${caller}" AUTH_USER="${App.Auth?.currentUser?.email || 'null'}"`);
+    return origReplace.apply(this, arguments);
+  };
+})();
 
 App.State = {
   dataset_id: null,
@@ -36,13 +61,13 @@ App.Router = {
     const targetHash = '#/' + page + (qs ? '?' + qs : '');
     const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown';
     const fromRoute = App.State?.route || 'unknown';
-    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_CHANGE: FROM="${fromRoute}" TO="${page}" REASON="Router.go" caller=${caller}`);
+    console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE\n  FROM: ${fromRoute}\n  TO: ${page}\n  REASON: Router.go\n  CALLER/FUNCTION: ${caller}\n  AUTH_USER: ${App.Auth?.currentUser?.email || 'null'}`);
 
     if (window.location.hash === targetHash) {
-      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_CHANGE: same hash, triggering render directly`);
+      console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE (same hash, re-rendering): "${targetHash}"`);
       App.UI.render();
     } else {
-      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_CHANGE: setting window.location.hash="${targetHash}"`);
+      console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE (setting hash): "${targetHash}"`);
       window.location.hash = targetHash;
     }
   },
@@ -62,7 +87,7 @@ App.Router = {
     const prevRoute = App.State.route;
     App.State.route  = page || 'landing';
     App.State.params = params;
-    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_CHECK: prev="${prevRoute}" current="${App.State.route}" hash="${window.location.hash}"`);
+    console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHECK: prev="${prevRoute}" current="${App.State.route}" hash="${window.location.hash}" isAuthenticated=${App.Auth?.isAuthenticated}`);
 
     const currentHash = rawHash;
     const stack = this.historyStack;
@@ -109,17 +134,17 @@ App.UI = {
     const main = document.getElementById('main-content');
     if (!main) return;
 
-    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} RENDER #${renderNum} START: route="${route}" hash="${window.location.hash}" dataset_id=${dataset_id}`);
+    console.log(`[EDGE-LOOP] ${_appTs()} RENDER #${renderNum} START: route="${route}" hash="${window.location.hash}" dataset_id=${dataset_id}`);
 
     // ── FIREBASE AUTHENTICATION ROUTE GUARD ──────────────────
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
     const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
 
-    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_START: route="${route}" isInitialized=${App.Auth?.isInitialized} isAuthenticated=${App.Auth?.isAuthenticated}`);
+    console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_GUARD_START: route="${route}" isInitialized=${App.Auth?.isInitialized} isAuthenticated=${App.Auth?.isAuthenticated}`);
 
     // 1. If Auth service is initializing, render clean loading state (NEVER redirect while pending)
     if (window.App.Auth && !App.Auth.isInitialized) {
-      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_DECISION: WAITING (auth initializing)`);
+      console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_GUARD_DECISION: WAITING (auth initializing)`);
       main.innerHTML = `
         <div class="flex flex-col items-center justify-center" style="height:70vh">
           <div class="spinner mb-16" style="width:36px;height:36px"></div>
@@ -132,19 +157,19 @@ App.UI = {
 
     // 2. Guard: Authenticated user attempting to visit Login, Signup, or Forgot Password
     if (isAuthenticated && AUTH_PAGES.includes(route)) {
-      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_DECISION: REDIRECT authenticated user from "${route}" → dashboard`);
+      console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE\n  FROM: ${route}\n  TO: dashboard\n  REASON: authenticated user visiting auth page\n  CALLER/FUNCTION: App.UI.render()\n  AUTH_USER: ${App.Auth?.currentUser?.email || 'null'}`);
       App.Router.go('dashboard');
       return;
     }
 
     // 3. Guard: Unauthenticated user attempting to access a protected route
     if (!isAuthenticated && !PUBLIC_ROUTES.includes(route)) {
-      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_DECISION: REDIRECT unauthenticated user from "${route}" → login`);
+      console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE\n  FROM: ${route}\n  TO: login\n  REASON: unauthenticated user on protected route\n  CALLER/FUNCTION: App.UI.render()\n  AUTH_USER: null`);
       App.Router.go('login');
       return;
     }
 
-    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_DECISION: ALLOW "${route}"`);
+    console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_GUARD_DECISION: ALLOW "${route}" (isAuthenticated=${isAuthenticated})`);
 
     // Toggle Landing / Auth Fullscreen Mode layout on document.body AND html element
     const isFullScreenPage = PUBLIC_ROUTES.includes(route);
@@ -682,27 +707,27 @@ App.GlobalSearch = {
 
 /* ── Boot ────────────────────────────────────────────────── */
 (async function init() {
-  console.log(`[AUTH-FLOW] ${_appTs()} ========== APP BOOT START ==========`);
-  console.log(`[AUTH-FLOW] ${_appTs()} CURRENT URL: ${window.location.href}`);
-  console.log(`[AUTH-FLOW] ${_appTs()} CURRENT HASH: ${window.location.hash}`);
-  console.log(`[AUTH-FLOW] ${_appTs()} CURRENT ORIGIN: ${window.location.origin}`);
-  console.log(`[AUTH-FLOW] ${_appTs()} CURRENT HOSTNAME: ${window.location.hostname}`);
+  console.log(`[EDGE-LOOP] ${_appTs()} ========== APP BOOT START ========== (BOOT_ID = ${BOOT_ID})`);
+  console.log(`[EDGE-LOOP] ${_appTs()} CURRENT_URL: ${window.location.href}`);
+  console.log(`[EDGE-LOOP] ${_appTs()} CURRENT_HASH: ${window.location.hash}`);
+  console.log(`[EDGE-LOOP] ${_appTs()} CURRENT_ORIGIN: ${window.location.origin}`);
+  console.log(`[EDGE-LOOP] ${_appTs()} CURRENT_HOSTNAME: ${window.location.hostname}`);
 
-  console.log(`[AUTH-FLOW] ${_appTs()} INDEXEDDB INITIALIZATION START`);
+  console.log(`[EDGE-LOOP] ${_appTs()} INDEXEDDB_INIT_START`);
   await App.DB.open();
-  console.log(`[AUTH-FLOW] ${_appTs()} INDEXEDDB INITIALIZATION COMPLETE`);
+  console.log(`[EDGE-LOOP] ${_appTs()} INDEXEDDB_INIT_COMPLETE`);
 
   // Initialize Firebase Authentication Service & await first auth state resolution
   if (window.App && window.App.Auth) {
-    console.log(`[AUTH-FLOW] ${_appTs()} AUTH INIT AWAIT START`);
+    console.log(`[EDGE-LOOP] ${_appTs()} AUTH_INIT_AWAIT_START`);
     await App.Auth.init();
-    console.log(`[AUTH-FLOW] ${_appTs()} AUTH INIT AWAIT COMPLETE, isInitialized=${App.Auth.isInitialized}, isAuthenticated=${App.Auth.isAuthenticated}`);
+    console.log(`[EDGE-LOOP] ${_appTs()} AUTH_INIT_AWAIT_COMPLETE: isInitialized=${App.Auth.isInitialized} isAuthenticated=${App.Auth.isAuthenticated} user=${App.Auth.currentUser?.email || 'null'}`);
   } else {
-    console.warn(`[AUTH-FLOW] ${_appTs()} App.Auth NOT FOUND, skipping auth init`);
+    console.warn(`[EDGE-LOOP] ${_appTs()} App.Auth NOT FOUND, skipping auth init`);
   }
 
   // Restore active dataset
-  console.log(`[AUTH-FLOW] ${_appTs()} DATA INITIALIZATION START`);
+  console.log(`[EDGE-LOOP] ${_appTs()} DATA_INIT_START`);
   const savedId = localStorage.getItem('liq_active_dataset');
   if (savedId) {
     const ds = await App.DB.getDataset(savedId);
@@ -717,7 +742,7 @@ App.GlobalSearch = {
       localStorage.setItem('liq_active_dataset', all[0].id);
     }
   }
-  console.log(`[AUTH-FLOW] ${_appTs()} DATA INITIALIZATION COMPLETE, dataset_id=${App.State.dataset_id}`);
+  console.log(`[EDGE-LOOP] ${_appTs()} DATA_INIT_COMPLETE: dataset_id=${App.State.dataset_id}`);
 
   // Close dropdown menu on outside click
   document.addEventListener('click', (e) => {
@@ -733,12 +758,12 @@ App.GlobalSearch = {
 
   // Listen for hash changes
   window.addEventListener('hashchange', () => {
-    console.log(`[AUTH-FLOW] ${_appTs()} HASHCHANGE EVENT, new hash="${window.location.hash}", isAuthenticated=${App.Auth?.isAuthenticated}`);
+    console.log(`[EDGE-LOOP] ${_appTs()} HASHCHANGE EVENT: new hash="${window.location.hash}", isAuthenticated=${App.Auth?.isAuthenticated}`);
     App.UI.render();
   });
 
   // Initial render
-  console.log(`[AUTH-FLOW] ${_appTs()} INITIAL RENDER START`);
+  console.log(`[EDGE-LOOP] ${_appTs()} INITIAL_RENDER_START`);
   App.UI.updateDatasetDisplay();
   App.UI.render();
 
@@ -748,17 +773,17 @@ App.GlobalSearch = {
   // Setup global search
   setupGlobalSearch();
 
-  console.log(`[AUTH-FLOW] ${_appTs()} ========== APP BOOT COMPLETE ========== Dataset: ${App.State.dataset_id}`);
+  console.log(`[EDGE-LOOP] ${_appTs()} ========== APP BOOT COMPLETE ========== (BOOT_ID = ${BOOT_ID}) Dataset: ${App.State.dataset_id}`);
 
   // Post-boot auth state monitor: watch for unexpected state changes for 15 seconds
   let _authMonitorCount = 0;
   const _authMonitorUnsub = App.Auth?.onAuthStateChanged?.((authState) => {
     _authMonitorCount++;
-    console.log(`[AUTH-FLOW] ${_appTs()} POST-BOOT AUTH MONITOR #${_authMonitorCount}: isAuthenticated=${authState.isAuthenticated}, user=${authState.currentUser?.email || 'null'}`);
+    console.log(`[EDGE-LOOP] ${_appTs()} POST_BOOT_AUTH_MONITOR #${_authMonitorCount}: isAuthenticated=${authState.isAuthenticated} user=${authState.currentUser?.email || 'null'}`);
   });
   setTimeout(() => {
     if (_authMonitorUnsub) _authMonitorUnsub();
-    console.log(`[AUTH-FLOW] ${_appTs()} POST-BOOT AUTH MONITOR ENDED after ${_authMonitorCount} events`);
+    console.log(`[EDGE-LOOP] ${_appTs()} POST_BOOT_AUTH_MONITOR ENDED after ${_authMonitorCount} events`);
   }, 15000);
 })();
 

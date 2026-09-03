@@ -32,13 +32,13 @@ App.Views.Dashboard = (() => {
   }
 
   async function render(container, dataset_id) {
-    console.log('[EDGE-AUTH-FORENSIC] DASHBOARD_START');
+    console.log('[EDGE-LOOP] DASHBOARD_START');
     container.innerHTML = `<div class="animate-fade-in"><div class="flex items-center gap-12 mb-24" style="padding:4px 0">
       <div class="spinner"></div><span class="text-muted">Loading dashboard…</span></div></div>`;
 
     if (!dataset_id) {
       renderWelcome(container);
-      console.log('[EDGE-AUTH-FORENSIC] DASHBOARD_COMPLETE (welcome state)');
+      console.log('[EDGE-LOOP] DASHBOARD_COMPLETE (welcome state)');
       return;
     }
 
