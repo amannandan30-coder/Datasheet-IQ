@@ -13,27 +13,28 @@ App.Categorizer = (() => {
       subcategories: {
         'General Staples':     { kw: ['staple','grocery','food'] },
         'Atta':                { kw: ['\\batta\\b','\\bchakki\\b','multigrain atta','wheat atta','gehun'] },
-        'Flours':              { kw: ['\\bflour\\b','\\bflours\\b','\\bmaida\\b','\\bbesan\\b','\\bsuji\\b','\\brava\\b','\\bsooji\\b','multigrain flour','rice flour','corn flour','gram flour','wheat flour'] },
+        'Flours':              { kw: ['\\bflour\\b','\\bflours\\b','\\bmaida\\b','\\bbesan\\b','\\bsuji\\b','\\brava\\b','\\bsooji\\b','multigrain flour','rice flour','corn flour','gram flour','wheat flour','bajra flour','ragi flour'] },
         'Rice':                { kw: ['\\brice\\b','\\bbasmati\\b','\\bsella\\b','\\bmogra\\b','\\bpoha\\b'] },
-        'Pulses & Lentils':    { kw: ['\\bdal\\b','\\bdaal\\b','\\bmoong\\b','\\bmasoor\\b','\\burad\\b','\\bchana\\b','\\brajma\\b','\\barhar\\b','\\btoor\\b','\\blentil\\b','\\bpulses\\b'] },
+        'Pulses & Lentils':    { kw: ['\\bdal\\b','\\bdaal\\b','\\bmoong\\b','\\bmasoor\\b','\\burad\\b','\\bchana\\b','\\brajma\\b','\\barhar\\b','\\btoor\\b','\\blentil\\b','\\bpulses\\b','lobiya'] },
+        'Dry Fruits & Nuts':   { kw: ['almond','almonds','badam','cashew','cashews','kaju','walnut','walnuts','akhrot','pista','pistachio','pistachios','raisin','raisins','kismis','kishmish','makhana','foxnut','foxnuts','dates','khajoor','khajur','anjeer','fig','figs','hazelnut','hazelnuts','dry fruit','dry fruits','nut mix','trail mix','chia seed','chia seeds','flax seed','flax seeds','pumpkin seeds','sunflower seeds','watermelon seeds'] },
         'Oils':                { kw: ['\\boil\\b','\\boils\\b','sunflower','mustard','olive','refined','groundnut','sesame','canola','coconut oil','rice bran','cooking oil','edible oil'] },
         'Ghee':                { kw: ['\\bghee\\b','\\bdalda\\b','vanaspati','cow ghee','desi ghee'] },
-        'Sugar':               { kw: ['\\bsugar\\b','\\bjaggery\\b','\\bcheeni\\b','\\bshakkar\\b','\\bgur\\b','brown sugar','white sugar','mishri','boora','bura'] },
+        'Sugar':               { kw: ['\\bsugar\\b','\\bjaggery\\b','\\bcheeni\\b','\\bshakkar\\b','\\bgur\\b','brown sugar','white sugar','mishri','boora','bura','batasha'] },
         'Salt':                { kw: ['\\bsalt\\b','\\bnamak\\b','sendha','rock salt','black salt','iodized salt','table salt','tata salt'] },
-        'Spices & Masalas':    { kw: ['\\bmasala\\b','\\bmasalas\\b','\\bspice\\b','\\bspices\\b','chilli','turmeric','cumin','coriander','garam masala','pepper','haldi','jeera'] },
+        'Spices & Masalas':    { kw: ['\\bmasala\\b','\\bmasalas\\b','\\bspice\\b','\\bspices\\b','chilli','turmeric','cumin','coriander','garam masala','pepper','haldi','jeera','ajwain','star anise','chakriphool','saunf','fennel','methi dana','poppy seeds','khaskhas','dalchini','cinnamon','cloves','laung','elaichi','cardamom','black pepper','kali mirch','nutmeg','jaiphal','mace','javitri','bay leaf','tejpatta','kasuri methi','panch phoron'] },
         'Tea':                 { kw: ['\\btea\\b','\\bchai\\b','green tea','tata tea','brooke bond','black tea','tea bags','red label','taj mahal','wagh bakri','lipton'] },
         'Coffee':              { kw: ['\\bcoffee\\b','bru','nescafe','instant coffee','ground coffee','cappuccino','espresso','davidoff'] },
-        'Biscuits & Cookies':  { kw: ['biscuit','biscuits','cookie','cookies','rusk','wafer','bourbon','good day','parle','oreo','marie','cracker','krackjack','monaco','hide & seek','hide and seek'] },
-        'Snacks & Namkeen':    { kw: ['snack','snacks','chips','namkeen','popcorn','munchies','bhujia','kurkure','lays','bingo','nachos','sev','mixture','gathiya','chanachur'] },
+        'Biscuits & Cookies':  { kw: ['biscuit','biscuits','cookie','cookies','rusk','wafer','bourbon','good day','parle','oreo','marie','cracker','krackjack','monaco','hide & seek','hide and seek','cake','pound cake','slice cake','muffin','brownie','pastry','donut cake'] },
+        'Snacks & Namkeen':    { kw: ['snack','snacks','chips','namkeen','popcorn','munchies','bhujia','kurkure','lays','bingo','nachos','sev','mixture','gathiya','chanachur','mathri','matthi','papad','appalam','khakhra'] },
         'Breakfast Cereals':   { kw: ['oats','cornflakes','muesli','cereal','quaker','kellogg','upma','daliya','dalia'] },
         'Noodles':             { kw: ['noodle','noodles','maggi','yippee','ramen','chowmein','hakka noodles','wai wai','top ramen'] },
         'Pasta & Macaroni':    { kw: ['pasta','macaroni','spaghetti','vermicelli','fusilli','penne','lasagna','sewai','seviyan'] },
         'Sauces & Ketchups':   { kw: ['sauce','sauces','ketchup','ketchups','mayonnaise','spread','chilli sauce','soya sauce','schezwan','tomato sauce'] },
         'Pickles & Chutneys':  { kw: ['pickle','pickles','achar','aachar','chutney','chutneys','jam','jelly','vinegar'] },
-        'Beverages':           { kw: ['juice','drink','squash','syrup','sharbat','cold drink','energy drink','nimbu','cola'] },
+        'Beverages':           { kw: ['juice','drink','squash','syrup','sharbat','cold drink','energy drink','nimbu','cola','cold coffee','coffee milkshake'] },
         'Dairy Products':      { kw: ['milk','curd','paneer','butter','cheese','yogurt','lassi','khoa','cream'] },
         'Chocolates':          { kw: ['chocolate','chocolates','cadbury','dairy milk','kitkat','snickers','gems','candy','toffee','lollipop','gum','eclairs','perk','5 star','munch'] },
-        'Sweets & Mithai':     { kw: ['sweet','sweets','mithai','barfi','burfi','halwa','laddu','ladoo','laddoo','gulab jamun','rasgulla','soan papdi','peda','kaju katli','sonpapdi'] },
+        'Sweets & Mithai':     { kw: ['sweet','sweets','mithai','barfi','burfi','halwa','laddu','ladoo','laddoo','gulab jamun','rasgulla','soan papdi','peda','kaju katli','sonpapdi','ghevar','milk cake','mysore pak','cham cham','rasbhari'] },
       }
     },
     'Cleaning Essentials': {
@@ -53,7 +54,7 @@ App.Categorizer = (() => {
       icon: '⚡',
       color: '#6366f1',
       subcategories: {
-        'Lighting':            { kw: ['\\bbulb\\b','\\bbulbs\\b','\\bled\\b','\\bbatten\\b','spotlight','lantern','torch','lamp','cfl','tubelight'] },
+        'Lighting':            { kw: ['\\bbulb\\b','\\bbulbs\\b','\\bled\\b','\\bbatten\\b','spotlight','lantern','torch','lamp','cfl','tubelight','rice light','string light','fairy light'] },
         'Fans':                { kw: ['\\bfan\\b','\\bfans\\b','ceiling fan','table fan','exhaust','cooler'] },
         'Batteries':           { kw: ['\\bbattery\\b','\\bbatteries\\b','\\bcell\\b','alkaline','aa','aaa','eveready','duracell'] },
         'Mobile Accessories':  { kw: ['charger','cable','earphone','headphone','power bank','usb','lightning','type-c','adapter','case','cover','screen guard','tempered','zebronics'] },
@@ -68,9 +69,10 @@ App.Categorizer = (() => {
       color: '#38bdf8',
       subcategories: {
         'Plastic Containers':  { kw: ['container','box','tub','jar','storage','tupperware','milton','cello'] },
-        'Kitchen Accessories': { kw: ['plate','bowl','glass','cup','tray','spatula','ladle','pan','pressure cooker','kadai'] },
+        'Kitchen Accessories': { kw: ['plate','bowl','glass','cup','tray','spatula','ladle','pan','pressure cooker','kadai','coffee mug','tea mug','tea set','mug','mugs'] },
         'Bedding & Linen':     { kw: ['bedsheet','pillow','blanket','towel','quilt','mattress'] },
-        'Decor':               { kw: ['frame','vase','candle','lamp shade','decor','ornament','figurine'] },
+        'Decor':               { kw: ['frame','vase','candle','lamp shade','decor','ornament','figurine','pooja','puja','diya'] },
+        'Pet Care':            { kw: ['dog food','cat food','pedigree','whiskas','drools','me-o','dog treat','cat treat','pet food','pet treat','dog biscuit','puppy food','kitten food','nootie'] }
       }
     },
     'Toys & Games': {
@@ -88,7 +90,7 @@ App.Categorizer = (() => {
       icon: '💄',
       color: '#fb923c',
       subcategories: {
-        'Skin Care':           { kw: ['moisturizer','cream','lotion','sunscreen','face wash','cleanser','toner','serum'] },
+        'Skin Care':           { kw: ['moisturizer','cream','lotion','sunscreen','face wash','cleanser','toner','serum','lipstick','lip','gloss','kajal','eyeliner','mascara','compact','foundation','nail polish','cosmetics','sugar pop','tea tree'] },
         'Hair Care':           { kw: ['shampoo','conditioner','hair oil','hair mask','serum','headandshoulders','pantene','dove shampoo'] },
         'Oral Care':           { kw: ['toothpaste','toothbrush','mouthwash','floss','colgate','closeup','pepsodent','oral-b'] },
         'Deodorants':          { kw: ['deodorant','deo','perfume','body spray','axe','dove deo','rexona'] },
@@ -119,14 +121,14 @@ App.Categorizer = (() => {
   const RAW_CATEGORY_MAP = {
     'atta, rice & dal':         { category: 'Grocery', subcategory: null },
     'dry fruits, masala & oil': { category: 'Grocery', subcategory: null },
-    'bakery & biscuits':        { category: 'Grocery', subcategory: 'Snacks & Biscuits' },
-    'tea, coffee & milk drinks':{ category: 'Grocery', subcategory: 'Tea & Coffee' },
+    'bakery & biscuits':        { category: 'Grocery', subcategory: null },
+    'tea, coffee & milk drinks':{ category: 'Grocery', subcategory: null },
     'cold drinks & juices':     { category: 'Grocery', subcategory: 'Beverages' },
-    'sweet tooth':              { category: 'Grocery', subcategory: 'Chocolates & Sweets' },
-    'munchies':                 { category: 'Grocery', subcategory: 'Snacks & Biscuits' },
-    'dairy & breakfast':        { category: 'Grocery', subcategory: 'Dairy Products' },
-    'sauces & spreads':         { category: 'Grocery', subcategory: 'Sauces & Condiments' },
-    'instant & frozen food':    { category: 'Grocery', subcategory: 'Noodles & Pasta' },
+    'sweet tooth':              { category: 'Grocery', subcategory: null },
+    'munchies':                 { category: 'Grocery', subcategory: null },
+    'dairy & breakfast':        { category: 'Grocery', subcategory: null },
+    'sauces & spreads':         { category: 'Grocery', subcategory: null },
+    'instant & frozen food':    { category: 'Grocery', subcategory: null },
     'cleaning essentials':      { category: 'Cleaning Essentials', subcategory: null },
     'electronics & electricals':{ category: 'Electronics & Electricals', subcategory: null },
     'personal care':            { category: 'Personal Care', subcategory: null },
@@ -137,7 +139,7 @@ App.Categorizer = (() => {
     'kitchen & dining':         { category: 'Home Care', subcategory: null },
     'toys & games':             { category: 'Toys & Games', subcategory: null },
     'stationery needs':         { category: 'Stationery & Office', subcategory: null },
-    'pet care':                 { category: 'Home Care', subcategory: null },
+    'pet care':                 { category: 'Home Care', subcategory: 'Pet Care' },
   };
 
   const DEFAULT_CATEGORY = {
@@ -179,19 +181,22 @@ App.Categorizer = (() => {
       subCat  = RAW_CATEGORY_MAP[rawCatLower].subcategory;
     }
 
-    // 2. Check canonical category match
-    if (!mainCat && rawCatLower) {
-      for (const [k] of Object.entries(CATEGORY_RULES)) {
-        if (normLower(k) === rawCatLower || rawCatLower.includes(normLower(k).split(' ')[0])) {
-          mainCat = k;
-          break;
-        }
-      }
+    // 2. Pet Care Early Domain Check (Dog & Cat Food, Treats, Pet Biscuits)
+    const isPetCare = /\b(dog food|cat food|dog treat|cat treat|dog biscuit|cat biscuit|pet food|pet treat|puppy food|kitten food|pedigree|whiskas|drools|me-o|huft|chip chops|nootie)\b/i.test(prodLower) ||
+                      /\b(pedigree|whiskas|drools|me-o|huft|chip chops|nootie)\b/i.test(brandLower);
+    if (isPetCare) {
+      return { normalized_category: 'Home Care', subcategory: 'Pet Care', category_icon: '🏠', category_color: '#38bdf8', subcategory_confidence: 'HIGH' };
     }
 
-    // 3. Early Domain Disambiguation (prevent cross-category false positives)
+    // 3. Non-Edible / Religious Pooja Ghee & Items
+    const isPooja = /\b(pooja|puja|non[- ]edible|diya batti|ghee diya|havan samagri|roli chawal)\b/i.test(prodLower);
+    if (isPooja) {
+      return { normalized_category: 'Home Care', subcategory: 'Decor', category_icon: '🏠', category_color: '#38bdf8', subcategory_confidence: 'HIGH' };
+    }
+
+    // 4. Early Domain Disambiguation (prevent cross-category false positives)
     const isElectronics = /\b(bulb|bulbs|led|batten|torch|lamp|cfl|tubelight|fan|fans|battery|batteries|cell|charger|cable|earphone|headphone|power bank|usb|adapter|keyboard|mouse|pen drive|flash drive|speaker|trimmer|shaver|iron|hair dryer|switch|socket|plug|extension|wire|board|mcb|fuse|mixer|grinder|juicer|blender|kettle|toaster|oven|microwave|refrigerator|rice light|string light|fairy light)\b/i.test(prodLower);
-    const isPersonalCare = /\b(shampoo|conditioner|hair oil|hair color|face wash|moisturizer|sunscreen|lotion|cream|serum|lipstick|lip balm|lip gloss|kajal|eyeliner|mascara|compact|foundation|nail polish|cosmetics|sugar pop|toothpaste|toothbrush|mouthwash|deodorant|deo|body spray|perfume|sanitary pad|diaper|baby wipes|soap|body wash|handwash|essential oil|eucalyptus oil)\b/i.test(prodLower) || /\bsugar\b/i.test(brandLower);
+    const isPersonalCare = /\b(shampoo|conditioner|hair oil|hair color|face wash|moisturizer|sunscreen|lotion|cream|serum|lipstick|lip balm|lip gloss|kajal|eyeliner|mascara|compact|foundation|nail polish|cosmetics|sugar pop|toothpaste|toothbrush|mouthwash|deodorant|deo|body spray|perfume|sanitary pad|diaper|baby wipes|soap|body wash|handwash|essential oil|eucalyptus oil|tea tree oil)\b/i.test(prodLower) || /\bsugar\b/i.test(brandLower);
     const isCleaning = /\b(detergent|washing powder|surf|tide|ariel|rin|fena|ghadi|dishwash|vim|pril|exo|harpic|lizol|toilet cleaner|floor cleaner|air freshener|odonil|repellent|allout|goodknight|hit|baygon|mop|phenyl)\b/i.test(prodLower);
     const isKitchenware = /\b(plate|bowl|coffee mug|tea mug|tea set|mug|mugs|cup|cups|tray|spatula|ladle|pan|pressure cooker|kadai|storage jar|tupperware|milton|cello|borosil|opalware)\b/i.test(prodLower);
 
@@ -226,23 +231,25 @@ App.Categorizer = (() => {
       mainCat = 'Home Care';
       subCat  = 'Kitchen Accessories';
     } else {
-      // 4. Grocery Subcategory Classification
+      // 5. Grocery Subcategory Classification
       const isChocolate = /\b(chocolate|chocolates|cadbury|dairy milk|kitkat|snickers|gems|candy|toffee|lollipop|eclairs|perk|5 star|munch|ferrero)\b/i.test(prodLower) && !/\b(cake|biscuit|cookie|shake|syrup|ice cream|milk drink|protein bar)\b/i.test(prodLower);
-      const isMithai = /\b(laddu|ladoo|laddoo|burfi|barfi|halwa|mithai|gulab jamun|rasgulla|soan papdi|peda|kaju katli|sonpapdi|milk cake|mysore pak|cham cham|rasbhari)\b/i.test(prodLower);
-      const isCereal = /\b(daliya|dalia|oats|muesli|cornflakes)\b/i.test(prodLower) && !/\b(cookie|biscuit|rusk)\b/i.test(prodLower);
-      const isBiscuit = /\b(biscuit|biscuits|cookie|cookies|rusk|wafer|bourbon|good day|parle|oreo|marie|cracker|krackjack|monaco)\b/i.test(prodLower);
-      const isNamkeen = /\b(chips|namkeen|munchies|popcorn|bhujia|kurkure|lays|bingo|nachos|sev|mixture|gathiya|chanachur)\b/i.test(prodLower) && !isBiscuit;
+      const isMithai = (/\b(laddu|ladoo|laddoo|burfi|barfi|halwa|mithai|gulab jamun|rasgulla|soan papdi|peda|kaju katli|sonpapdi|milk cake|mysore pak|cham cham|rasbhari|ghevar)\b/i.test(prodLower) || (/\bghee\b/i.test(prodLower) && /\b(cake|sweet|mithai|ghevar|laddu|burfi|halwa|peda)\b/i.test(prodLower))) && !isChocolate;
+      const isBiscuit = /\b(biscuit|biscuits|cookie|cookies|rusk|wafer|bourbon|good day|parle|oreo|marie|cracker|krackjack|monaco|cake|pound cake|slice cake|muffin|brownie|pastry|donut cake)\b/i.test(prodLower) && !isMithai;
+      const isNamkeen = (/\b(chips|namkeen|munchies|popcorn|bhujia|kurkure|lays|bingo|nachos|sev|mixture|gathiya|chanachur|mathri|matthi|papad|appalam|khakhra)\b/i.test(prodLower) || /\bdal mathri\b/i.test(prodLower)) && !isBiscuit;
+      const isDryFruit = /\b(almond|almonds|badam|cashew|cashews|kaju|walnut|walnuts|akhrot|pista|pistachio|pistachios|raisin|raisins|kismis|kishmish|makhana|foxnut|foxnuts|dates|khajoor|khajur|anjeer|fig|figs|hazelnut|hazelnuts|dry fruit|dry fruits|nut mix|trail mix|chia seed|chia seeds|flax seed|flax seeds|pumpkin seeds|sunflower seeds|watermelon seeds)\b/i.test(prodLower) && !isBiscuit && !isNamkeen && !/\b(ice cream|chocolate|shake|drink|hair oil|shampoo)\b/i.test(prodLower);
+      const isSpice = (/\b(masala|masalas|spice|spices|turmeric|chilli|coriander|haldi|mirch|cumin|garam masala|sambar|rasam|kitchen king|paneer masala|meat masala|chicken masala|biryani masala|ajwain|star anise|chakriphool|saunf|fennel|jeera|methi dana|poppy seeds|khaskhas|dalchini|cinnamon|cloves|laung|elaichi|cardamom|black pepper|kali mirch|nutmeg|jaiphal|mace|javitri|bay leaf|tejpatta|kasuri methi|panch phoron)\b/i.test(prodLower) || /\bwith natural oils\b/i.test(prodLower)) && !isNamkeen && !/\b(hair oil|body oil|cooking oil|refiner|sunflower oil|mustard oil|groundnut oil|olive oil|sesame oil|canola oil)\b/i.test(prodLower);
+      const isCereal = /\b(daliya|dalia|oats|muesli|cornflakes)\b/i.test(prodLower) && !isBiscuit;
       const isNoodle = /\b(noodle|noodles|maggi|yippee|ramen|chowmein|hakka noodles|wai wai|top ramen)\b/i.test(prodLower);
       const isPasta = /\b(pasta|macaroni|spaghetti|vermicelli|fusilli|penne|lasagna|sewai|seviyan)\b/i.test(prodLower);
 
-      const isBeverage = /\b(juice|drink|squash|syrup|sharbat|cold drink|energy drink|nimbu|cola|pepsi|coca[- ]cola|sprite|fanta|maaza|frooti|glucon[- ]d|tang|soda)\b/i.test(prodLower) || /\bzero\s+sugar\b/i.test(prodLower);
+      const isBeverage = (/\b(juice|drink|squash|syrup|sharbat|cold drink|energy drink|nimbu|cola|pepsi|coca[- ]cola|sprite|fanta|maaza|frooti|glucon[- ]d|tang|soda)\b/i.test(prodLower) || /\bzero\s+sugar\b/i.test(prodLower) || /\b(cold coffee|coffee milkshake|coffee drink|cold coffee can)\b/i.test(prodLower));
       const isTea = /\b(tea|chai|green tea|tea bags|red label|taj mahal|wagh bakri)\b/i.test(prodLower) && !/\b(tea tree|tea set|tea cup|tea mug|tree oil|cookie|biscuit)\b/i.test(prodLower);
-      const isCoffee = /\b(coffee|bru|nescafe|cappuccino|espresso|davidoff)\b/i.test(prodLower) && !/\b(coffee mug|mug|mugs|cup|cups|set|borosil|opalware)\b/i.test(prodLower);
+      const isCoffee = /\b(coffee|bru|nescafe|cappuccino|espresso|davidoff)\b/i.test(prodLower) && !/\b(coffee mug|mug|mugs|cup|cups|set|borosil|opalware)\b/i.test(prodLower) && !isBeverage;
 
-      const isGhee = /\b(ghee|dalda|vanaspati)\b/i.test(prodLower) && !/\b(cake|milk cake|biscuit|cookie|sweet|mithai|laddu|ladoo|halwa|soan papdi|burfi|barfi|peda|namkeen|chips|roast|dosa)\b/i.test(prodLower);
-      const isOil = /\b(oil|oils|sunflower|mustard|olive|refined|groundnut|sesame|canola)\b/i.test(prodLower) && !isGhee && !/\b(essential oil|hair oil|body oil|massage oil|engine|coconut hair|face oil|castor oil|mustard seed|oil pastel|paint)\b/i.test(prodLower);
+      const isGhee = /\b(ghee|dalda|vanaspati)\b/i.test(prodLower) && !isMithai && !isNamkeen && !isPooja && !/\b(cake|milk cake|biscuit|cookie|sweet|mithai|laddu|ladoo|halwa|soan papdi|burfi|barfi|peda|namkeen|chips|roast|dosa|ghevar|pooja|puja|non[- ]edible)\b/i.test(prodLower);
+      const isOil = /\b(oil|oils|sunflower|mustard|olive|refined|groundnut|sesame|canola|coconut oil|rice bran oil|cooking oil|edible oil)\b/i.test(prodLower) && !isGhee && !isSpice && !/\b(essential oil|hair oil|body oil|massage oil|engine|coconut hair|face oil|castor oil|mustard seed|oil pastel|paint|with natural oils)\b/i.test(prodLower);
 
-      const isSugar = /\b(sugar|jaggery|cheeni|shakkar|gur|mishri|boora|bura)\b/i.test(prodLower) && !/\b(zero sugar|sugar free|sugarfree|no added sugar|sugar plum|lipstick|lip|cosmetic|cereal|drink|cola|cookie|biscuit|chocolate|soda)\b/i.test(prodLower) && !isBeverage;
+      const isSugar = /\b(sugar|jaggery|cheeni|shakkar|gur|mishri|boora|bura|batasha)\b/i.test(prodLower) && !/\b(zero sugar|sugar free|sugarfree|no added sugar|sugar plum|lipstick|lip|cosmetic|cereal|drink|cola|cookie|biscuit|chocolate|soda)\b/i.test(prodLower) && !isBeverage;
       const isSalt = /\b(salt|namak|sendha)\b/i.test(prodLower) && !/\b(sugar|potato chips|biscuit|cookie|sauce|shampoo)\b/i.test(prodLower) && !isSugar;
 
       const isSauce = (/\b(ketchup|mayonnaise|spread|chilli sauce|soya sauce|schezwan|tomato sauce)\b/i.test(prodLower) || (/\bsauce\b/i.test(prodLower) && !/\b(pasta|noodle)\b/i.test(prodLower))) && !isBeverage;
@@ -250,56 +257,36 @@ App.Categorizer = (() => {
 
       const attaExclude = /\b(sunflower|batteries|attract|rattan|flourish|flower|rice flour|corn flour|gram flour)\b/i.test(prodLower) ||
                           /\b(zero|no|no[\s-]added)\s+maida\b/i.test(prodLower) ||
-                          isChocolate || isMithai || isCereal || isBiscuit || isNamkeen || isNoodle || isPasta || isBeverage;
+                          isChocolate || isMithai || isCereal || isBiscuit || isNamkeen || isNoodle || isPasta || isBeverage || isDryFruit;
       const isAtta = /\b(atta|chakki|multigrain atta|gehun)\b/i.test(prodLower) && !attaExclude;
-      const isFlour = /\b(flour|flours|maida|besan|suji|rava|sooji|corn flour|rice flour|gram flour)\b/i.test(prodLower) && !attaExclude && !isAtta;
-      const isRice = /\b(basmati|rice|poha|sella|mogra)\b/i.test(prodLower) && !/\b(rice light|rice lights|light|lights|led|flour|atta|noodle|bran oil)\b/i.test(prodLower);
-      const isDal = /\b(dal|daal|moong|masoor|urad|chana dal|rajma|arhar|toor|lentil|lobiya)\b/i.test(prodLower) && !/\b(besan|roasted chana|namkeen|chips)\b/i.test(prodLower);
+      const isFlour = /\b(flour|flours|maida|besan|suji|rava|sooji|corn flour|rice flour|gram flour|bajra flour|ragi flour)\b/i.test(prodLower) && !attaExclude && !isAtta && !isBiscuit && !isNamkeen;
+      const isRice = /\b(basmati|rice|poha|sella|mogra)\b/i.test(prodLower) && !/\b(rice light|rice lights|light|lights|led|flour|atta|noodle|bran oil|dog food|cat food)\b/i.test(prodLower);
+      const isDal = /\b(dal|daal|moong|masoor|urad|chana dal|rajma|arhar|toor|lentil|lobiya)\b/i.test(prodLower) && !isNamkeen && !isBiscuit && !/\b(besan|roasted chana|papad|mathri)\b/i.test(prodLower);
       const isDairy = /\b(milk|curd|paneer|butter|cheese|yogurt|lassi|khoa|cream)\b/i.test(prodLower) && !/\b(milk cake|milk chocolate|dairy milk|flavoured milk)\b/i.test(prodLower);
 
-      if (isChocolate) {
-        mainCat = 'Grocery'; subCat = 'Chocolates';
-      } else if (isMithai) {
-        mainCat = 'Grocery'; subCat = 'Sweets & Mithai';
-      } else if (isCereal) {
-        mainCat = 'Grocery'; subCat = 'Breakfast Cereals';
-      } else if (isBiscuit) {
-        mainCat = 'Grocery'; subCat = 'Biscuits & Cookies';
-      } else if (isNamkeen) {
-        mainCat = 'Grocery'; subCat = 'Snacks & Namkeen';
-      } else if (isNoodle) {
-        mainCat = 'Grocery'; subCat = 'Noodles';
-      } else if (isPasta) {
-        mainCat = 'Grocery'; subCat = 'Pasta & Macaroni';
-      } else if (isSauce) {
-        mainCat = 'Grocery'; subCat = 'Sauces & Ketchups';
-      } else if (isPickle) {
-        mainCat = 'Grocery'; subCat = 'Pickles & Chutneys';
-      } else if (isBeverage) {
-        mainCat = 'Grocery'; subCat = 'Beverages';
-      } else if (isTea) {
-        mainCat = 'Grocery'; subCat = 'Tea';
-      } else if (isCoffee) {
-        mainCat = 'Grocery'; subCat = 'Coffee';
-      } else if (isGhee) {
-        mainCat = 'Grocery'; subCat = 'Ghee';
-      } else if (isOil) {
-        mainCat = 'Grocery'; subCat = 'Oils';
-      } else if (isSugar) {
-        mainCat = 'Grocery'; subCat = 'Sugar';
-      } else if (isSalt) {
-        mainCat = 'Grocery'; subCat = 'Salt';
-      } else if (isAtta) {
-        mainCat = 'Grocery'; subCat = 'Atta';
-      } else if (isFlour) {
-        mainCat = 'Grocery'; subCat = 'Flours';
-      } else if (isRice) {
-        mainCat = 'Grocery'; subCat = 'Rice';
-      } else if (isDal) {
-        mainCat = 'Grocery'; subCat = 'Pulses & Lentils';
-      } else if (isDairy) {
-        mainCat = 'Grocery'; subCat = 'Dairy Products';
-      }
+      if (isChocolate) { mainCat = 'Grocery'; subCat = 'Chocolates'; }
+      else if (isMithai) { mainCat = 'Grocery'; subCat = 'Sweets & Mithai'; }
+      else if (isBiscuit) { mainCat = 'Grocery'; subCat = 'Biscuits & Cookies'; }
+      else if (isNamkeen) { mainCat = 'Grocery'; subCat = 'Snacks & Namkeen'; }
+      else if (isDryFruit) { mainCat = 'Grocery'; subCat = 'Dry Fruits & Nuts'; }
+      else if (isSpice) { mainCat = 'Grocery'; subCat = 'Spices & Masalas'; }
+      else if (isCereal) { mainCat = 'Grocery'; subCat = 'Breakfast Cereals'; }
+      else if (isNoodle) { mainCat = 'Grocery'; subCat = 'Noodles'; }
+      else if (isPasta) { mainCat = 'Grocery'; subCat = 'Pasta & Macaroni'; }
+      else if (isSauce) { mainCat = 'Grocery'; subCat = 'Sauces & Ketchups'; }
+      else if (isPickle) { mainCat = 'Grocery'; subCat = 'Pickles & Chutneys'; }
+      else if (isBeverage) { mainCat = 'Grocery'; subCat = 'Beverages'; }
+      else if (isTea) { mainCat = 'Grocery'; subCat = 'Tea'; }
+      else if (isCoffee) { mainCat = 'Grocery'; subCat = 'Coffee'; }
+      else if (isGhee) { mainCat = 'Grocery'; subCat = 'Ghee'; }
+      else if (isOil) { mainCat = 'Grocery'; subCat = 'Oils'; }
+      else if (isSugar) { mainCat = 'Grocery'; subCat = 'Sugar'; }
+      else if (isSalt) { mainCat = 'Grocery'; subCat = 'Salt'; }
+      else if (isAtta) { mainCat = 'Grocery'; subCat = 'Atta'; }
+      else if (isFlour) { mainCat = 'Grocery'; subCat = 'Flours'; }
+      else if (isRice) { mainCat = 'Grocery'; subCat = 'Rice'; }
+      else if (isDal) { mainCat = 'Grocery'; subCat = 'Pulses & Lentils'; }
+      else if (isDairy) { mainCat = 'Grocery'; subCat = 'Dairy Products'; }
     }
 
     // Fallback main category
