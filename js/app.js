@@ -1,5 +1,5 @@
 window.App = window.App || {};
-console.log('[ROUTE-DIAG] app.js v3.2 ACTIVE | ' + new Date().toISOString());
+console.log('[ROUTE-DIAG] app.js v3.3 ACTIVE | ' + new Date().toISOString());
 
 /* ============================================================
    MAIN APP — Router + State + UI helpers
@@ -140,6 +140,8 @@ App.UI = {
     const main = document.getElementById('main-content');
     if (!main) return;
 
+    const isAuthenticated = !!(App.Auth && App.Auth.isAuthenticated);
+
     console.log(`[EDGE-LOOP] ${_appTs()} RENDER #${renderNum} START: route="${route}" hash="${window.location.hash}" dataset_id=${dataset_id}`);
     console.log(`[ROUTE-DIAG] RENDER_START #${renderNum} | route="${route}" | HASH="${window.location.hash}" | isAuthenticated=${isAuthenticated}`);
 
@@ -147,7 +149,7 @@ App.UI = {
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
     const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
 
-    console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_GUARD_START: route="${route}" isInitialized=${App.Auth?.isInitialized} isAuthenticated=${App.Auth?.isAuthenticated}`);
+    console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_GUARD_START: route="${route}" isInitialized=${App.Auth?.isInitialized} isAuthenticated=${isAuthenticated}`);
 
     // 1. If Auth service is initializing, render clean loading state (NEVER redirect while pending)
     if (window.App.Auth && !App.Auth.isInitialized) {
@@ -159,8 +161,6 @@ App.UI = {
         </div>`;
       return;
     }
-
-    const isAuthenticated = App.Auth ? App.Auth.isAuthenticated : false;
 
     // 2. Guard: Authenticated user attempting to visit Login, Signup, or Forgot Password
     if (isAuthenticated && AUTH_PAGES.includes(route)) {
