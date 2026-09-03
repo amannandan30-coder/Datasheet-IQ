@@ -198,6 +198,11 @@ App.Views.Login = (() => {
       }
     } catch (err) {
       console.error(`[EDGE-LOOP] GOOGLE_ERROR in login handler: ${err.message}`);
+      if (App.Auth?.isAuthenticated) {
+        console.log(`[EDGE-LOOP] GOOGLE_ERROR recovered: user is authenticated, navigating to dashboard`);
+        App.Router.go('dashboard');
+        return;
+      }
       showError(err.message);
       if (googleBtn) {
         googleBtn.disabled = false;

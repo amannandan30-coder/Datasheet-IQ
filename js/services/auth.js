@@ -60,7 +60,7 @@ App.Auth = (() => {
         // Initialize Firebase App if not already initialized (Single Shared App)
         if (!firebase.apps || !firebase.apps.length) {
           firebase.initializeApp(App.Config.Firebase);
-          console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} FIREBASE_INITIALIZED (projectId: ${App.Config?.Firebase?.projectId})`);
+          console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} FIREBASE_INITIALIZED (projectId: ${App.Config?.Firebase?.projectId}, authDomain: ${App.Config?.Firebase?.authDomain})`);
         } else {
           console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} FIREBASE_ALREADY_INITIALIZED (apps.length: ${firebase.apps.length})`);
         }
@@ -134,13 +134,28 @@ App.Auth = (() => {
       state.context.userId = user.uid;
       state.context.tenantId = user.tenantId || null;
       state.context.shopId = null;
+      try {
+        sessionStorage.setItem('liq_auth_active', 'true');
+        localStorage.setItem('liq_auth_cached_user', JSON.stringify(state.currentUser));
+      } catch(e){}
     } else {
+      // Guard: Ignore transient null events in Edge if session was already active and not explicitly signed out
+      const hadActiveSession = sessionStorage.getItem('liq_auth_active') === 'true';
+      if (hadActiveSession && state.isAuthenticated) {
+        console.warn(`[EDGE-AUTH-FORENSIC] ${_ts()} Transient null auth event ignored to prevent Edge popup close loop`);
+        return;
+      }
+
       console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} AUTH_EVENT\n  EVENT: AUTH_SIGNED_OUT\n  AUTH_USER: null\n  CURRENT_USER: null\n  URL: ${window.location.href}\n  ROUTE: ${App.State?.route}`);
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
       state.context.tenantId = null;
       state.context.shopId = null;
+      try {
+        sessionStorage.removeItem('liq_auth_active');
+        localStorage.removeItem('liq_auth_cached_user');
+      } catch(e){}
     }
 
     const wasInitialized = state.isInitialized;
@@ -229,16 +244,28 @@ App.Auth = (() => {
       
       const cred = await _auth.signInWithPopup(provider);
       console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_SUCCESS: user=${cred?.user?.email} uid=${cred?.user?.uid}`);
+      try {
+        sessionStorage.setItem('liq_auth_active', 'true');
+      } catch(e){}
       _startUserStabilityMonitor('GOOGLE_SUCCESS_POPUP');
       return cred.user;
     } catch (err) {
       console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_ERROR: code=${err.code} msg=${err.message} url=${window.location.href} route=${App.State?.route}`);
       
-      // If auth.currentUser is already populated (e.g. onAuthStateChanged succeeded before popup closed)
-      if (_auth && _auth.currentUser) {
-        console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_RECOVERED: auth.currentUser exists (${_auth.currentUser.email})`);
+      // If auth.currentUser or state.currentUser is already populated
+      if ((_auth && _auth.currentUser) || state.currentUser) {
+        console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_RECOVERED: currentUser exists (${_auth?.currentUser?.email || state.currentUser?.email})`);
+        try {
+          sessionStorage.setItem('liq_auth_active', 'true');
+        } catch(e){}
         _startUserStabilityMonitor('GOOGLE_RECOVERED');
-        return _auth.currentUser;
+        return _auth?.currentUser || state.currentUser;
+      }
+
+      // If popup was closed but user is authenticated
+      if (err.code === 'auth/popup-closed-by-user' && state.isAuthenticated) {
+        console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} Popup closed after successful auth, ignoring error`);
+        return state.currentUser;
       }
 
       // Fallback for popup blocked environments
@@ -277,6 +304,10 @@ App.Auth = (() => {
 
     try {
       console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} LOGOUT START`);
+      try {
+        sessionStorage.removeItem('liq_auth_active');
+        localStorage.removeItem('liq_auth_cached_user');
+      } catch(e){}
       await _auth.signOut();
       state.currentUser = null;
       state.isAuthenticated = false;
