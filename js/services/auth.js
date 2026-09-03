@@ -6,6 +6,8 @@ window.App = window.App || {};
 App.Auth = (() => {
   let _auth = null;
   let _authListeners = [];
+  let _initPromise = null;
+  let _unsubscribeAuthState = null;
 
   const state = {
     isInitialized: false,
@@ -21,37 +23,65 @@ App.Auth = (() => {
     }
   };
 
-  /* Initialize Firebase App & Auth Listener */
+  /* Initialize Firebase App & Auth Listener (Single Shared Instance) */
   function init() {
-    if (state.isInitialized && _auth) return;
+    if (_initPromise) return _initPromise;
 
-    if (typeof firebase === 'undefined' || !firebase.initializeApp) {
-      console.warn('[Firebase Auth] Firebase Web SDK not loaded. Operating in fallback state.');
-      state.isInitialized = true;
-      _notifyListeners();
-      return;
-    }
+    console.log('[AUTH] initialization started');
 
-    try {
-      // Initialize Firebase App if not already initialized
-      if (!firebase.apps || !firebase.apps.length) {
-        firebase.initializeApp(App.Config.Firebase);
+    _initPromise = new Promise((resolve) => {
+      if (typeof firebase === 'undefined' || !firebase.initializeApp) {
+        console.warn('[AUTH] Firebase Web SDK not loaded. Operating in fallback state.');
+        state.isInitialized = true;
+        _notifyListeners();
+        resolve(state);
+        return;
       }
-      _auth = firebase.auth();
 
-      // Listen for Firebase Auth state changes (Single Source of Truth)
-      _auth.onAuthStateChanged((user) => {
-        _handleAuthStateChange(user);
-      });
-    } catch (err) {
-      console.error('[Firebase Auth] Initialization error:', err);
-      state.isInitialized = true;
-      _notifyListeners();
-    }
+      try {
+        // Initialize Firebase App if not already initialized (Single Shared App)
+        if (!firebase.apps || !firebase.apps.length) {
+          firebase.initializeApp(App.Config.Firebase);
+        }
+        _auth = firebase.auth();
+
+        // 1. Explicitly configure browserLocalPersistence to avoid session loss across redirects
+        _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+          console.warn('[AUTH] Error setting persistence:', err.message);
+        });
+
+        // 2. Process Redirect Result if returning from Google signInWithRedirect
+        _auth.getRedirectResult().then((result) => {
+          if (result && result.user) {
+            console.log('[AUTH] redirect result processed: signed-in via Google redirect');
+          } else {
+            console.log('[AUTH] redirect result processed');
+          }
+        }).catch((err) => {
+          console.error('[AUTH] redirect result processing error:', err.message);
+        });
+
+        // 3. Register Single Source of Truth Auth State Listener (Only Once)
+        if (!_unsubscribeAuthState) {
+          _unsubscribeAuthState = _auth.onAuthStateChanged((user) => {
+            _handleAuthStateChange(user);
+            resolve(state);
+          });
+        }
+      } catch (err) {
+        console.error('[AUTH] Initialization error:', err);
+        state.isInitialized = true;
+        _notifyListeners();
+        resolve(state);
+      }
+    });
+
+    return _initPromise;
   }
 
   function _handleAuthStateChange(user) {
     if (user) {
+      console.log('[AUTH] state changed: signed-in');
       state.currentUser = {
         uid: user.uid,
         email: user.email || '',
@@ -67,6 +97,7 @@ App.Auth = (() => {
       state.context.tenantId = user.tenantId || null;
       state.context.shopId = null; // Reserved for multi-shop data isolation
     } else {
+      console.log('[AUTH] state changed: signed-out');
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
@@ -74,18 +105,19 @@ App.Auth = (() => {
       state.context.shopId = null;
     }
 
+    const wasInitialized = state.isInitialized;
     state.isInitialized = true;
     _notifyListeners();
 
-    // Re-render UI on auth state change
-    if (window.App && window.App.UI && typeof window.App.UI.render === 'function') {
+    // Re-render UI on auth state change if app is already initialized
+    if (wasInitialized && window.App && window.App.UI && typeof window.App.UI.render === 'function') {
       window.App.UI.render();
     }
   }
 
   function _notifyListeners() {
     _authListeners.forEach(cb => {
-      try { cb(state); } catch (e) { console.error('[Auth Listener Error]', e); }
+      try { cb(state); } catch (e) { console.error('[AUTH] Listener Error', e); }
     });
   }
 
@@ -108,10 +140,12 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
     
     try {
+      console.log('[AUTH] Email signup started');
       const cred = await _auth.createUserWithEmailAndPassword(email, password);
       if (displayName && cred.user) {
         await cred.user.updateProfile({ displayName: displayName.trim() });
       }
+      console.log('[AUTH] Email signup success');
       return cred.user;
     } catch (err) {
       throw new Error(mapErrorMessage(err));
@@ -123,27 +157,32 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
+      console.log('[AUTH] Email sign-in started');
       const cred = await _auth.signInWithEmailAndPassword(email, password);
+      console.log('[AUTH] Email sign-in success');
       return cred.user;
     } catch (err) {
       throw new Error(mapErrorMessage(err));
     }
   }
 
-  // Google Sign-In
+  // Google Sign-In (Executed ONLY on explicit user click)
   async function signInWithGoogle() {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
+      console.log('[AUTH] Google sign-in started');
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
       
       const cred = await _auth.signInWithPopup(provider);
+      console.log('[AUTH] Google sign-in success');
       return cred.user;
     } catch (err) {
       // Fallback for popup blocked environments
       if (err.code === 'auth/popup-blocked') {
+        console.warn('[AUTH] Google popup blocked, falling back to redirect flow');
         try {
           const provider = new firebase.auth.GoogleAuthProvider();
           await _auth.signInWithRedirect(provider);
@@ -161,7 +200,9 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
+      console.log('[AUTH] Password reset requested');
       await _auth.sendPasswordResetEmail(email);
+      console.log('[AUTH] Password reset email sent');
       return true;
     } catch (err) {
       throw new Error(mapErrorMessage(err));
@@ -173,14 +214,16 @@ App.Auth = (() => {
     if (!_auth) return;
 
     try {
+      console.log('[AUTH] Sign out requested');
       await _auth.signOut();
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
       state.context.tenantId = null;
       state.context.shopId = null;
+      console.log('[AUTH] Sign out success');
     } catch (err) {
-      console.error('[SignOut Error]', err);
+      console.error('[AUTH] Sign out error:', err);
       throw new Error(mapErrorMessage(err));
     }
   }

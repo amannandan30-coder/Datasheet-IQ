@@ -87,8 +87,9 @@ App.UI = {
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
     const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
 
-    // 1. If Auth service is initializing, render clean loading state
+    // 1. If Auth service is initializing, render clean loading state (NEVER redirect while pending)
     if (window.App.Auth && !App.Auth.isInitialized) {
+      console.log('[AUTH] Route guard waiting for auth initialization…');
       main.innerHTML = `
         <div class="flex flex-col items-center justify-center" style="height:70vh">
           <div class="spinner mb-16" style="width:36px;height:36px"></div>
@@ -101,14 +102,20 @@ App.UI = {
 
     // 2. Guard: Authenticated user attempting to visit Login, Signup, or Forgot Password
     if (isAuthenticated && AUTH_PAGES.includes(route)) {
+      console.log(`[AUTH] protected route redirected: authenticated user visiting ${route} -> going to dashboard`);
       App.Router.go('dashboard');
       return;
     }
 
     // 3. Guard: Unauthenticated user attempting to access a protected route
     if (!isAuthenticated && !PUBLIC_ROUTES.includes(route)) {
+      console.log(`[AUTH] protected route redirected: unauthenticated user attempting ${route} -> going to login`);
       App.Router.go('login');
       return;
+    }
+
+    if (!PUBLIC_ROUTES.includes(route) && isAuthenticated) {
+      console.log(`[AUTH] protected route allowed: ${route}`);
     }
 
     // Toggle Landing / Auth Fullscreen Mode layout on document.body AND html element
@@ -645,9 +652,9 @@ App.GlobalSearch = {
 (async function init() {
   await App.DB.open();
 
-  // Initialize Firebase Authentication Service
+  // Initialize Firebase Authentication Service & await first auth state resolution
   if (window.App && window.App.Auth) {
-    App.Auth.init();
+    await App.Auth.init();
   }
 
   // Restore active dataset

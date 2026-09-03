@@ -177,9 +177,13 @@ App.Views.Login = (() => {
     }
 
     try {
-      await App.Auth.signInWithGoogle();
-      App.UI.toast('Signed in with Google! 🌐');
-      App.Router.go('dashboard');
+      const user = await App.Auth.signInWithGoogle();
+      if (user) {
+        App.UI.toast('Signed in with Google! 🌐');
+        if (App.State.route === 'login' || App.State.route === 'signup') {
+          App.Router.go('dashboard');
+        }
+      }
     } catch (err) {
       showError(err.message);
       if (googleBtn) {
