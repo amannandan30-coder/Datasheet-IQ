@@ -171,7 +171,7 @@ App.Views.Login = (() => {
   async function handleGoogleSignIn() {
     const googleBtn = document.getElementById('google-signin-btn');
     hideError();
-    console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn START, currentRoute=${App.State?.route}, hash=${window.location.hash}`);
+    console.log(`[EDGE-AUTH-FORENSIC] GOOGLE_CLICK on login page, currentRoute=${App.State?.route} hash=${window.location.hash}`);
 
     if (googleBtn) {
       googleBtn.disabled = true;
@@ -179,27 +179,25 @@ App.Views.Login = (() => {
     }
 
     try {
-      console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn calling App.Auth.signInWithGoogle()`);
+      console.log(`[EDGE-AUTH-FORENSIC] GOOGLE_CLICK calling App.Auth.signInWithGoogle()`);
       const user = await App.Auth.signInWithGoogle();
-      console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn signInWithGoogle() RESOLVED, user=${user?.email}, currentRoute=${App.State?.route}, hash=${window.location.hash}`);
+      console.log(`[EDGE-AUTH-FORENSIC] GOOGLE_CLICK signInWithGoogle resolved: user_exists=${!!user} email=${user?.email} currentRoute=${App.State?.route}`);
       
       if (user) {
         App.UI.toast('Signed in with Google! 🌐');
-        // Only navigate if we're still on an auth page
-        // (onAuthStateChanged may have already redirected us to dashboard)
         const currentRoute = App.State.route;
-        console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn post-login route check: "${currentRoute}"`);
+        console.log(`[EDGE-AUTH-FORENSIC] GOOGLE_CLICK post-login route check: "${currentRoute}"`);
         if (currentRoute === 'login' || currentRoute === 'signup') {
-          console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn navigating to dashboard`);
+          console.log(`[EDGE-AUTH-FORENSIC] GOOGLE_CLICK navigating to dashboard`);
           App.Router.go('dashboard');
         } else {
-          console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn SKIP navigation (already on "${currentRoute}")`);
+          console.log(`[EDGE-AUTH-FORENSIC] GOOGLE_CLICK SKIP navigation (already on "${currentRoute}")`);
         }
       } else {
-        console.log(`[AUTH-FLOW] LOGIN.handleGoogleSignIn user is null (redirect flow started)`);
+        console.log(`[EDGE-AUTH-FORENSIC] GOOGLE_CLICK user is null (redirect flow started)`);
       }
     } catch (err) {
-      console.error(`[AUTH-FLOW] LOGIN.handleGoogleSignIn ERROR: ${err.message}`);
+      console.error(`[EDGE-AUTH-FORENSIC] GOOGLE_CLICK error: ${err.message}`);
       showError(err.message);
       if (googleBtn) {
         googleBtn.disabled = false;

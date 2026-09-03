@@ -10,15 +10,15 @@ function _appTs() { return (performance.now() - _appT0).toFixed(1) + 'ms'; }
 
 // Global error handlers for JS exceptions and unhandled promise rejections
 window.onerror = function(msg, source, line, col, error) {
-  console.error(`[AUTH-FLOW] ${_appTs()} JS ERROR: ${msg} at ${source}:${line}:${col}`, error);
+  console.error(`[EDGE-AUTH-FORENSIC] ${_appTs()} JS_ERROR: ${msg} at ${source}:${line}:${col}`, error);
 };
 window.addEventListener('unhandledrejection', function(event) {
-  console.error(`[AUTH-FLOW] ${_appTs()} UNHANDLED PROMISE: ${event.reason}`, event.reason);
+  console.error(`[EDGE-AUTH-FORENSIC] ${_appTs()} UNHANDLED_PROMISE: ${event.reason}`, event.reason);
 });
 
 // Detect page reload events
 window.addEventListener('beforeunload', function() {
-  console.log(`[AUTH-FLOW] ${_appTs()} BEFORE UNLOAD (page is unloading)`);
+  console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} PAGE_RELOAD (page beforeunload event)`);
 });
 
 App.State = {
@@ -28,7 +28,6 @@ App.State = {
 };
 
 /* ── Router ──────────────────────────────────────────────── */
-/* ── Router ──────────────────────────────────────────────── */
 App.Router = {
   historyStack: [],
 
@@ -36,13 +35,14 @@ App.Router = {
     const qs = new URLSearchParams(params).toString();
     const targetHash = '#/' + page + (qs ? '?' + qs : '');
     const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown';
-    console.log(`[AUTH-FLOW] ${_appTs()} ROUTER.GO: target="${page}", currentHash="${window.location.hash}", targetHash="${targetHash}", caller=${caller}`);
+    const fromRoute = App.State?.route || 'unknown';
+    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_CHANGE: FROM="${fromRoute}" TO="${page}" REASON="Router.go" caller=${caller}`);
 
     if (window.location.hash === targetHash) {
-      console.log(`[AUTH-FLOW] ${_appTs()} ROUTER.GO: same hash, calling render() directly`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_CHANGE: same hash, triggering render directly`);
       App.UI.render();
     } else {
-      console.log(`[AUTH-FLOW] ${_appTs()} ROUTER.GO: setting hash to "${targetHash}"`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_CHANGE: setting window.location.hash="${targetHash}"`);
       window.location.hash = targetHash;
     }
   },
@@ -62,7 +62,7 @@ App.Router = {
     const prevRoute = App.State.route;
     App.State.route  = page || 'landing';
     App.State.params = params;
-    console.log(`[AUTH-FLOW] ${_appTs()} ROUTER.PARSE: from="${prevRoute}" to="${App.State.route}" hash="${window.location.hash}"`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_CHECK: prev="${prevRoute}" current="${App.State.route}" hash="${window.location.hash}"`);
 
     const currentHash = rawHash;
     const stack = this.historyStack;
@@ -109,17 +109,17 @@ App.UI = {
     const main = document.getElementById('main-content');
     if (!main) return;
 
-    console.log(`[AUTH-FLOW] ${_appTs()} RENDER #${renderNum} START, route="${route}", hash="${window.location.hash}", dataset_id=${dataset_id}`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} RENDER #${renderNum} START: route="${route}" hash="${window.location.hash}" dataset_id=${dataset_id}`);
 
     // ── FIREBASE AUTHENTICATION ROUTE GUARD ──────────────────
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
     const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
 
-    console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD START route="${route}", isInitialized=${App.Auth?.isInitialized}, isAuthenticated=${App.Auth?.isAuthenticated}`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_START: route="${route}" isInitialized=${App.Auth?.isInitialized} isAuthenticated=${App.Auth?.isAuthenticated}`);
 
     // 1. If Auth service is initializing, render clean loading state (NEVER redirect while pending)
     if (window.App.Auth && !App.Auth.isInitialized) {
-      console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD DECISION: WAITING (auth not initialized)`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_DECISION: WAITING (auth initializing)`);
       main.innerHTML = `
         <div class="flex flex-col items-center justify-center" style="height:70vh">
           <div class="spinner mb-16" style="width:36px;height:36px"></div>
@@ -132,19 +132,19 @@ App.UI = {
 
     // 2. Guard: Authenticated user attempting to visit Login, Signup, or Forgot Password
     if (isAuthenticated && AUTH_PAGES.includes(route)) {
-      console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD DECISION: REDIRECT authenticated user from "${route}" → dashboard`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_DECISION: REDIRECT authenticated user from "${route}" → dashboard`);
       App.Router.go('dashboard');
       return;
     }
 
     // 3. Guard: Unauthenticated user attempting to access a protected route
     if (!isAuthenticated && !PUBLIC_ROUTES.includes(route)) {
-      console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD DECISION: REDIRECT unauthenticated user from "${route}" → login`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_DECISION: REDIRECT unauthenticated user from "${route}" → login`);
       App.Router.go('login');
       return;
     }
 
-    console.log(`[AUTH-FLOW] ${_appTs()} ROUTE GUARD DECISION: ALLOW "${route}"`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_appTs()} ROUTE_GUARD_DECISION: ALLOW "${route}"`);
 
     // Toggle Landing / Auth Fullscreen Mode layout on document.body AND html element
     const isFullScreenPage = PUBLIC_ROUTES.includes(route);

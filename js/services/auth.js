@@ -28,15 +28,16 @@ App.Auth = (() => {
   function init() {
     if (_initPromise) return _initPromise;
 
-    console.log(`[AUTH-FLOW] ${_ts()} AUTH INIT START`);
-    console.log(`[AUTH-FLOW] ${_ts()} CURRENT URL: ${window.location.href}`);
-    console.log(`[AUTH-FLOW] ${_ts()} CURRENT HASH: ${window.location.hash}`);
-    console.log(`[AUTH-FLOW] ${_ts()} CURRENT ORIGIN: ${window.location.origin}`);
-    console.log(`[AUTH-FLOW] ${_ts()} CURRENT HOSTNAME: ${window.location.hostname}`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} AUTH_INIT_START`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} CURRENT_URL: ${window.location.href}`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} CURRENT_HASH: ${window.location.hash}`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} CURRENT_ORIGIN: ${window.location.origin}`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} CURRENT_HOSTNAME: ${window.location.hostname}`);
+    console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} USER_AGENT: ${navigator.userAgent}`);
 
     _initPromise = new Promise(async (resolve) => {
       if (typeof firebase === 'undefined' || !firebase.initializeApp) {
-        console.warn(`[AUTH-FLOW] ${_ts()} Firebase Web SDK not loaded. Fallback state.`);
+        console.warn(`[EDGE-AUTH-FORENSIC] ${_ts()} Firebase Web SDK not loaded. Fallback state.`);
         state.isInitialized = true;
         _notifyListeners();
         resolve(state);
@@ -47,59 +48,56 @@ App.Auth = (() => {
         // Initialize Firebase App if not already initialized (Single Shared App)
         if (!firebase.apps || !firebase.apps.length) {
           firebase.initializeApp(App.Config.Firebase);
-          console.log(`[AUTH-FLOW] ${_ts()} FIREBASE INITIALIZED (projectId: ${App.Config?.Firebase?.projectId})`);
+          console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} FIREBASE_INITIALIZED (projectId: ${App.Config?.Firebase?.projectId})`);
         } else {
-          console.log(`[AUTH-FLOW] ${_ts()} FIREBASE ALREADY INITIALIZED (apps.length: ${firebase.apps.length})`);
+          console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} FIREBASE_ALREADY_INITIALIZED (apps.length: ${firebase.apps.length})`);
         }
         
         _auth = firebase.auth();
-        console.log(`[AUTH-FLOW] ${_ts()} AUTH INSTANCE CREATED`);
+        console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} AUTH_INSTANCE_CREATED`);
 
         // 1. Explicitly configure browserLocalPersistence
-        console.log(`[AUTH-FLOW] ${_ts()} PERSISTENCE START`);
+        console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} PERSISTENCE_START`);
         try {
           await _auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-          console.log(`[AUTH-FLOW] ${_ts()} PERSISTENCE RESULT: SUCCESS (LOCAL)`);
+          console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} PERSISTENCE_SUCCESS (LOCAL)`);
         } catch (err) {
-          console.warn(`[AUTH-FLOW] ${_ts()} PERSISTENCE RESULT: ERROR - ${err.code} ${err.message}`);
+          console.warn(`[EDGE-AUTH-FORENSIC] ${_ts()} PERSISTENCE_ERROR: code=${err.code} msg=${err.message}`);
         }
 
         // 2. Process Redirect Result BEFORE registering onAuthStateChanged
-        //    This prevents the race condition where onAuthStateChanged fires with null
-        //    before the redirect result is processed, causing a false "signed out" state.
-        console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT START (awaiting)`);
+        //    This prevents race conditions where onAuthStateChanged fires before redirect resolution.
+        console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} REDIRECT_RESULT_START (awaiting)`);
         _isProcessingRedirect = true;
         try {
           const redirectResult = await _auth.getRedirectResult();
           if (redirectResult && redirectResult.user) {
-            console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT: SUCCESS, user: ${redirectResult.user.email}`);
+            console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} REDIRECT_RESULT_SUCCESS: user=${redirectResult.user.email} uid=${redirectResult.user.uid}`);
           } else {
-            console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT: NULL (no pending redirect)`);
+            console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} REDIRECT_RESULT_NULL (no pending redirect)`);
           }
         } catch (err) {
-          // auth/credential-already-in-use or other redirect errors
-          console.error(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT ERROR: ${err.code} ${err.message}`);
+          console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} REDIRECT_RESULT_ERROR: code=${err.code} msg=${err.message}`);
         }
         _isProcessingRedirect = false;
-        console.log(`[AUTH-FLOW] ${_ts()} REDIRECT RESULT COMPLETE`);
+        console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} REDIRECT_RESULT_COMPLETE`);
 
-        // 3. NOW register the onAuthStateChanged listener (after redirect is processed)
-        //    This guarantees the first onAuthStateChanged call reflects the true auth state
-        //    including any redirect-based sign-in.
+        // 3. NOW register the single onAuthStateChanged listener
         let _resolved = false;
         if (!_unsubscribeAuthState) {
-          console.log(`[AUTH-FLOW] ${_ts()} REGISTERING onAuthStateChanged listener`);
+          console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} REGISTERING onAuthStateChanged listener`);
           _unsubscribeAuthState = _auth.onAuthStateChanged((user) => {
-            console.log(`[AUTH-FLOW] ${_ts()} onAuthStateChanged FIRED, user: ${user ? user.email : 'null'}, wasInitialized: ${state.isInitialized}, alreadyResolved: ${_resolved}`);
+            console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} AUTH_STATE_CHANGED: user_exists=${!!user}, uid_exists=${!!user?.uid}, email=${user ? user.email : 'null'}, wasInitialized=${state.isInitialized}`);
             _handleAuthStateChange(user);
             if (!_resolved) {
               _resolved = true;
+              console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} AUTH_INIT_COMPLETE (resolved init promise)`);
               resolve(state);
             }
           });
         }
       } catch (err) {
-        console.error(`[AUTH-FLOW] ${_ts()} Initialization EXCEPTION:`, err);
+        console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} AUTH_INIT_EXCEPTION:`, err);
         state.isInitialized = true;
         _notifyListeners();
         resolve(state);
@@ -111,7 +109,7 @@ App.Auth = (() => {
 
   function _handleAuthStateChange(user) {
     if (user) {
-      console.log(`[AUTH-FLOW] ${_ts()} AUTH STATE SIGNED_IN, email: ${user.email}, uid: ${user.uid}`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} AUTH_STATE_SIGNED_IN: user_exists=true uid_exists=true email=${user.email} uid=${user.uid}`);
       state.currentUser = {
         uid: user.uid,
         email: user.email || '',
@@ -124,8 +122,9 @@ App.Auth = (() => {
       state.context.userId = user.uid;
       state.context.tenantId = user.tenantId || null;
       state.context.shopId = null;
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} CURRENT_USER: uid=${user.uid} email=${user.email} displayName="${state.currentUser.displayName}"`);
     } else {
-      console.log(`[AUTH-FLOW] ${_ts()} AUTH STATE SIGNED_OUT`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} AUTH_STATE_SIGNED_OUT: user_exists=false uid_exists=false`);
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
@@ -135,22 +134,21 @@ App.Auth = (() => {
 
     const wasInitialized = state.isInitialized;
     state.isInitialized = true;
-    console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange: wasInitialized=${wasInitialized}, isAuthenticated=${state.isAuthenticated}`);
     _notifyListeners();
 
     // Re-render UI on auth state change if app is already initialized
     // (Skip during redirect processing to prevent premature renders)
     if (wasInitialized && !_isProcessingRedirect && window.App && window.App.UI && typeof window.App.UI.render === 'function') {
-      console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange TRIGGERING App.UI.render()`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} _handleAuthStateChange TRIGGERING App.UI.render() (wasInitialized=true)`);
       window.App.UI.render();
     } else {
-      console.log(`[AUTH-FLOW] ${_ts()} _handleAuthStateChange SKIPPING App.UI.render() (wasInitialized=${wasInitialized}, isProcessingRedirect=${_isProcessingRedirect})`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} _handleAuthStateChange SKIPPING App.UI.render() (wasInitialized=${wasInitialized}, isProcessingRedirect=${_isProcessingRedirect})`);
     }
   }
 
   function _notifyListeners() {
     _authListeners.forEach(cb => {
-      try { cb(state); } catch (e) { console.error(`[AUTH-FLOW] ${_ts()} Listener Error`, e); }
+      try { cb(state); } catch (e) { console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} Listener Error`, e); }
     });
   }
 
@@ -173,15 +171,15 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
     
     try {
-      console.log(`[AUTH-FLOW] ${_ts()} Email signup start`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} Email signup start`);
       const cred = await _auth.createUserWithEmailAndPassword(email, password);
       if (displayName && cred.user) {
         await cred.user.updateProfile({ displayName: displayName.trim() });
       }
-      console.log(`[AUTH-FLOW] ${_ts()} Email signup success`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} Email signup success`);
       return cred.user;
     } catch (err) {
-      console.error(`[AUTH-FLOW] ${_ts()} Email signup error: ${err.code} ${err.message}`);
+      console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} Email signup error: ${err.code} ${err.message}`);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -191,17 +189,17 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
-      console.log(`[AUTH-FLOW] ${_ts()} Email sign-in start`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} Email sign-in start`);
       const cred = await _auth.signInWithEmailAndPassword(email, password);
-      console.log(`[AUTH-FLOW] ${_ts()} Email sign-in success`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} Email sign-in success`);
       return cred.user;
     } catch (err) {
-      console.error(`[AUTH-FLOW] ${_ts()} Email sign-in error: ${err.code} ${err.message}`);
+      console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} Email sign-in error: ${err.code} ${err.message}`);
       throw new Error(mapErrorMessage(err));
     }
   }
 
-  // Google Sign-In (Executed ONLY on explicit user click)
+  // Google Sign-In with explicit prompt: 'select_account'
   async function signInWithGoogle() {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
@@ -210,25 +208,33 @@ App.Auth = (() => {
     }
 
     try {
-      console.log(`[AUTH-FLOW] ${_ts()} GOOGLE SIGN-IN START (signInWithPopup)`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_POPUP_START (provider with prompt: select_account)`);
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
       
+      // Explicitly request account selection so account chooser appears on both Chrome and Edge
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
       const cred = await _auth.signInWithPopup(provider);
-      console.log(`[AUTH-FLOW] ${_ts()} GOOGLE SIGN-IN signInWithPopup RESOLVED, user: ${cred?.user?.email}`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_POPUP_SUCCESS: user_exists=true uid_exists=true user=${cred?.user?.email} uid=${cred?.user?.uid}`);
       return cred.user;
     } catch (err) {
-      console.error(`[AUTH-FLOW] ${_ts()} GOOGLE SIGN-IN ERROR: code=${err.code}, msg=${err.message}, url=${window.location.href}, route=${App.State?.route}, hasCurrentUser=${!!_auth?.currentUser}, isInitialized=${state.isInitialized}`);
+      console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_POPUP_ERROR: code=${err.code} msg=${err.message} url=${window.location.href} route=${App.State?.route} hasCurrentUser=${!!_auth?.currentUser} isInitialized=${state.isInitialized}`);
       // Fallback for popup blocked environments (ONLY if on http/https)
       if (err.code === 'auth/popup-blocked' && window.location.protocol !== 'file:') {
-        console.warn(`[AUTH-FLOW] ${_ts()} Google popup blocked, starting signInWithRedirect`);
+        console.warn(`[EDGE-AUTH-FORENSIC] ${_ts()} Google popup blocked, starting signInWithRedirect`);
         try {
           const provider = new firebase.auth.GoogleAuthProvider();
+          provider.addScope('email');
+          provider.addScope('profile');
+          provider.setCustomParameters({ prompt: 'select_account' });
           await _auth.signInWithRedirect(provider);
           return null;
         } catch (redirErr) {
-          console.error(`[AUTH-FLOW] ${_ts()} GOOGLE REDIRECT ERROR: ${redirErr.code} ${redirErr.message}`);
+          console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_REDIRECT_ERROR: ${redirErr.code} ${redirErr.message}`);
           throw new Error(mapErrorMessage(redirErr));
         }
       }
@@ -241,12 +247,12 @@ App.Auth = (() => {
     if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
 
     try {
-      console.log(`[AUTH-FLOW] ${_ts()} Password reset start`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} Password reset start`);
       await _auth.sendPasswordResetEmail(email);
-      console.log(`[AUTH-FLOW] ${_ts()} Password reset email sent`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} Password reset email sent`);
       return true;
     } catch (err) {
-      console.error(`[AUTH-FLOW] ${_ts()} Password reset error: ${err.code} ${err.message}`);
+      console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} Password reset error: ${err.code} ${err.message}`);
       throw new Error(mapErrorMessage(err));
     }
   }
@@ -256,16 +262,16 @@ App.Auth = (() => {
     if (!_auth) return;
 
     try {
-      console.log(`[AUTH-FLOW] ${_ts()} LOGOUT START`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} LOGOUT START`);
       await _auth.signOut();
       state.currentUser = null;
       state.isAuthenticated = false;
       state.context.userId = null;
       state.context.tenantId = null;
       state.context.shopId = null;
-      console.log(`[AUTH-FLOW] ${_ts()} LOGOUT SUCCESS`);
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} LOGOUT SUCCESS`);
     } catch (err) {
-      console.error(`[AUTH-FLOW] ${_ts()} LOGOUT ERROR: ${err.code} ${err.message}`);
+      console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} LOGOUT ERROR: ${err.code} ${err.message}`);
       throw new Error(mapErrorMessage(err));
     }
   }
