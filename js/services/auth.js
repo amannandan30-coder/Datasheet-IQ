@@ -218,15 +218,25 @@ App.Auth = (() => {
       throw new Error('Google Sign-In requires running over an HTTP web server (e.g. https://liquidation-iq.vercel.app or http://127.0.0.1:8080). Opening index.html directly from a local file (file://) is not supported by Google OAuth.');
     }
 
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('email');
+    provider.addScope('profile');
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
+
+    const isEdge = /Edg\//i.test(navigator.userAgent);
+
+    // In Microsoft Edge with Tracking Prevention, top-level signInWithRedirect bypasses iframe storage restrictions
+    if (isEdge && window.location.protocol.startsWith('http')) {
+      console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_START: Microsoft Edge detected, using top-level signInWithRedirect (select_account)`);
+      await _auth.signInWithRedirect(provider);
+      return null;
+    }
+
+    // Chrome and other standard browsers use signInWithPopup
     try {
       console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_START: signInWithPopup with prompt: select_account`);
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
-      
       const cred = await _auth.signInWithPopup(provider);
       console.log(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_SUCCESS: user=${cred?.user?.email} uid=${cred?.user?.uid}`);
       _startUserStabilityMonitor('GOOGLE_SUCCESS_POPUP');
@@ -241,20 +251,11 @@ App.Auth = (() => {
         return _auth.currentUser;
       }
 
-      // ONLY fall back to redirect if popup was explicitly blocked by the browser
-      if (err.code === 'auth/popup-blocked' && window.location.protocol !== 'file:') {
-        console.warn(`[EDGE-AUTH-FORENSIC] ${_ts()} Google popup blocked, starting signInWithRedirect`);
-        try {
-          const provider = new firebase.auth.GoogleAuthProvider();
-          provider.addScope('email');
-          provider.addScope('profile');
-          provider.setCustomParameters({ prompt: 'select_account' });
-          await _auth.signInWithRedirect(provider);
-          return null;
-        } catch (redirErr) {
-          console.error(`[EDGE-AUTH-FORENSIC] ${_ts()} GOOGLE_REDIRECT_ERROR: ${redirErr.code} ${redirErr.message}`);
-          throw new Error(mapErrorMessage(redirErr));
-        }
+      // Fallback for popup blocked environments
+      if (err.code === 'auth/popup-blocked' && window.location.protocol.startsWith('http')) {
+        console.warn(`[EDGE-AUTH-FORENSIC] ${_ts()} Google popup blocked, falling back to signInWithRedirect`);
+        await _auth.signInWithRedirect(provider);
+        return null;
       }
 
       throw new Error(mapErrorMessage(err));
