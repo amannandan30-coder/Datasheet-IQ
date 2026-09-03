@@ -1,5 +1,6 @@
 window.App = window.App || {};
 App.Views = App.Views || {};
+console.log('[ROUTE-DIAG] login.js v3.2 ACTIVE | ' + new Date().toISOString());
 
 /* ============================================================
    LIQUIDATION IQ — LOGIN VIEW (Firebase Authentication)
@@ -171,6 +172,8 @@ App.Views.Login = (() => {
     const googleBtn = document.getElementById('google-signin-btn');
     hideError();
 
+    console.log(`[ROUTE-DIAG] BEFORE_AUTH | handleGoogleSignIn click | ROUTE_BEFORE=${App.State?.route} | HASH_BEFORE=${window.location.hash} | isAuth=${App.Auth?.isAuthenticated}`);
+
     if (googleBtn) {
       googleBtn.disabled = true;
       googleBtn.style.opacity = '0.7';
@@ -178,16 +181,26 @@ App.Views.Login = (() => {
 
     try {
       const user = await App.Auth.signInWithGoogle();
+      console.log(`[ROUTE-DIAG] POPUP_RESOLVED | handleGoogleSignIn received user | user=${user ? user.email : 'null'} | uid=${user ? user.uid : 'null'} | isAuth=${App.Auth?.isAuthenticated} | ROUTE_BEFORE=${App.State?.route} | HASH_BEFORE=${window.location.hash}`);
+
       if (user) {
         App.UI.toast('Signed in with Google! 🌐');
         if (App.State.route === 'login' || App.State.route === 'signup') {
+          console.log(`[ROUTE-DIAG] ROUTER_GO_DASHBOARD | caller=handleGoogleSignIn | HASH_BEFORE=${window.location.hash}`);
           App.Router.go('dashboard');
+          console.log(`[ROUTE-DIAG] HASH_AFTER=${window.location.hash} | ROUTE_AFTER=${App.State?.route}`);
+        } else {
+          console.log(`[ROUTE-DIAG] SKIPPED_ROUTER_GO | current_route=${App.State?.route} (not login/signup) | hash=${window.location.hash}`);
         }
       }
     } catch (err) {
+      console.error(`[ROUTE-DIAG] POPUP_REJECTED | handleGoogleSignIn caught error | code=${err.code} | message=${err.message} | isAuth=${App.Auth?.isAuthenticated} | hash=${window.location.hash}`);
+
       // If user became authenticated despite popup close event
       if (App.Auth?.isAuthenticated) {
+        console.log(`[ROUTE-DIAG] ROUTER_GO_DASHBOARD | caller=handleGoogleSignIn.catch (isAuthenticated=true) | HASH_BEFORE=${window.location.hash}`);
         App.Router.go('dashboard');
+        console.log(`[ROUTE-DIAG] HASH_AFTER=${window.location.hash} | ROUTE_AFTER=${App.State?.route}`);
         return;
       }
       showError(err.message);

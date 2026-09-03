@@ -1,4 +1,5 @@
 window.App = window.App || {};
+console.log('[ROUTE-DIAG] dashboard.js v3.2 ACTIVE | ' + new Date().toISOString());
 
 /* ============================================================
    DASHBOARD VIEW
@@ -33,12 +34,14 @@ App.Views.Dashboard = (() => {
 
   async function render(container, dataset_id) {
     console.log('[EDGE-LOOP] DASHBOARD_START');
+    console.log(`[ROUTE-DIAG] DASHBOARD_VIEW_RENDER_START | HASH=${window.location.hash} | ROUTE=${App.State?.route} | isAuth=${App.Auth?.isAuthenticated}`);
     container.innerHTML = `<div class="animate-fade-in"><div class="flex items-center gap-12 mb-24" style="padding:4px 0">
       <div class="spinner"></div><span class="text-muted">Loading dashboard…</span></div></div>`;
 
     if (!dataset_id) {
       renderWelcome(container);
       console.log('[EDGE-LOOP] DASHBOARD_COMPLETE (welcome state)');
+      console.log(`[ROUTE-DIAG] DASHBOARD_VIEW_RENDER_WELCOME | HASH=${window.location.hash} | ROUTE=${App.State?.route}`);
       return;
     }
 

@@ -1,4 +1,6 @@
 window.App = window.App || {};
+console.log('[ROUTE-DIAG] auth.js v3.2 ACTIVE | ' + new Date().toISOString());
+console.log('[POPUP-DIAG] auth.js v3.2 ACTIVE | ' + new Date().toISOString());
 
 /* ============================================================
    LIQUIDATION IQ — FIREBASE AUTHENTICATION SERVICE
@@ -74,10 +76,24 @@ App.Auth = (() => {
               ` | hash=${window.location.hash}` +
               ` | isAuthenticated_BEFORE=${state.isAuthenticated}`
             );
+            console.log(
+              `[ROUTE-DIAG] AUTH_STATE_CHANGED #${_authEventCount}` +
+              ` | user=${user ? 'EXISTS (' + user.email + ')' : 'NULL'}` +
+              ` | uid=${user ? user.uid : 'null'}` +
+              ` | ROUTE_BEFORE=${window.App?.State?.route}` +
+              ` | HASH_BEFORE=${window.location.hash}` +
+              ` | isAuth_BEFORE=${state.isAuthenticated}`
+            );
             _handleAuthStateChange(user);
             console.log(
               `[POPUP-DIAG] [T+${performance.now().toFixed(1)}ms] onAuthStateChanged #${_authEventCount} HANDLED` +
               ` | isAuthenticated_AFTER=${state.isAuthenticated}`
+            );
+            console.log(
+              `[ROUTE-DIAG] AUTH_STATE_CHANGED #${_authEventCount} HANDLED` +
+              ` | ROUTE_AFTER=${window.App?.State?.route}` +
+              ` | HASH_AFTER=${window.location.hash}` +
+              ` | isAuth_AFTER=${state.isAuthenticated}`
             );
             if (!_resolved) {
               _resolved = true;
@@ -198,6 +214,7 @@ App.Auth = (() => {
 
     const t0 = performance.now();
     console.log(`[POPUP-DIAG] [T+${t0.toFixed(1)}ms] signInWithPopup START | authDomain=${App.Config?.Firebase?.authDomain} | origin=${window.location.origin}`);
+    console.log(`[ROUTE-DIAG] BEFORE_AUTH | signInWithPopup START | HASH_BEFORE=${window.location.hash} | ROUTE_BEFORE=${window.App?.State?.route} | isAuth=${state.isAuthenticated}`);
 
     try {
       const cred = await _auth.signInWithPopup(provider);
@@ -215,6 +232,16 @@ App.Auth = (() => {
         ` | firebase.auth().currentUser_SYNC=${syncUser ? syncUser.email : 'NULL'}` +
         ` | state.isAuthenticated=${state.isAuthenticated}`
       );
+      console.log(
+        `[ROUTE-DIAG] POPUP_RESOLVED` +
+        ` | cred.user=${cred.user ? cred.user.email : 'NULL'}` +
+        ` | uid=${cred.user ? cred.user.uid : 'null'}` +
+        ` | cred.credential=${cred.credential ? 'EXISTS' : 'NULL'}` +
+        ` | currentUser_SYNC=${syncUser ? syncUser.email : 'NULL'}` +
+        ` | HASH_AFTER=${window.location.hash}` +
+        ` | ROUTE_AFTER=${window.App?.State?.route}` +
+        ` | isAuth=${state.isAuthenticated}`
+      );
 
       // Poll firebase.auth().currentUser 5 times over 5 seconds after resolve
       [100, 500, 1000, 2000, 5000].forEach(delay => {
@@ -225,6 +252,13 @@ App.Auth = (() => {
             ` | firebase.auth().currentUser=${u ? u.email : 'NULL'}` +
             ` | state.isAuthenticated=${state.isAuthenticated}` +
             ` | route=${window.App?.State?.route}`
+          );
+          console.log(
+            `[ROUTE-DIAG] POST_RESOLVE_POLL +${delay}ms` +
+            ` | currentUser=${u ? u.email : 'NULL'}` +
+            ` | isAuth=${state.isAuthenticated}` +
+            ` | HASH=${window.location.hash}` +
+            ` | ROUTE=${window.App?.State?.route}`
           );
         }, delay);
       });
@@ -240,6 +274,14 @@ App.Auth = (() => {
         ` | message=${err.message}` +
         ` | firebase.auth().currentUser_SYNC=${_auth.currentUser ? _auth.currentUser.email : 'NULL'}` +
         ` | state.isAuthenticated=${state.isAuthenticated}`
+      );
+      console.error(
+        `[ROUTE-DIAG] POPUP_REJECTED` +
+        ` | code=${err.code}` +
+        ` | message=${err.message}` +
+        ` | currentUser_SYNC=${_auth.currentUser ? _auth.currentUser.email : 'NULL'}` +
+        ` | HASH=${window.location.hash}` +
+        ` | ROUTE=${window.App?.State?.route}`
       );
 
       // If user already authenticated in memory despite the error

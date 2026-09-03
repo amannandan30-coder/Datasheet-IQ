@@ -1,4 +1,5 @@
 window.App = window.App || {};
+console.log('[ROUTE-DIAG] app.js v3.2 ACTIVE | ' + new Date().toISOString());
 
 /* ============================================================
    MAIN APP — Router + State + UI helpers
@@ -62,13 +63,17 @@ App.Router = {
     const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown';
     const fromRoute = App.State?.route || 'unknown';
     console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE\n  FROM: ${fromRoute}\n  TO: ${page}\n  REASON: Router.go\n  CALLER/FUNCTION: ${caller}\n  AUTH_USER: ${App.Auth?.currentUser?.email || 'null'}`);
+    console.log(`[ROUTE-DIAG] ROUTER_GO_${page.toUpperCase()} | ROUTE_BEFORE=${fromRoute} | HASH_BEFORE=${window.location.hash} | targetHash=${targetHash} | caller=${caller}`);
 
     if (window.location.hash === targetHash) {
       console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE (same hash, re-rendering): "${targetHash}"`);
+      console.log(`[ROUTE-DIAG] HASH_SAME: "${targetHash}" (re-rendering directly)`);
       App.UI.render();
     } else {
       console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE (setting hash): "${targetHash}"`);
+      console.log(`[ROUTE-DIAG] HASH_BEFORE: ${window.location.hash} -> setting to: ${targetHash}`);
       window.location.hash = targetHash;
+      console.log(`[ROUTE-DIAG] HASH_AFTER: ${window.location.hash}`);
     }
   },
 
@@ -88,6 +93,7 @@ App.Router = {
     App.State.route  = page || 'landing';
     App.State.params = params;
     console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHECK: prev="${prevRoute}" current="${App.State.route}" hash="${window.location.hash}" isAuthenticated=${App.Auth?.isAuthenticated}`);
+    console.log(`[ROUTE-DIAG] ROUTE_BEFORE: "${prevRoute}" | ROUTE_AFTER: "${App.State.route}" | HASH: "${window.location.hash}" | isAuthenticated=${App.Auth?.isAuthenticated}`);
 
     const currentHash = rawHash;
     const stack = this.historyStack;
@@ -135,6 +141,7 @@ App.UI = {
     if (!main) return;
 
     console.log(`[EDGE-LOOP] ${_appTs()} RENDER #${renderNum} START: route="${route}" hash="${window.location.hash}" dataset_id=${dataset_id}`);
+    console.log(`[ROUTE-DIAG] RENDER_START #${renderNum} | route="${route}" | HASH="${window.location.hash}" | isAuthenticated=${isAuthenticated}`);
 
     // ── FIREBASE AUTHENTICATION ROUTE GUARD ──────────────────
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
@@ -158,12 +165,14 @@ App.UI = {
     // 2. Guard: Authenticated user attempting to visit Login, Signup, or Forgot Password
     if (isAuthenticated && AUTH_PAGES.includes(route)) {
       console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE\n  FROM: ${route}\n  TO: dashboard\n  REASON: authenticated user visiting auth page\n  CALLER/FUNCTION: App.UI.render()\n  AUTH_USER: ${App.Auth?.currentUser?.email || 'null'}`);
+      console.log(`[ROUTE-DIAG] ROUTER_GO_DASHBOARD (auth guard: authenticated user visiting ${route}) | HASH_BEFORE=${window.location.hash}`);
       App.Router.go('dashboard');
       return;
     }
 
     // 3. Guard: Unauthenticated user attempting to access a protected route
     if (!isAuthenticated && !PUBLIC_ROUTES.includes(route)) {
+      console.log(`[ROUTE-DIAG] ROUTER_GO_LOGIN (auth guard: unauthenticated on protected route ${route}) | HASH_BEFORE=${window.location.hash}`);
       App.Router.go('login');
       return;
     }
@@ -201,6 +210,7 @@ App.UI = {
 
     // Route dispatch
     console.log(`[AUTH-FLOW] ${_appTs()} ROUTE DISPATCH: "${route}" (render #${renderNum})`);
+    console.log(`[ROUTE-DIAG] ROUTE_DISPATCH: "${route}" (render #${renderNum}) | HASH=${window.location.hash}`);
     switch (route) {
       case 'landing':
       case 'home':            await App.Views.Landing.render(main); break;
@@ -226,6 +236,7 @@ App.UI = {
         }
     }
     console.log(`[AUTH-FLOW] ${_appTs()} RENDER #${renderNum} COMPLETE, final route="${App.State.route}", hash="${window.location.hash}"`);
+    console.log(`[ROUTE-DIAG] FINAL_URL: ${window.location.href} | ROUTE_AFTER="${App.State.route}" | HASH_AFTER="${window.location.hash}" | isAuthenticated=${isAuthenticated}`);
   },
 
   updateBreadcrumb(route, params) {
@@ -758,6 +769,7 @@ App.GlobalSearch = {
   // Listen for hash changes
   window.addEventListener('hashchange', () => {
     console.log(`[EDGE-LOOP] ${_appTs()} HASHCHANGE EVENT: new hash="${window.location.hash}", isAuthenticated=${App.Auth?.isAuthenticated}`);
+    console.log(`[ROUTE-DIAG] HASHCHANGE: new hash="${window.location.hash}" | isAuthenticated=${App.Auth?.isAuthenticated} | route=${App.State?.route}`);
     App.UI.render();
   });
 
