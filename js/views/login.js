@@ -7,6 +7,7 @@ App.Views = App.Views || {};
 App.Views.Login = (() => {
 
   function render(container) {
+    console.log('[AUTH-FORENSIC] login page initialization');
     container.innerHTML = `
       <div class="auth-wrapper animate-fade-in">
         <div class="auth-card">
