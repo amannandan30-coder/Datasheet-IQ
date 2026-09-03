@@ -86,6 +86,23 @@ App.Views.CategoryDetail = (() => {
       container.insertAdjacentHTML('beforeend', `
         <div class="subcat-tabs-wrap mb-20" id="subcat-tabs">${tabsHtml}</div>
       `);
+
+      /* ── Subcategory Summary Panel ─────────────────────── */
+      container.insertAdjacentHTML('beforeend', `
+        <div class="subcat-summary-panel" id="subcat-summary">
+          <div class="subcat-summary-inner">
+            <div class="subcat-summary-header">
+              <div class="subcat-summary-title" id="subcat-summary-title"></div>
+              <button class="subcat-summary-close" onclick="App.Views.CategoryDetail.closeSummary()" title="Close summary">✕</button>
+            </div>
+            <div class="subcat-summary-grid" id="subcat-summary-grid"></div>
+          </div>
+        </div>
+      `);
+
+      // Show summary for the first (default active) subcategory
+      const firstSc = subcats[0];
+      _showSubcatSummary(firstSc, totalValue, totalUnits, totalWeight, totalSKUs);
     }
 
     /* ── Brand table ─────────────────────────────────────── */
@@ -103,6 +120,12 @@ App.Views.CategoryDetail = (() => {
     window._catRecords   = catRecords;
     window._catTotalVal  = totalValue;
     window._catName      = catName;
+
+    // Store totals for subcategory summary calculations
+    window._catTotalUnits  = totalUnits;
+    window._catTotalWeight = totalWeight;
+    window._catTotalSKUs   = totalSKUs;
+    window._subcatMap      = subcatMap;
 
     buildBrandList(catRecords, container.querySelector('#brand-list-wrap'), totalValue);
 
@@ -128,12 +151,89 @@ App.Views.CategoryDetail = (() => {
         tab.classList.add('active');
         tab.classList.remove('btn-ghost');
       }
+
+      // Show subcategory summary
+      const scData = window._subcatMap?.get(sc);
+      if (scData) {
+        _showSubcatSummary(scData, totalValue, totalUnits, totalWeight, totalSKUs);
+      }
+    };
+
+    App.Views.CategoryDetail.closeSummary = () => {
+      const panel = document.getElementById('subcat-summary');
+      if (panel) {
+        panel.classList.remove('visible');
+      }
     };
 
     App.Views.CategoryDetail.sort = (by) => {
       const filtered = catRecords; // could respect subcat filter too
       buildBrandList(filtered, container.querySelector('#brand-list-wrap'), totalValue, by);
     };
+  }
+
+  function _showSubcatSummary(scData, totalValue, totalUnits, totalWeight, totalSKUs) {
+    const panel = document.getElementById('subcat-summary');
+    const titleEl = document.getElementById('subcat-summary-title');
+    const gridEl = document.getElementById('subcat-summary-grid');
+    if (!panel || !titleEl || !gridEl) return;
+
+    const skuCount = scData.skus instanceof Set ? scData.skus.size : (scData.skus || 0);
+    const brandCount = scData.brands instanceof Set ? scData.brands.size : (scData.brands || 0);
+    const valuePct = totalValue ? ((scData.value / totalValue) * 100).toFixed(1) : '0';
+    const unitsPct = totalUnits ? ((scData.qty / totalUnits) * 100).toFixed(1) : '0';
+
+    titleEl.innerHTML = `<span class="subcat-summary-icon">📋</span> ${scData.name}`;
+
+    gridEl.innerHTML = `
+      <div class="subcat-stat-card" style="--stat-color: #6366f1">
+        <div class="subcat-stat-icon">📦</div>
+        <div class="subcat-stat-info">
+          <div class="subcat-stat-value">${App.Fmt.number(skuCount)}</div>
+          <div class="subcat-stat-label">SKUs</div>
+        </div>
+      </div>
+      <div class="subcat-stat-card" style="--stat-color: #10b981">
+        <div class="subcat-stat-icon">📊</div>
+        <div class="subcat-stat-info">
+          <div class="subcat-stat-value">${App.Fmt.number(scData.qty)}</div>
+          <div class="subcat-stat-label">Units <span class="subcat-stat-pct">(${unitsPct}%)</span></div>
+        </div>
+      </div>
+      <div class="subcat-stat-card" style="--stat-color: #f59e0b">
+        <div class="subcat-stat-icon">💰</div>
+        <div class="subcat-stat-info">
+          <div class="subcat-stat-value">${App.Fmt.currency(scData.value)}</div>
+          <div class="subcat-stat-label">Value <span class="subcat-stat-pct">(${valuePct}%)</span></div>
+        </div>
+      </div>
+      <div class="subcat-stat-card" style="--stat-color: #38bdf8">
+        <div class="subcat-stat-icon">⚖️</div>
+        <div class="subcat-stat-info">
+          <div class="subcat-stat-value">${App.Fmt.weight(scData.weight)}</div>
+          <div class="subcat-stat-label">Weight</div>
+        </div>
+      </div>
+      <div class="subcat-stat-card" style="--stat-color: #a78bfa">
+        <div class="subcat-stat-icon">🏷️</div>
+        <div class="subcat-stat-info">
+          <div class="subcat-stat-value">${App.Fmt.number(brandCount)}</div>
+          <div class="subcat-stat-label">Brands</div>
+        </div>
+      </div>
+      <div class="subcat-stat-card" style="--stat-color: #fb923c">
+        <div class="subcat-stat-icon">💵</div>
+        <div class="subcat-stat-info">
+          <div class="subcat-stat-value">${scData.qty ? App.Fmt.currency(scData.value / scData.qty) : '—'}</div>
+          <div class="subcat-stat-label">Avg Value / Unit</div>
+        </div>
+      </div>
+    `;
+
+    // Animate panel in
+    requestAnimationFrame(() => {
+      panel.classList.add('visible');
+    });
   }
 
   function buildBrandList(records, wrap, totalValue, sortBy = 'value') {
@@ -221,5 +321,5 @@ App.Views.CategoryDetail = (() => {
       .replace(/>/g, '&gt;');
   }
 
-  return { render, showSubcat:()=>{}, sort:()=>{} };
+  return { render, showSubcat:()=>{}, sort:()=>{}, closeSummary:()=>{} };
 })();
