@@ -183,7 +183,9 @@ App.Cleaner = (() => {
         raw_type = 'expired';
       } else if (sheetLower.includes('near expiry') || sheetLower.includes('nearexpiry')) {
         raw_type = 'near_expiry';
-      } else if (sheetLower.includes('saleable') || sheetLower.includes('salable') || sheetLower.includes('good')) {
+      } else if (sheetLower.includes('bad rtv') || sheetLower.includes('rtv') || sheetLower.includes('dump') || sheetLower.includes('quarantine') || sheetLower.includes('blocked') || sheetLower.includes('scrap')) {
+        raw_type = sheetLower.includes('dump') ? 'dump' : (sheetLower.includes('rtv') ? 'bad_rtv' : 'quarantine');
+      } else if (sheetLower.includes('saleable') || sheetLower.includes('salable') || sheetLower.includes('good') || sheetLower.includes('active') || sheetLower.includes('available')) {
         raw_type = 'saleable';
       } else {
         raw_type = raw_type || 'unknown';

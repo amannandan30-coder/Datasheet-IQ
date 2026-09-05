@@ -155,81 +155,60 @@ App.Views.Dashboard = (() => {
       `);
     }
 
-    /* ── Dynamic Worksheet & Reporting Scopes Banner ─────────────────── */
-    if (App.ReportingMapper && typeof App.ReportingMapper.getScopesSummary === 'function') {
-      const scopes = App.ReportingMapper.getScopesSummary(records);
-      const shouldShowScopes = scopes && (scopes.has_multiple_sheets || scopes.is_grofers_applicable || scopes.saleable_only || scopes.dedicated_atta);
+    /* ── Primary Inventory Status Section (3-Card Simplification) ─── */
+    if (App.InventoryStatusResolver && typeof App.InventoryStatusResolver.resolveDataset === 'function') {
+      const statusSummary = App.InventoryStatusResolver.resolveDataset(records);
       
-      if (shouldShowScopes) {
-        let scopeBoxesHtml = '';
-
-        // All sheets total
-        scopeBoxesHtml += `
-          <div class="reconciliation-box" style="border-left:3px solid #6366f1">
-            <div class="text-xs text-muted font-medium">All Sheets (Total Inventory)</div>
-            <div class="font-bold text-base mt-4 text-primary">${App.Fmt.currency(scopes.all_sheets?.value || totalValue)}</div>
-            <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.all_sheets?.records || records.length)} records · ${App.Fmt.number(scopes.all_sheets?.units || kpis.total_units)} units</div>
+      container.insertAdjacentHTML('beforeend', `
+        <div class="card mb-24 inventory-status-card">
+          <div class="flex items-center justify-between mb-16">
+            <div class="font-bold text-sm flex items-center gap-8 text-primary">
+              <span style="font-size:16px">📦</span> Inventory Status
+            </div>
+            <div class="text-xs text-muted font-medium">From active workbook</div>
           </div>
-        `;
 
-        // If Grofers profile is applicable
-        if (scopes.is_grofers_applicable && scopes.business_fm_scope) {
-          if (scopes.saleable_only) {
-            scopeBoxesHtml += `
-              <div class="reconciliation-box" style="border-left:3px solid #10b981">
-                <div class="text-xs text-muted font-medium">Saleable Inventory Scope</div>
-                <div class="font-bold text-base mt-4 text-success">${App.Fmt.currency(scopes.saleable_only.value)}</div>
-                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.saleable_only.records)} records · ${App.Fmt.number(scopes.saleable_only.units)} units</div>
-              </div>
-            `;
-          }
-          scopeBoxesHtml += `
-            <div class="reconciliation-box" style="border-left:3px solid #f59e0b">
-              <div class="text-xs text-muted font-medium">Business FM Scope (20 Buckets)</div>
-              <div class="font-bold text-base mt-4 text-warning">${App.Fmt.currency(scopes.business_fm_scope.value)}</div>
-              <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.business_fm_scope.records)} records · ${App.Fmt.number(scopes.business_fm_scope.units)} units</div>
+          <div class="grid-3" style="gap:14px">
+            <!-- Card 1: Total Inventory -->
+            <div class="reconciliation-box" style="border-left:4px solid #6366f1;padding:14px 16px">
+              <div class="text-xs text-muted font-medium">Total Inventory</div>
+              <div class="font-bold text-lg mt-4 text-primary">${App.Fmt.currency(statusSummary.total.value)}</div>
+              <div class="text-xs text-muted mt-4">${App.Fmt.number(statusSummary.total.records)} Records · ${App.Fmt.number(statusSummary.total.units)} Units</div>
+              <div class="badge badge-muted mt-8" style="font-size:10px;padding:2px 6px">All Active Inventory</div>
             </div>
-          `;
-          if (scopes.dedicated_atta) {
-            scopeBoxesHtml += `
-              <div class="reconciliation-box" style="border-left:3px solid #06b6d4">
-                <div class="text-xs text-muted font-medium">Dedicated Atta Scope</div>
-                <div class="font-bold text-base mt-4 text-info">${App.Fmt.currency(scopes.dedicated_atta.value)}</div>
-                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.dedicated_atta.records)} records · ${App.Fmt.number(scopes.dedicated_atta.units)} units</div>
-              </div>
-            `;
-          }
-        } else if (scopes.sheets && Object.keys(scopes.sheets).length > 1) {
-          // Generic multi-sheet workbook: dynamically render each worksheet box
-          const sheetColors = ['#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#ec4899', '#3b82f6'];
-          let colorIdx = 0;
-          for (const [sheetName, sheetData] of Object.entries(scopes.sheets)) {
-            const color = sheetColors[colorIdx % sheetColors.length];
-            colorIdx++;
-            scopeBoxesHtml += `
-              <div class="reconciliation-box" style="border-left:3px solid ${color}">
-                <div class="text-xs text-muted font-medium">${App.Fmt.escapeHtml(sheetName)} Sheet</div>
-                <div class="font-bold text-base mt-4" style="color:${color}">${App.Fmt.currency(sheetData.value)}</div>
-                <div class="text-xs text-muted mt-2">${App.Fmt.number(sheetData.recordCount)} records · ${App.Fmt.number(sheetData.units)} units</div>
-              </div>
-            `;
-          }
-        }
 
-        container.insertAdjacentHTML('beforeend', `
-          <div class="card mb-24 business-scopes-card">
-            <div class="flex items-center justify-between mb-14">
-              <div class="font-bold text-sm flex items-center gap-8 text-primary">
-                <span style="font-size:16px">🎯</span> Worksheet & Inventory Scopes
-              </div>
-              <div class="badge badge-primary" style="font-size:11px;padding:3px 8px">Dynamic Scope Breakdown</div>
+            <!-- Card 2: Sellable Items -->
+            <div class="reconciliation-box" style="border-left:4px solid #10b981;padding:14px 16px">
+              <div class="text-xs text-muted font-medium">Sellable Items</div>
+              <div class="font-bold text-lg mt-4 text-success">${App.Fmt.currency(statusSummary.sellable.value)}</div>
+              <div class="text-xs text-muted mt-4">${App.Fmt.number(statusSummary.sellable.records)} Records · ${App.Fmt.number(statusSummary.sellable.units)} Units</div>
+              <div class="badge badge-success mt-8" style="font-size:10px;padding:2px 6px">Status: Sellable</div>
             </div>
-            <div class="grid-4" style="gap:12px">
-              ${scopeBoxesHtml}
+
+            <!-- Card 3: Non-Sellable Items -->
+            <div class="reconciliation-box" style="border-left:4px solid #ef4444;padding:14px 16px">
+              <div class="text-xs text-muted font-medium">Non-Sellable Items</div>
+              <div class="font-bold text-lg mt-4 text-danger">${App.Fmt.currency(statusSummary.nonSellable.value)}</div>
+              <div class="text-xs text-muted mt-4">${App.Fmt.number(statusSummary.nonSellable.records)} Records · ${App.Fmt.number(statusSummary.nonSellable.units)} Units</div>
+              <div class="badge badge-danger mt-8" style="font-size:10px;padding:2px 6px">Status: Non-Sellable</div>
             </div>
           </div>
-        `);
-      }
+
+          ${statusSummary.unknown.records > 0 ? `
+            <div class="text-xs text-muted mt-12 flex items-center gap-6" style="padding-top:10px;border-top:1px solid var(--border-subtle)">
+              <span>ℹ️</span>
+              <span><strong>${App.Fmt.number(statusSummary.unknown.records)}</strong> records (${App.Fmt.currency(statusSummary.unknown.value)}) have undetermined sellability status and are excluded from the Sellable / Non-Sellable split.</span>
+            </div>
+          ` : ''}
+
+          ${!statusSummary.reconciled ? `
+            <div class="badge badge-warning mt-12 w-full text-xs" style="padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
+              <span>⚠️ Reconciliation Discrepancy Detected</span>
+              <span>Difference: ${statusSummary.difference.records} records · ${statusSummary.difference.units} units · ${App.Fmt.currency(statusSummary.difference.value)}</span>
+            </div>
+          ` : ''}
+        </div>
+      `);
     }
 
     /* ── Status Distribution ─────────────────────────────── */
