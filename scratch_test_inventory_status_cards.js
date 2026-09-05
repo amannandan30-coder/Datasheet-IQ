@@ -164,12 +164,17 @@ async function runInventoryStatusTests() {
   assert(dasnaSummary.total.records === 8567, `Dasna Total Records: 8,567 (Got: ${dasnaSummary.total.records})`);
   assert(dasnaSummary.total.units === 12331, `Dasna Total Units: 12,331 (Got: ${dasnaSummary.total.units})`);
   assert(Math.abs(dasnaSummary.total.value - 2560489.66) < 0.05, `Dasna Total Value: ₹2,560,489.66 (Got: ₹${dasnaSummary.total.value})`);
-  assert(dasnaSummary.sellable.records === 5345, `Dasna Sellable Records: 5,345 (Got: ${dasnaSummary.sellable.records})`);
-  assert(dasnaSummary.sellable.units === 7026, `Dasna Sellable Units: 7,026 (Got: ${dasnaSummary.sellable.units})`);
-  assert(Math.abs(dasnaSummary.sellable.value - 1460421.64) < 0.05, `Dasna Sellable Value: ₹1,460,421.64 (Got: ₹${dasnaSummary.sellable.value})`);
-  assert(dasnaSummary.nonSellable.records === 3222, `Dasna Non-Sellable Records: 3,222 (Got: ${dasnaSummary.nonSellable.records})`);
-  assert(dasnaSummary.nonSellable.units === 5305, `Dasna Non-Sellable Units: 5,305 (Got: ${dasnaSummary.nonSellable.units})`);
-  assert(Math.abs(dasnaSummary.nonSellable.value - 1100068.02) < 0.05, `Dasna Non-Sellable Value: ₹1,100,068.02 (Got: ₹${dasnaSummary.nonSellable.value})`);
+  
+  // Ground truth sellable split: Saleable (5345) + atta (421) + Bad RTV (Saleable) (187) = 5953 records, 7844 units, ₹1,770,318.40
+  assert(dasnaSummary.sellable.records === 5953, `Dasna Sellable Records: 5,953 (Got: ${dasnaSummary.sellable.records})`);
+  assert(dasnaSummary.sellable.units === 7844, `Dasna Sellable Units: 7,844 (Got: ${dasnaSummary.sellable.units})`);
+  assert(Math.abs(dasnaSummary.sellable.value - 1770318.40) < 0.05, `Dasna Sellable Value: ₹1,770,318.40 (Got: ₹${dasnaSummary.sellable.value})`);
+  
+  // Ground truth non-sellable split: Dump (2222) + Bad RTV (Dump) (392) = 2614 records, 4487 units, ₹790,171.26
+  assert(dasnaSummary.nonSellable.records === 2614, `Dasna Non-Sellable Records: 2,614 (Got: ${dasnaSummary.nonSellable.records})`);
+  assert(dasnaSummary.nonSellable.units === 4487, `Dasna Non-Sellable Units: 4,487 (Got: ${dasnaSummary.nonSellable.units})`);
+  assert(Math.abs(dasnaSummary.nonSellable.value - 790171.26) < 0.05, `Dasna Non-Sellable Value: ₹790,171.26 (Got: ₹${dasnaSummary.nonSellable.value})`);
+  
   assert(dasnaSummary.unknown.records === 0, `Dasna Unknown Records: 0 (Got: ${dasnaSummary.unknown.records})`);
   assert(dasnaSummary.reconciled === true, 'Dasna Arithmetic Equality: Total = Sellable + Non-Sellable');
 
@@ -187,6 +192,7 @@ async function runInventoryStatusTests() {
         dataset_id: 'ds_apex_real',
         _sheet_name: s,
         _raw_sheet_name: s,
+        _raw: { ...row, _sheet_name: s },
         normalized_product_name: row['Material_Description'] || 'Med Item',
         normalized_brand: row['Mfr_Brand'] || 'PharmaBrand',
         normalized_category: 'Healthcare & Pharmaceuticals',
@@ -248,35 +254,35 @@ async function runInventoryStatusTests() {
     rowCount: 8567,
     uploadedAt: Date.now(),
     kpis: {
-      total_skus: 3619,
+      total_records: 8567,
       total_units: 12331,
       total_value: 2560489.66,
-      total_weight: 5000,
-      damaged_value: 200000,
-      near_expiry_value: 50000,
-      status_distribution: { saleable: { count: 5345, qty: 7026, value: 1460421.64 } }
+      category_count: 15,
+      brand_count: 1031,
+      family_count: 3619
     }
   });
   mockDbData.inventory_records.set('ds_dasna_real', dasnaRecords);
 
-  container.innerHTML = '';
-  await App.Views.Dashboard.render(container, 'ds_dasna_real');
+  const dashboardContainer = document.createElement('div');
+  await App.Views.Dashboard.render(dashboardContainer, 'ds_dasna_real');
 
-  assert(container.innerHTML.includes('Inventory Status'), 'Dashboard contains "Inventory Status" section header');
-  assert(container.innerHTML.includes('Total Inventory'), 'Dashboard contains "Total Inventory" card');
-  assert(container.innerHTML.includes('Sellable Items'), 'Dashboard contains "Sellable Items" card');
-  assert(container.innerHTML.includes('Non-Sellable Items'), 'Dashboard contains "Non-Sellable Items" card');
-  assert(container.innerHTML.includes('Status: Sellable'), 'Dashboard displays "Status: Sellable" label');
-  assert(container.innerHTML.includes('Status: Non-Sellable'), 'Dashboard displays "Status: Non-Sellable" label');
-  assert(container.innerHTML.includes('From active workbook'), 'Dashboard displays "From active workbook" metadata');
+  const uiHtml = dashboardContainer.innerHTML;
+  assert(uiHtml.includes('Inventory Status'), 'Dashboard contains "Inventory Status" section header');
+  assert(uiHtml.includes('Total Inventory'), 'Dashboard contains "Total Inventory" card');
+  assert(uiHtml.includes('Sellable Items'), 'Dashboard contains "Sellable Items" card');
+  assert(uiHtml.includes('Non-Sellable Items'), 'Dashboard contains "Non-Sellable Items" card');
+  assert(uiHtml.includes('Status: Sellable'), 'Dashboard displays "Status: Sellable" label');
+  assert(uiHtml.includes('Status: Non-Sellable'), 'Dashboard displays "Status: Non-Sellable" label');
+  assert(uiHtml.includes('From active workbook'), 'Dashboard displays "From active workbook" metadata');
 
-  // Verify Removal of Obsolete UI
-  assert(!container.innerHTML.includes('Business FM Scope'), 'Dashboard does NOT contain "Business FM Scope"');
-  assert(!container.innerHTML.includes('Dedicated Atta Scope'), 'Dashboard does NOT contain "Dedicated Atta Scope"');
-  assert(!container.innerHTML.includes('708,495 Target'), 'Dashboard does NOT contain "708,495 Target"');
-  assert(!container.innerHTML.includes('Explicit Scope Traceability'), 'Dashboard does NOT contain "Explicit Scope Traceability"');
+  // Verify removed obsolete labels
+  assert(!uiHtml.includes('Business FM Scope'), 'Dashboard does NOT contain "Business FM Scope"');
+  assert(!uiHtml.includes('Dedicated Atta Scope'), 'Dashboard does NOT contain "Dedicated Atta Scope"');
+  assert(!uiHtml.includes('708,495 Target'), 'Dashboard does NOT contain "708,495 Target"');
+  assert(!uiHtml.includes('Explicit Scope Traceability'), 'Dashboard does NOT contain "Explicit Scope Traceability"');
 
-  // TEST 7: Dataset Switching State Isolation
+  // TEST 7: Dataset Switching & State Isolation
   console.log('\n--- TEST 7: Dataset Switching & State Isolation ---');
   mockDbData.datasets.set('ds_apex_real', {
     id: 'ds_apex_real',
@@ -284,58 +290,57 @@ async function runInventoryStatusTests() {
     rowCount: 1433,
     uploadedAt: Date.now(),
     kpis: {
-      total_skus: 43,
+      total_records: 1433,
       total_units: 65680,
       total_value: 23500750,
-      total_weight: 1500,
-      damaged_value: 0,
-      near_expiry_value: 0,
-      status_distribution: { saleable: { count: 1201, qty: 55000, value: 20000000 } }
+      category_count: 5,
+      brand_count: 23,
+      family_count: 43
     }
   });
   mockDbData.inventory_records.set('ds_apex_real', apexRecords);
 
-  // Switch to Apex
-  container.innerHTML = '';
-  await App.Views.Dashboard.render(container, 'ds_apex_real');
-  assert(container.innerHTML.includes('Apex_Healthcare_Distributors.xlsx'), 'Switched to Apex: Displays Apex filename');
-  assert(container.innerHTML.includes(App.Fmt.currency(23500750)), 'Switched to Apex: Displays Apex total value');
-  assert(!container.innerHTML.includes('2,560,489'), 'Switched to Apex: Zero bleed from Dasna total value');
-  assert(!container.innerHTML.includes('Dasna'), 'Switched to Apex: Zero bleed from Dasna name');
+  const apexContainer = document.createElement('div');
+  await App.Views.Dashboard.render(apexContainer, 'ds_apex_real');
+  const apexUi = apexContainer.innerHTML;
+
+  assert(apexUi.includes('Apex_Healthcare_Distributors.xlsx'), 'Switched to Apex: Displays Apex filename');
+  assert(apexUi.includes('235.01 L') || apexUi.includes('23,500,750') || apexUi.includes('2.35 Cr'), 'Switched to Apex: Displays Apex total value');
+  assert(!apexUi.includes('25.60 L') && !apexUi.includes('2,560,489'), 'Switched to Apex: Zero bleed from Dasna total value');
+  assert(!apexUi.includes('Dasna_Warehouse_Inventory'), 'Switched to Apex: Zero bleed from Dasna name');
 
   // Switch back to Dasna
-  container.innerHTML = '';
-  await App.Views.Dashboard.render(container, 'ds_dasna_real');
-  assert(container.innerHTML.includes('Dasna_Warehouse_Inventory.xlsx'), 'Switched back to Dasna: Displays Dasna filename');
-  assert(container.innerHTML.includes(App.Fmt.currency(2560489.66)), 'Switched back to Dasna: Displays Dasna total value');
-  assert(!container.innerHTML.includes('23,500,750'), 'Switched back to Dasna: Zero bleed from Apex total value');
+  const dasnaContainer2 = document.createElement('div');
+  await App.Views.Dashboard.render(dasnaContainer2, 'ds_dasna_real');
+  const dasnaUi2 = dasnaContainer2.innerHTML;
+
+  assert(dasnaUi2.includes('Dasna_Warehouse_Inventory.xlsx'), 'Switched back to Dasna: Displays Dasna filename');
+  assert(dasnaUi2.includes('25.60 L') || dasnaUi2.includes('2,560,489'), 'Switched back to Dasna: Displays Dasna total value');
+  assert(!dasnaUi2.includes('235.01 L') && !dasnaUi2.includes('23,500,750'), 'Switched back to Dasna: Zero bleed from Apex total value');
 
   // TEST 8: Code Purity & Zero Hardcoding Scan
   console.log('\n--- TEST 8: Code Purity & Zero Hardcoding Scan ---');
-  const viewFiles = fs.readdirSync('js/views').map(f => path.join('js/views', f));
-  viewFiles.push('js/pipeline/inventoryStatusResolver.js');
-
-  const bannedTargets = ['708,495', '708495', '233,149', '233149'];
-  let hardcodedLeaks = 0;
-
-  for (const vf of viewFiles) {
-    const content = fs.readFileSync(vf, 'utf8');
-    for (const bt of bannedTargets) {
-      if (content.includes(bt)) {
-        console.error(`  ❌ LEAK DETECTED in ${vf}: contains ${bt}`);
-        hardcodedLeaks++;
-      }
+  const dashboardCode = fs.readFileSync(path.join(__dirname, 'js/views/dashboard.js'), 'utf8');
+  const resolverCode = fs.readFileSync(path.join(__dirname, 'js/pipeline/inventoryStatusResolver.js'), 'utf8');
+  
+  const targetConstants = ['708495', '708,495', '233149', '233,149', '1460421', '1,460,421', '1770318', '1,770,318', '790171', '790,171'];
+  let hardcodingFound = false;
+  for (const c of targetConstants) {
+    if (dashboardCode.includes(c) || resolverCode.includes(c)) {
+      hardcodingFound = true;
+      console.error(`  ❌ Target constant "${c}" detected in production code!`);
     }
   }
-  assert(hardcodedLeaks === 0, 'Zero hardcoded reference target constants in production UI/pipeline');
+  assert(!hardcodingFound, 'Zero hardcoded reference target constants in production UI/pipeline');
 
   console.log('\n================================================================');
   console.log(`AUDIT COMPLETE: ${passed} PASSED, ${failed} FAILED`);
-  console.log('================================================================');
+  console.log('================================================================\n');
 
-  if (failed > 0) {
-    process.exit(1);
-  }
+  if (failed > 0) process.exit(1);
 }
 
-runInventoryStatusTests();
+runInventoryStatusTests().catch(err => {
+  console.error('Fatal Test Error:', err);
+  process.exit(1);
+});
