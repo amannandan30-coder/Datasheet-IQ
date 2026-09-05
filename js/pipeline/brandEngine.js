@@ -27,11 +27,10 @@ App.BrandEngine = (() => {
     return (maxLen - levenshtein(a, b)) / maxLen;
   }
 
-  /* Enhanced noise words for brand fingerprinting */
+  /* Legal/entity suffixes and stop words for brand fingerprinting */
   const NOISE_WORDS = new Set([
-    'the','a','an','and','or','of','for','by','pvt','ltd','inc','corp','llp',
-    'industries','enterprise','enterprises','products','india','limited','private',
-    'grocery','foods','food','supermarket','brand','company','co'
+    'the','a','an','and','or','of','for','by',
+    'pvt','ltd','inc','corp','llp','limited','private','co','company'
   ]);
 
   function fingerprint(brand) {
@@ -50,15 +49,16 @@ App.BrandEngine = (() => {
     const fingerprintMap = new Map();
 
     for (const rec of records) {
-      const raw = rec.normalized_brand || 'Unknown Brand';
-      const fp  = fingerprint(raw) || raw.toLowerCase().trim();
+      const rawBrand = rec.raw_brand || rec.normalized_brand || 'Unknown Brand';
+      const cleanBrand = rec.normalized_brand || rawBrand;
+      const fp  = fingerprint(cleanBrand) || fingerprint(rawBrand) || cleanBrand.toLowerCase().trim();
 
       if (!fingerprintMap.has(fp)) {
         fingerprintMap.set(fp, {
           id: crypto.randomUUID(),
           dataset_id,
-          canonical_brand_name: raw,
-          raw_brand_names: new Set([raw]),
+          canonical_brand_name: cleanBrand,
+          raw_brand_names: new Set([rawBrand]),
           fingerprint: fp,
           status: 'active',
           record_count: 0,
@@ -68,11 +68,12 @@ App.BrandEngine = (() => {
         });
       }
       const entry = fingerprintMap.get(fp);
-      entry.raw_brand_names.add(raw);
+      entry.raw_brand_names.add(rawBrand);
+      if (cleanBrand !== rawBrand) entry.raw_brand_names.add(cleanBrand);
 
       // Keep shortest clean name as canonical if cleaner (e.g. "Pillsbury" over "Pillsbury Atta")
-      if (raw.length < entry.canonical_brand_name.length && raw.length >= 3) {
-        entry.canonical_brand_name = raw;
+      if (cleanBrand.length < entry.canonical_brand_name.length && cleanBrand.length >= 3) {
+        entry.canonical_brand_name = cleanBrand;
       }
       entry.record_count++;
       entry.total_qty    += (rec.qty || 0);

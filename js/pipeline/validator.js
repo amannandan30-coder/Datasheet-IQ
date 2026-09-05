@@ -1,7 +1,7 @@
 window.App = window.App || {};
 
 /* ============================================================
-   VALIDATOR — Excel file + column validation
+   VALIDATOR — Excel file + column validation & error recovery
    ============================================================ */
 App.Validator = (() => {
 
@@ -13,35 +13,139 @@ App.Validator = (() => {
 
   const REQUIRED_COLUMNS = ['name'];  // flexible minimum
 
-  // Enhanced Aliases for flexible column mapping across sheets & varied Excel files
+  function normalizeHeader(h) {
+    if (h == null) return '';
+    return String(h)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\u0900-\u097F]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // Enhanced Aliases for enterprise workbooks, distribution sheets & diverse ERPs
   const COLUMN_ALIASES = {
-    entity_name:       ['entity_name','entity','warehouse','location','store','entity name','wh_name','warehouse_name'],
-    item_id:           ['item_id','itemid','item id','sku','sku_id','product_id','itemcode','item_code'],
-    upc:               ['upc','barcode','ean','gtin','scan upc','scan_upc','scanupc'],
-    name:              ['name','product_name','product name','item name','description','title','product_title','item_description'],
-    brand:             ['brand','brand_name','manufacturer','make','brand name'],
-    variant_uom_text:  ['variant_uom_text','uom','uom_text','unit','unit_of_measure','pack_size','size','pack_text','weight_uom'],
-    variant_mrp:       ['variant_mrp','mrp','price','selling_price','sp','unit_mrp','variant mrp'],
-    qty:               ['qty','quantity','units','stock','stock_qty','sum of qty','sum_of_qty','available_qty','total_qty'],
-    variant_id:        ['variant_id','variant','sku_variant','variant id'],
-    bad_inventory_type:['bad_inventory_type','inventory_type','type','condition','status','bad inventory type','inventory status'],
-    l0:                ['l0','category','l0_category','main_category','category_name','l0 category'],
-    Value:             ['Value','value','total_value','inv_value','inventory_value','total value','val'],
-    Weight:            ['Weight','weight','unit_weight','net_weight','unit weight'],
-    'Total Weight':    ['Total Weight','total_weight','totalweight','gross_weight','total weight','tot_weight'],
-    Type:              ['Type','type','sub_type','item_type'],
+    entity_name: [
+      'entity_name','entity','warehouse','location','store','entity name','wh_name','warehouse_name','wh name',
+      'dc','distribution center','distribution_center','facility','storage facility','storage location','storage_location','plant',
+      'warehouse location','warehouse_location','depot','wh'
+    ],
+    item_id: [
+      'item_id','itemid','item id','sku','sku_id','sku id','product_id','product id','itemcode','item_code','item code',
+      'material_id','material_code','material code','material id','sku code','sku_code',
+      'article_code','article code','articlecode','material_number','material number','sku_number','sku number','mat_code','mat code'
+    ],
+    upc: [
+      'upc','barcode','ean','gtin','scan upc','scan_upc','scanupc'
+    ],
+    name: [
+      'name','product_name','product name','product description','product_description','product title','product_title',
+      'product label','product_label','product','article','article name','article_name','item','item name','item_name',
+      'item title','item_title','item description','item_description','description','title',
+      'sku description','sku_description','sku name','sku_name','material','material name','material_name',
+      'material description','material_description','style product','style / product','product style','style','style description',
+      'product details','product_details','item details','item_details','item desc'
+    ],
+    brand: [
+      'brand','brand_name','brand name','product brand','product_brand','manufacturer','mfr','make','vendor','principal','principal brand','principal_brand',
+      'mfr_brand','mfr brand','manufacturer_brand','mfr_name','mfr name','brand label'
+    ],
+    variant_uom_text: [
+      'variant_uom_text','uom','uom_text','uom text','unit','unit_of_measure','unit of measure','pack_size','pack size','size','pack_text','pack text','weight_uom','weight uom','pack',
+      'uom_code','uom code','pack_spec','pack spec','uom description','packaging'
+    ],
+    variant_mrp: [
+      'variant_mrp','variant mrp','mrp','price','selling_price','selling price','sp','unit_mrp','unit mrp',
+      'unit price','unit_price','rate','unit rate','unit_rate','cost','unit cost','unit_cost','list price','list_price',
+      'currency unit rate','currency_unit_rate','rate per unit',
+      'mrp_inr','mrp inr','unit_price_inr','unit price inr','rate_inr','rate inr','unit rate inr','mrp (inr)','unit price (inr)'
+    ],
+    qty: [
+      'qty','quantity','units','units in stock','units_in_stock','inventory','stock','stock_qty','stock qty',
+      'available_qty','available qty','available stock','available_stock','closing stock','closing_stock','on hand','on_hand',
+      'net qty','net_qty','gross qty','gross_qty','total units','total_units','total qty','total_qty','sum of qty','sum_of_qty','count',
+      'qty_in_hand','qty in hand','qty on hand','stock on hand','current stock','current_stock','closing_units'
+    ],
+    variant_id: [
+      'variant_id','variant','sku_variant','variant id','sku variant'
+    ],
+    bad_inventory_type: [
+      'bad_inventory_type','bad inventory type','status','inventory status','inventory_status','condition','stock condition','stock_condition',
+      'inventory state','inventory_state','quality','grade','stock grade','stock_grade','inventory_type','type'
+    ],
+    l0: [
+      'l0','category','category name','category_name','product category','product_category','main category','main_category',
+      'l0_category','l0 category','department','segment','group','division','domain'
+    ],
+    subcategory: [
+      'subcategory','sub category','sub_category','product type','product_type','sub group','sub_group','class','product class','product_class','l1','l1 category','l1_category'
+    ],
+    Value: [
+      'Value','value','total value','total_value','amount','total amount','total_amount','inventory value','inventory_value',
+      'stock value','stock_value','inv amount','inv_amount','inv value','inv_value','valuation','total valuation','total_valuation',
+      'extended cost','extended_cost','extended amount','extended_amount','total extended amount','total_extended_amount',
+      'line total','line_total','total inv value','total_inv_value','net valuation','net_valuation','net amount','net_amount','val','stock val',
+      'valuation_amount','valuation amount','stock_valuation','stock valuation','extended_value','extended value'
+    ],
+    Weight: [
+      'Weight','weight','unit weight','unit_weight','unit weight kg','unit_weight_kg','item weight','item_weight','piece weight','piece_weight',
+      'weight kg','weight_kg','net weight','net_weight','net weight kg','net_weight_kg','net weight spec','net_weight_spec',
+      'net wt','net_wt','net wt kg','net_wt_kg','single weight'
+    ],
+    'Total Weight': [
+      'Total Weight','total weight','total weight kg','total_weight_kg','total_weight','totalweight',
+      'gross weight','gross_weight','gross weight kg','gross_weight_kg','gross wt','gross_wt','gross wt kg','gross_wt_kg',
+      'total wt','total_wt','total wt kg','total_wt_kg','tot_weight','tot weight','batch weight','batch_weight','total gross weight'
+    ],
+    Type: [
+      'Type','type','sub_type','sub type','item_type','item type'
+    ],
   };
+
+  /**
+   * Suggests near-matches for missing columns to help the user identify headers
+   */
+  function suggestColumnMatches(rawHeaders, missingCols) {
+    const suggestions = {};
+    const normalizedRaw = (rawHeaders || []).map(h => ({ raw: h, norm: normalizeHeader(h) }));
+
+    for (const missing of missingCols) {
+      const targetAliases = COLUMN_ALIASES[missing] || [missing];
+      let bestCandidate = null;
+      let highestSimilarity = 0;
+
+      for (const { raw, norm } of normalizedRaw) {
+        for (const alias of targetAliases) {
+          const normAlias = normalizeHeader(alias);
+          if (norm.includes(normAlias) || normAlias.includes(norm)) {
+            const sim = Math.min(norm.length, normAlias.length) / Math.max(norm.length, normAlias.length);
+            if (sim > highestSimilarity && sim > 0.4) {
+              highestSimilarity = sim;
+              bestCandidate = raw;
+            }
+          }
+        }
+      }
+
+      if (bestCandidate) {
+        suggestions[missing] = bestCandidate;
+      }
+    }
+    return suggestions;
+  }
 
   /* Map raw headers to canonical names */
   function mapColumns(headers) {
-    const headerLower = headers.map(h => (h||'').toString().trim().toLowerCase());
+    const rawHeaders = headers || [];
+    const normalizedHeaders = rawHeaders.map(normalizeHeader);
     const mapping = {}; // canonical → original header name
 
     for (const [canonical, aliases] of Object.entries(COLUMN_ALIASES)) {
       let found = null;
       for (const alias of aliases) {
-        const idx = headerLower.indexOf(alias.toLowerCase());
-        if (idx !== -1) { found = headers[idx]; break; }
+        const normAlias = normalizeHeader(alias);
+        const idx = normalizedHeaders.indexOf(normAlias);
+        if (idx !== -1) { found = rawHeaders[idx]; break; }
       }
       if (found) mapping[canonical] = found;
     }
@@ -49,20 +153,25 @@ App.Validator = (() => {
     // Check missing
     const missing = EXPECTED_COLUMNS.filter(c => !mapping[c]);
     const missingRequired = REQUIRED_COLUMNS.filter(c => !mapping[c]);
+    const suggestions = suggestColumnMatches(rawHeaders, missingRequired);
 
-    return { mapping, missing, missingRequired };
+    return { mapping, missing, missingRequired, suggestions };
   }
 
   function validateFile(file) {
     const errors = [];
     if (!file) { errors.push('No file selected'); return { ok: false, errors }; }
-    const ext = file.name.split('.').pop().toLowerCase();
+    const name = file.name || '';
+    const ext = name.split('.').pop().toLowerCase();
     if (!['xlsx','xls','csv'].includes(ext)) {
-      errors.push(`File type ".${ext}" not supported. Please upload .xlsx, .xls, or .csv`);
+      errors.push(`File type ".${ext}" is not supported. Please upload a valid .xlsx, .xls, or .csv spreadsheet.`);
     }
     const MAX_MB = 100;
     if (file.size > MAX_MB * 1024 * 1024) {
-      errors.push(`File too large (${(file.size/1024/1024).toFixed(1)} MB). Max ${MAX_MB} MB`);
+      errors.push(`File too large (${(file.size/1024/1024).toFixed(1)} MB). Maximum allowed size is ${MAX_MB} MB.`);
+    }
+    if (file.size === 0) {
+      errors.push('The selected file is empty (0 bytes).');
     }
     return { ok: errors.length === 0, errors };
   }
@@ -88,5 +197,5 @@ App.Validator = (() => {
     return { valid, review };
   }
 
-  return { mapColumns, validateFile, validateRows, EXPECTED_COLUMNS, COLUMN_ALIASES };
+  return { mapColumns, validateFile, validateRows, suggestColumnMatches, EXPECTED_COLUMNS, COLUMN_ALIASES };
 })();

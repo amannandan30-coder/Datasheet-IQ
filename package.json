@@ -1,0 +1,14 @@
+{
+  "name": "liquidation-iq",
+  "version": "3.4.0-rc1",
+  "build": "20260905.01",
+  "description": "Liquidation IQ - Inventory & Analytics Engine",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.9.0"
+  }
+}

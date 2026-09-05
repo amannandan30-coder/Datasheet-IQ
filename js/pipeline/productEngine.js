@@ -29,12 +29,31 @@ App.ProductEngine = (() => {
       .trim();
   }
 
-  const STOP_WORDS = new Set(['the','a','an','and','or','for','of','with','in','pack','size','new','special','edition','packet','pouch','jar','bottle']);
+  const COLOR_DESCRIPTORS = new Set([
+    'black','blue','white','red','green','yellow','silver','gold','grey','gray','pink','purple','orange','brown','navy','beige','maroon','teal'
+  ]);
+  const SIZE_DESCRIPTORS = new Set([
+    'xs','s','m','l','xl','xxl','xxxl'
+  ]);
+
+  const STOP_WORDS = new Set([
+    'the','a','an','and','or','for','of','with','in','pack','size','new','special','edition','packet','pouch','jar','bottle',
+    ...COLOR_DESCRIPTORS, ...SIZE_DESCRIPTORS
+  ]);
+
+  const MODEL_MODIFIERS = new Set([
+    '2.0','3.0','4.0','pro','max','anc','plus','ultra','lite','se','gt','gen2','gen3','mk2','mkii','2024','2025','2026'
+  ]);
 
   function getTokens(name) {
     return stripUOMAndPackaging(name)
       .split(/\W+/)
       .filter(t => t.length > 2 && !STOP_WORDS.has(t));
+  }
+
+  function getModelTokens(name) {
+    const rawTokens = normLower(name).replace(/[-_]/g, ' ').split(/\s+/);
+    return new Set(rawTokens.filter(t => MODEL_MODIFIERS.has(t) || /^\d+\.\d+$/.test(t)));
   }
 
   function tokenSimilarity(tokensA, tokensB) {
@@ -59,11 +78,12 @@ App.ProductEngine = (() => {
       let method    = null;
       let confidence= null;
 
-      const item_id  = (rec.item_id || '').toString().trim();
-      const upc      = (rec.upc     || '').toString().trim();
-      const brand_id = rec.brand_id;
-      const baseName = stripUOMAndPackaging(rec.normalized_product_name || '');
-      const tokens   = getTokens(rec.normalized_product_name || '');
+      const item_id    = (rec.item_id || '').toString().trim();
+      const upc        = (rec.upc     || '').toString().trim();
+      const brand_id   = rec.brand_id;
+      const baseName   = stripUOMAndPackaging(rec.normalized_product_name || '');
+      const tokens     = getTokens(rec.normalized_product_name || '');
+      const modelTokens= getModelTokens(rec.normalized_product_name || '');
 
       // 1. STRONG signal 1: item_id
       if (item_id && itemIdMap.has(item_id)) {
@@ -82,6 +102,21 @@ App.ProductEngine = (() => {
         let bestMatch = null, bestScore = 0;
         for (const [fid, fam] of families) {
           if (brand_id && fam.brand_id && fam.brand_id !== brand_id) continue; // Different brand -> skip
+          
+          // Model modifier conflict check (e.g. 2.0 Pro ANC vs standard)
+          let hasModelConflict = false;
+          if (fam.modelTokens) {
+            for (const m of modelTokens) {
+              if (!fam.modelTokens.has(m)) { hasModelConflict = true; break; }
+            }
+            if (!hasModelConflict) {
+              for (const m of fam.modelTokens) {
+                if (!modelTokens.has(m)) { hasModelConflict = true; break; }
+              }
+            }
+          }
+          if (hasModelConflict) continue;
+
           const sim = tokenSimilarity(tokens, fam.tokens);
           if (sim > bestScore && sim >= 0.70) {
             bestScore = sim;
@@ -105,6 +140,7 @@ App.ProductEngine = (() => {
         families.set(family_id, {
           id:          family_id,
           dataset_id,
+          item_ids:    new Set(item_id ? [item_id] : []),
           brand_id,
           normalized_brand:    rec.normalized_brand,
           normalized_category: rec.normalized_category,
@@ -113,6 +149,7 @@ App.ProductEngine = (() => {
           name:            rec.normalized_product_name,
           normalized_name: baseName,
           tokens,
+          modelTokens,
           record_count: 0,
           total_qty:    0,
           total_value:  0,
@@ -128,6 +165,7 @@ App.ProductEngine = (() => {
 
       // Update family aggregates
       const fam = families.get(family_id);
+      if (item_id && fam.item_ids) fam.item_ids.add(item_id);
       fam.record_count++;
       fam.total_qty    += (rec.qty || 0);
       fam.total_value  += (rec.source_value || 0);

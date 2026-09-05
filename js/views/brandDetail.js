@@ -10,14 +10,31 @@ App.Views.BrandDetail = (() => {
   async function render(container, params, dataset_id) {
     const brandName = decodeURIComponent(params.id || '');
     const catName   = decodeURIComponent(params.cat || '');
+    const subcatName= decodeURIComponent(params.subcat || params.subcategory || '');
     container.innerHTML = `<div class="flex items-center gap-12"><div class="spinner"></div><span class="text-muted">Loading ${brandName}…</span></div>`;
 
     const records = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
-    let brandRecords = records.filter(r => r.normalized_brand === brandName || r.raw_brand === brandName);
+    let allBrandRecords = records.filter(r => r.normalized_brand === brandName || r.raw_brand === brandName);
+
+    // Ensure accurate subcategory classification on all brand records
+    if (window.App && window.App.Categorizer && typeof window.App.Categorizer.classify === 'function') {
+      for (const r of allBrandRecords) {
+        const res = App.Categorizer.classify(r.source_category || r.normalized_category, r.normalized_product_name, r.normalized_brand);
+        if (res && res.subcategory) r.subcategory = res.subcategory;
+      }
+    }
+
+    let brandRecords = allBrandRecords;
     if (catName) brandRecords = brandRecords.filter(r => r.normalized_category === catName);
+    if (subcatName) brandRecords = brandRecords.filter(r => (r.subcategory || 'General') === subcatName);
 
     if (!brandRecords.length) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div>No records for "${brandName}"</div></div>`;
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div>No records for "${brandName}"${catName ? ' in ' + catName : ''}${subcatName ? ' › ' + subcatName : ''}</div>
+          <button class="btn btn-secondary mt-12" onclick="App.Router.go('brand',{id:'${encodeURIComponent(brandName)}'})">View All ${brandName} Inventory</button>
+        </div>`;
       return;
     }
 
@@ -26,14 +43,6 @@ App.Views.BrandDetail = (() => {
     const totalWeight= brandRecords.reduce((s,r) => s+(r.total_weight||0), 0);
     const totalSKUs  = new Set(brandRecords.map(r => r.product_family_id)).size;
     const cats       = [...new Set(brandRecords.map(r => r.normalized_category))];
-
-    // Ensure accurate subcategory classification
-    if (window.App && window.App.Categorizer && typeof window.App.Categorizer.classify === 'function') {
-      for (const r of brandRecords) {
-        const res = App.Categorizer.classify(r.source_category || r.normalized_category, r.normalized_product_name, r.normalized_brand);
-        if (res && res.subcategory) r.subcategory = res.subcategory;
-      }
-    }
 
     // Group by product family
     const familyMap = new Map();
@@ -73,6 +82,42 @@ App.Views.BrandDetail = (() => {
     container.innerHTML = '';
 
     /* ── Header ──────────────────────────────────────────── */
+    let pageSub = '';
+    if (catName && subcatName) {
+      pageSub = `${catName} › ${subcatName} · ${families.length} product families`;
+    } else if (catName) {
+      pageSub = `${catName} · ${families.length} product families`;
+    } else {
+      pageSub = `${cats.join(' · ')} · ${families.length} product families`;
+    }
+
+    let filterControlsHtml = '';
+    if (subcatName) {
+      filterControlsHtml = `
+        <div class="flex items-center gap-8">
+          <div class="badge badge-primary" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px">
+            Context: ${catName} › ${subcatName}
+            <button class="btn-ghost text-xs font-bold ml-4" style="color:inherit;border:none;background:none;cursor:pointer;padding:0"
+                    onclick="App.Router.go('brand',{id:'${encodeURIComponent(brandName)}'})" title="Clear filter (View all products of ${brandName})">✕</button>
+          </div>
+        </div>`;
+    } else if (catName) {
+      filterControlsHtml = `
+        <div class="flex items-center gap-8">
+          <div class="badge badge-primary" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px">
+            Context: ${catName}
+            <button class="btn-ghost text-xs font-bold ml-4" style="color:inherit;border:none;background:none;cursor:pointer;padding:0"
+                    onclick="App.Router.go('brand',{id:'${encodeURIComponent(brandName)}'})" title="Clear filter (View all products of ${brandName})">✕</button>
+          </div>
+        </div>`;
+    } else {
+      filterControlsHtml = `
+        <select class="select" onchange="filterFamilies(this.value)">
+          <option value="">All Categories</option>
+          ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
+        </select>`;
+    }
+
     container.insertAdjacentHTML('beforeend', `
       <div class="page-header">
         <div class="flex items-center gap-14">
@@ -81,14 +126,11 @@ App.Views.BrandDetail = (() => {
           </div>
           <div>
             <div class="page-title">${brandName}</div>
-            <div class="page-sub">${cats.join(' · ')} · ${families.length} product families</div>
+            <div class="page-sub">${pageSub}</div>
           </div>
         </div>
         <div class="flex gap-8">
-          <select class="select" onchange="filterFamilies(this.value)">
-            <option value="">All Categories</option>
-            ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
-          </select>
+          ${filterControlsHtml}
         </div>
       </div>
 
@@ -141,8 +183,8 @@ App.Views.BrandDetail = (() => {
             </svg>
           </div>
           <div class="product-name-block">
-            <div class="product-name">${fam.name || 'Unknown Product'}</div>
-            <div class="product-meta">${variants.length} variant${variants.length!==1?'s':''} · ${fam.subcategory||''}</div>
+            <div class="product-name">${App.Fmt.escapeHtml(fam.name || 'Unknown Product')}</div>
+            <div class="product-meta">${variants.length} variant${variants.length!==1?'s':''} · ${App.Fmt.escapeHtml(fam.subcategory||'')}</div>
           </div>
           <div class="product-summary-stats">
             <div class="product-summary-stat">
@@ -180,12 +222,15 @@ App.Views.BrandDetail = (() => {
   }
 
   function variantRow(v, fam_id) {
+    const cleanUom = App.Fmt.escapeHtml(v.uom || 'N/A');
+    const cleanRaw = App.Fmt.escapeHtml(v.raw_uom || '');
     return `<div class="variant-row" onclick="App.UI.openDrawer('${v.records[0]?.id}')">
-      <div class="variant-uom-badge">${v.uom || 'N/A'}</div>
+      <div class="variant-uom-badge">${cleanUom}</div>
       <div class="variant-name">
         MRP: ${v.mrp ? App.Fmt.currencyFull(v.mrp) : '—'}
-        <span class="text-muted text-xs" style="margin-left:6px">${v.raw_uom !== v.uom ? `(raw: ${v.raw_uom})` : ''}</span>
+        <span class="text-muted text-xs" style="margin-left:6px">${v.raw_uom !== v.uom ? `(raw: ${cleanRaw})` : ''}</span>
       </div>
+
       <div class="variant-stats">
         <div class="variant-stat">
           <div class="variant-stat-val">${App.Fmt.number(v.qty)}</div>

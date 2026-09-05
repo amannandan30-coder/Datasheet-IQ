@@ -80,19 +80,33 @@ App.Views.CategoryDetail = (() => {
     `);
 
     /* ── Subcategory tabs ────────────────────────────────── */
+    const initialSubcat = decodeURIComponent(params.subcat || '');
+    let activeSubcat = initialSubcat;
+    window._activeSubcat = activeSubcat;
+
     const subcats = [...subcatMap.values()].sort((a,b) => b.value - a.value);
     if (subcats.length > 1) {
-      const tabsHtml = subcats.map((sc,i) => {
-        const safeId = `tab-${sc.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
-        return `
-          <button class="subcat-tab ${i===0?'active':''}"
-                  onclick="App.Views.CategoryDetail.showSubcat(this.dataset.subcat)"
-                  data-subcat="${escHtml(sc.name)}"
-                  id="${safeId}">
-            ${escHtml(sc.name)}
-            <span class="subcat-tab-badge">${App.Fmt.number(sc.qty)}</span>
-          </button>`;
-      }).join('');
+      const tabsHtml = `
+        <button class="subcat-tab ${!activeSubcat ? 'active' : ''}"
+                onclick="App.Views.CategoryDetail.showSubcat('')"
+                data-subcat=""
+                id="tab-all">
+          All Subcategories
+          <span class="subcat-tab-badge">${App.Fmt.number(totalUnits)}</span>
+        </button>
+        ${subcats.map(sc => {
+          const safeId = `tab-${sc.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          const isActive = activeSubcat === sc.name;
+          return `
+            <button class="subcat-tab ${isActive ? 'active' : ''}"
+                    onclick="App.Views.CategoryDetail.showSubcat(this.dataset.subcat)"
+                    data-subcat="${escHtml(sc.name)}"
+                    id="${safeId}">
+              ${escHtml(sc.name)}
+              <span class="subcat-tab-badge">${App.Fmt.number(sc.qty)}</span>
+            </button>`;
+        }).join('')}
+      `;
       container.insertAdjacentHTML('beforeend', `
         <div class="subcat-tabs-wrap mb-20" id="subcat-tabs">${tabsHtml}</div>
       `);
@@ -110,9 +124,10 @@ App.Views.CategoryDetail = (() => {
         </div>
       `);
 
-      // Show summary for the first (default active) subcategory
-      const firstSc = subcats[0];
-      _showSubcatSummary(firstSc, totalValue, totalUnits, totalWeight, totalSKUs);
+      // Show summary for active subcategory if selected
+      if (activeSubcat && subcatMap.has(activeSubcat)) {
+        _showSubcatSummary(subcatMap.get(activeSubcat), totalValue, totalUnits, totalWeight, totalSKUs);
+      }
     }
 
     /* ── Brand table ─────────────────────────────────────── */
@@ -137,7 +152,8 @@ App.Views.CategoryDetail = (() => {
     window._catTotalSKUs   = totalSKUs;
     window._subcatMap      = subcatMap;
 
-    buildBrandList(catRecords, container.querySelector('#brand-list-wrap'), totalValue);
+    const initialRecords = activeSubcat ? catRecords.filter(r => (r.subcategory||'General') === activeSubcat) : catRecords;
+    buildBrandList(initialRecords, container.querySelector('#brand-list-wrap'), totalValue, 'value', activeSubcat);
 
     // Subcategory selector
     window.filterBrands = (q) => {
@@ -149,23 +165,31 @@ App.Views.CategoryDetail = (() => {
     };
 
     App.Views.CategoryDetail.showSubcat = (sc) => {
-      const filtered = catRecords.filter(r => (r.subcategory||'General') === sc);
-      buildBrandList(filtered, container.querySelector('#brand-list-wrap'), totalValue);
-      // Deactivate all tabs, then activate the matching one by data-subcat attribute
-      document.querySelectorAll('#subcat-tabs .subcat-tab, #subcat-tabs .btn').forEach(b => {
-        b.classList.remove('active', 'btn-primary');
-        b.classList.add('btn-ghost');
-      });
-      const tab = document.querySelector(`#subcat-tabs [data-subcat="${escHtml(sc)}"]`);
-      if (tab) {
-        tab.classList.add('active');
-        tab.classList.remove('btn-ghost');
+      window._activeSubcat = sc || '';
+      App.State.params.subcat = sc || '';
+      App.UI.updateBreadcrumb('category', { name: catName, subcat: sc || '' });
+
+      const newHash = '#/category?name=' + encodeURIComponent(catName) + (sc ? '&subcat=' + encodeURIComponent(sc) : '');
+      if (window.location.hash !== newHash) {
+        window.history.pushState(null, '', newHash);
       }
 
+      const filtered = sc ? catRecords.filter(r => (r.subcategory||'General') === sc) : catRecords;
+      buildBrandList(filtered, container.querySelector('#brand-list-wrap'), totalValue, 'value', sc || '');
+
+      document.querySelectorAll('#subcat-tabs .subcat-tab').forEach(b => {
+        if ((b.dataset.subcat || '') === (sc || '')) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+
       // Show subcategory summary
-      const scData = window._subcatMap?.get(sc);
-      if (scData) {
-        _showSubcatSummary(scData, totalValue, totalUnits, totalWeight, totalSKUs);
+      if (sc && window._subcatMap?.has(sc)) {
+        _showSubcatSummary(window._subcatMap.get(sc), totalValue, totalUnits, totalWeight, totalSKUs);
+      } else {
+        App.Views.CategoryDetail.closeSummary();
       }
     };
 
@@ -177,8 +201,9 @@ App.Views.CategoryDetail = (() => {
     };
 
     App.Views.CategoryDetail.sort = (by) => {
-      const filtered = catRecords; // could respect subcat filter too
-      buildBrandList(filtered, container.querySelector('#brand-list-wrap'), totalValue, by);
+      const currentSc = window._activeSubcat;
+      const filtered = currentSc ? catRecords.filter(r => (r.subcategory||'General') === currentSc) : catRecords;
+      buildBrandList(filtered, container.querySelector('#brand-list-wrap'), totalValue, by, currentSc);
     };
   }
 
@@ -246,7 +271,7 @@ App.Views.CategoryDetail = (() => {
     });
   }
 
-  function buildBrandList(records, wrap, totalValue, sortBy = 'value') {
+  function buildBrandList(records, wrap, totalValue, sortBy = 'value', activeSubcat = window._activeSubcat) {
     const brandMap = new Map();
     for (const r of records) {
       const b = r.normalized_brand || 'Unknown';
@@ -274,9 +299,9 @@ App.Views.CategoryDetail = (() => {
       el.dataset.brand = b.name;
       el.innerHTML = `
         <div class="brand-rank">${i+1}</div>
-        <div class="brand-avatar">${b.name[0]?.toUpperCase()||'?'}</div>
+        <div class="brand-avatar">${(b.name[0]||'?').toUpperCase()}</div>
         <div class="brand-name-block">
-          <div class="brand-name">${b.name}</div>
+          <div class="brand-name">${escHtml(b.name)}</div>
           <div class="brand-aliases">${b.skus.size} SKUs</div>
         </div>
         <div class="brand-stats">
@@ -299,10 +324,17 @@ App.Views.CategoryDetail = (() => {
         </div>
         <div class="brand-pct-bar"><div class="brand-pct-fill" style="width:${Math.min(100,parseFloat(pct)*3)}%"></div></div>
       `;
-      el.onclick = () => App.Router.go('brand', {
-        id: encodeURIComponent(b.name),
-        cat: encodeURIComponent(window._catName||'')
-      });
+      el.onclick = () => {
+        const routeParams = {
+          id: encodeURIComponent(b.name),
+          cat: encodeURIComponent(window._catName||'')
+        };
+        const currentSc = activeSubcat || window._activeSubcat;
+        if (currentSc) {
+          routeParams.subcat = encodeURIComponent(currentSc);
+        }
+        App.Router.go('brand', routeParams);
+      };
       wrap.appendChild(el);
     });
 

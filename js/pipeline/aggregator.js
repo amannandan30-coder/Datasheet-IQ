@@ -150,6 +150,34 @@ App.Aggregator = (() => {
       });
     }
 
+    // 7. Outlier values (e.g. Unit value > ₹100,000 or negative MRP)
+    const outliers = records.filter(r => (r.variant_mrp && (r.variant_mrp > 100000 || r.variant_mrp < 0)) || (r.source_value && r.source_value < 0));
+    if (outliers.length) {
+      dqIssues.push({
+        id: crypto.randomUUID(), dataset_id,
+        issue_type: 'outlier_values',
+        severity:   'medium',
+        count:      outliers.length,
+        details:    `${outliers.length} records with extreme outlier unit price (>₹100,000) or negative value`,
+        record_ids: outliers.map(r => r.id).slice(0,20),
+        created_at: Date.now(),
+      });
+    }
+
+    // 8. Zero price items with positive stock
+    const zeroPrice = records.filter(r => (r.qty > 0) && (!r.variant_mrp || r.variant_mrp === 0) && (!r.source_value || r.source_value === 0));
+    if (zeroPrice.length) {
+      dqIssues.push({
+        id: crypto.randomUUID(), dataset_id,
+        issue_type: 'zero_price_items',
+        severity:   'low',
+        count:      zeroPrice.length,
+        details:    `${zeroPrice.length} records with quantity in stock but ₹0 pricing/valuation`,
+        record_ids: zeroPrice.map(r => r.id).slice(0,20),
+        created_at: Date.now(),
+      });
+    }
+
     /* ── Status distribution ─────────────────────────────────  */
     const statusMap = {};
     for (const rec of records) {
@@ -159,6 +187,11 @@ App.Aggregator = (() => {
       statusMap[st].value += (rec.source_value || 0);
       statusMap[st].count++;
     }
+
+    // Confidence distribution
+    const confHigh = records.filter(r => (r.subcategory_confidence || r.classification_confidence || r.normalization_confidence) === 'HIGH').length;
+    const confMed  = records.filter(r => (r.subcategory_confidence || r.classification_confidence || r.normalization_confidence) === 'MEDIUM').length;
+    const confLow  = records.filter(r => (r.subcategory_confidence || r.classification_confidence || r.normalization_confidence) === 'LOW').length;
 
     const kpis = {
       total_skus:    totalSKUs,
@@ -171,6 +204,11 @@ App.Aggregator = (() => {
       brand_count:   new Set(records.map(r => r.brand_id)).size,
       category_count: new Set(records.map(r => r.normalized_category)).size,
       status_distribution: statusMap,
+      confidence_distribution: {
+        high: confHigh,
+        medium: confMed,
+        low: confLow
+      }
     };
 
     return { warehouses, dqIssues, kpis };

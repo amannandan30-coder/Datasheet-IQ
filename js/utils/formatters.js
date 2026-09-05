@@ -65,10 +65,21 @@ App.Fmt = (() => {
     });
   }
 
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function badge_confidence(conf) {
     const map = { HIGH:'conf-high', MEDIUM:'conf-medium', LOW:'conf-low', 'MANUAL REVIEW':'conf-review' };
     return map[conf] || 'badge-muted';
   }
 
-  return { currency, currencyFull, number, weight, pct, date, shortDate, badge_confidence };
+  return { currency, currencyFull, number, weight, pct, date, shortDate, badge_confidence, escapeHtml };
 })();
+

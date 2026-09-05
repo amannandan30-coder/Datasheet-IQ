@@ -35,12 +35,12 @@ App.Views.About = (() => {
             </div>
             <div class="text-xs text-muted mt-4">Designed & Engineered Liquidation Inventory Intelligence</div>
             <div class="text-sm text-secondary mt-12" style="line-height:1.6;max-width:780px">
-              "Liquidation IQ was engineered to solve a major real-world bottleneck: analyzing massive, messy, multi-worksheet liquidation Excel files without manual spreadsheet cleanup. It automatically normalizes product names, resolves brand duplicates, separates variants, and calculates accurate inventory valuation with 100% offline privacy."
+              "Liquidation IQ was engineered to solve a major real-world bottleneck: analyzing massive, messy, multi-worksheet liquidation Excel files without manual spreadsheet cleanup. It automatically normalizes product names, resolves brand duplicates, separates variants, and calculates verified inventory valuation with client-side privacy."
             </div>
             
             <div class="flex gap-12 mt-16 flex-wrap about-creator-tags">
               <div class="tag" style="background:rgba(99,102,241,0.15);color:#818cf8;border-color:rgba(99,102,241,0.3);padding:4px 10px">
-                ⚡ 100% Client-Side ETL
+                ⚡ Client-Side ETL
               </div>
               <div class="tag" style="background:rgba(16,185,129,0.15);color:#34d399;border-color:rgba(16,185,129,0.3);padding:4px 10px">
                 🔒 Zero Server Data Leakage
@@ -99,7 +99,7 @@ App.Views.About = (() => {
 
         <div class="card">
           <div style="font-size:24px;margin-bottom:10px">🔒</div>
-          <div class="font-bold text-base mb-6">100% Local First & Privacy Focused</div>
+          <div class="font-bold text-base mb-6">Local First & Privacy Focused</div>
           <div class="text-xs text-muted" style="line-height:1.5">
             All files are parsed and stored locally using IndexedDB. No confidential inventory or financial data is ever uploaded to external cloud servers.
           </div>

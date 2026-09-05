@@ -29,22 +29,30 @@ App.Views.DataQuality = (() => {
     const medium = issues.filter(i => i.severity === 'medium').length;
     const low    = issues.filter(i => i.severity === 'low').length;
 
+    const dataset = await App.DB.getDataset(dataset_id);
+    const confStats = dataset?.kpis?.confidence_distribution || { high: 0, medium: 0, low: 0 };
+
     container.insertAdjacentHTML('beforeend', `
       <div class="flex gap-10 mb-24" style="flex-wrap:wrap">
         <div class="kpi-card" style="--kpi-color:#ef4444;flex:1;min-width:140px">
           <div class="kpi-icon" style="background:#ef444422;color:#ef4444">🔴</div>
-          <div class="kpi-label">High Severity</div>
+          <div class="kpi-label">High Severity Issues</div>
           <div class="kpi-value">${high}</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#f59e0b;flex:1;min-width:140px">
           <div class="kpi-icon" style="background:#f59e0b22;color:#f59e0b">🟡</div>
-          <div class="kpi-label">Medium Severity</div>
+          <div class="kpi-label">Medium Severity Issues</div>
           <div class="kpi-value">${medium}</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#64748b;flex:1;min-width:140px">
           <div class="kpi-icon" style="background:#64748b22;color:#64748b">🔵</div>
-          <div class="kpi-label">Low Severity</div>
+          <div class="kpi-label">Low Severity Issues</div>
           <div class="kpi-value">${low}</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#10b981;flex:1;min-width:140px">
+          <div class="kpi-icon" style="background:#10b98122;color:#10b981">🎯</div>
+          <div class="kpi-label">High Confidence Records</div>
+          <div class="kpi-value">${App.Fmt.number(confStats.high || 0)}</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#6366f1;flex:1;min-width:140px">
           <div class="kpi-icon" style="background:#6366f122;color:#6366f1">🔀</div>
@@ -161,7 +169,12 @@ App.Views.DataQuality = (() => {
     `).join('');
 
     container.insertAdjacentHTML('beforeend', `
-      <div class="section-title mt-24 mb-16">Excluded & Unresolved Source Records (${excludedRecords.length})</div>
+      <div class="section-header mt-24 mb-16" style="display:flex;justify-content:space-between;align-items:center">
+        <div class="section-title">Excluded & Unresolved Source Records (${excludedRecords.length})</div>
+        <button class="btn btn-sm btn-secondary" onclick="App.Views.DataQuality.downloadExcludedCSV()">
+          ⬇️ Export Excluded Rows (CSV)
+        </button>
+      </div>
       <div class="card mb-24">
         <div class="text-xs text-muted mb-12">
           These records were set aside during import to preserve data integrity: 
@@ -279,5 +292,20 @@ App.Views.DataQuality = (() => {
     }
   };
 
-  return { render };
+  async function downloadExcludedCSV() {
+    const dataset_id = App.State.dataset_id;
+    if (!dataset_id) return;
+    const excludedRecords = await App.DB.getAllByIndex('excluded_records', 'dataset_id', dataset_id);
+    if (!excludedRecords || !excludedRecords.length) {
+      App.UI.toast('No excluded records to export');
+      return;
+    }
+    const ds = await App.DB.getDataset(dataset_id);
+    const fname = `${(ds?.filename || 'inventory').replace(/\.[^/.]+$/, '')}_excluded_records`;
+    App.Exporter.exportExcludedRecordsToCSV(fname, excludedRecords);
+    App.UI.toast(`Exported ${excludedRecords.length} excluded records ✅`);
+  }
+
+  return { render, downloadExcludedCSV };
 })();
+

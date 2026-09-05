@@ -39,9 +39,14 @@ App.Pipeline = (() => {
       prog('parse','done',`${rowCount.toLocaleString()} rows found in "${sheetName}"${excludedRows.length ? ` (${excludedRows.length} excluded)` : ''}`);
 
       // ── 3. Column mapping ─────────────────────────────────
-      const { mapping, missing, missingRequired } = App.Validator.mapColumns(headers);
+      const { mapping, missing, missingRequired, suggestions } = App.Validator.mapColumns(headers);
       if (missingRequired.length) {
-        throw new Error(`Required columns missing: ${missingRequired.join(', ')}. Found: ${headers.join(', ')}`);
+        let msg = `Required column missing: "${missingRequired.join(', ')}".\nDetected columns in file: [${headers.join(', ')}].`;
+        const suggList = Object.entries(suggestions || {}).map(([col, match]) => `Did you mean "${match}" for "${col}"?`);
+        if (suggList.length > 0) {
+          msg += `\nSuggestion: ${suggList.join('; ')}`;
+        }
+        throw new Error(msg);
       }
 
       // Apply mapping

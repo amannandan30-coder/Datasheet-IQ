@@ -225,6 +225,8 @@ App.DB = (() => {
   return {
     open, put, putBulk, get, getAll, getAllByIndex, del, clearByDataset,
     count, countByIndex, query,
-    saveDataset, getDataset, getAllDatasets, deleteDataset
+    saveDataset, getDataset, getAllDatasets, deleteDataset,
+    deleteDatasetCascade: deleteDataset
   };
 })();
+

@@ -69,14 +69,15 @@ App.Views.UploadsHistory = (() => {
 })();
 
 /* ============================================================
-   INVENTORY TABLE VIEW (all records with search/filter)
+   INVENTORY TABLE VIEW (all records with debounced search/filter & pagination)
    ============================================================ */
 App.Views.InventoryTable = (() => {
 
   let _allRecords = [];
   let _filtered   = [];
   let _page       = 0;
-  const PAGE_SIZE = 100;
+  const PAGE_SIZE = 50;
+  let _searchTimeout = null;
 
   async function render(container, params, dataset_id) {
     container.innerHTML = `<div class="flex items-center gap-12"><div class="spinner"></div><span class="text-muted">Loading inventory…</span></div>`;
@@ -88,10 +89,10 @@ App.Views.InventoryTable = (() => {
     container.innerHTML = '';
 
     /* ── Filters bar ─────────────────────────────────────── */
-    const cats    = [...new Set(_allRecords.map(r => r.normalized_category))].sort();
-    const brands  = [...new Set(_allRecords.map(r => r.normalized_brand))].sort();
-    const whs     = [...new Set(_allRecords.map(r => r.normalized_warehouse))].sort();
-    const statuses= [...new Set(_allRecords.map(r => r.raw_bad_inventory_type||'unknown'))].sort();
+    const cats    = [...new Set(_allRecords.map(r => r.normalized_category).filter(Boolean))].sort();
+    const brands  = [...new Set(_allRecords.map(r => r.normalized_brand).filter(Boolean))].sort();
+    const whs     = [...new Set(_allRecords.map(r => r.normalized_warehouse || r.warehouse_id).filter(Boolean))].sort();
+    const statuses= [...new Set(_allRecords.map(r => r.raw_bad_inventory_type || r.status || 'unknown'))].sort();
 
     container.insertAdjacentHTML('beforeend', `
       <div class="page-header">
@@ -99,16 +100,19 @@ App.Views.InventoryTable = (() => {
           <div class="page-title">Inventory Records</div>
           <div class="page-sub" id="inv-count">${App.Fmt.number(_allRecords.length)} records</div>
         </div>
-        <button class="btn btn-secondary" onclick="exportCSV()">⬇️ Export CSV</button>
+        <div class="flex gap-8">
+          <button class="btn btn-secondary" onclick="exportFiltered('csv')">⬇️ Export CSV</button>
+          <button class="btn btn-primary" onclick="exportFiltered('xlsx')">📊 Export XLSX</button>
+        </div>
       </div>
 
       <div class="card mb-16" style="overflow:visible">
         <div class="filter-row" id="filter-row">
-          <input class="input" placeholder="Search product, brand, item ID…" oninput="applySearch(this.value)" id="inv-search">
-          <select class="select" onchange="applyFilter('cat',this.value)"><option value="">All Categories</option>${cats.map(c=>`<option>${c}</option>`).join('')}</select>
-          <select class="select" onchange="applyFilter('brand',this.value)"><option value="">All Brands</option>${brands.map(b=>`<option>${b}</option>`).join('')}</select>
-          <select class="select" onchange="applyFilter('wh',this.value)"><option value="">All Warehouses</option>${whs.map(w=>`<option>${w}</option>`).join('')}</select>
-          <select class="select" onchange="applyFilter('status',this.value)"><option value="">All Statuses</option>${statuses.map(s=>`<option>${s}</option>`).join('')}</select>
+          <input class="input" placeholder="Search product, brand, item ID…" oninput="applySearchDebounced(this.value)" id="inv-search">
+          <select class="select" onchange="applyFilter('cat',this.value)"><option value="">All Categories</option>${cats.map(c=>`<option value="${App.Fmt.escapeHtml(c)}">${App.Fmt.escapeHtml(c)}</option>`).join('')}</select>
+          <select class="select" onchange="applyFilter('brand',this.value)"><option value="">All Brands</option>${brands.map(b=>`<option value="${App.Fmt.escapeHtml(b)}">${App.Fmt.escapeHtml(b)}</option>`).join('')}</select>
+          <select class="select" onchange="applyFilter('wh',this.value)"><option value="">All Warehouses</option>${whs.map(w=>`<option value="${App.Fmt.escapeHtml(w)}">${App.Fmt.escapeHtml(w)}</option>`).join('')}</select>
+          <select class="select" onchange="applyFilter('status',this.value)"><option value="">All Statuses</option>${statuses.map(s=>`<option value="${App.Fmt.escapeHtml(s)}">${App.Fmt.escapeHtml(s)}</option>`).join('')}</select>
         </div>
         <div id="active-filters" class="filter-bar" style="margin-top:8px;display:none"></div>
       </div>
@@ -135,11 +139,11 @@ App.Views.InventoryTable = (() => {
             <tbody id="inv-tbody"></tbody>
           </table>
         </div>
-        <div class="data-table-pagination">
-          <span id="inv-page-info"></span>
-          <div class="flex gap-8">
-            <button class="btn btn-sm btn-secondary" onclick="prevPage()">← Prev</button>
-            <button class="btn btn-sm btn-secondary" onclick="nextPage()">Next →</button>
+        <div class="data-table-pagination" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px">
+          <span id="inv-page-info" style="font-size:13px;color:var(--text-muted)"></span>
+          <div class="flex gap-8 items-center">
+            <button class="btn btn-sm btn-secondary" onclick="prevPage()" id="inv-prev-btn">← Prev</button>
+            <button class="btn btn-sm btn-secondary" onclick="nextPage()" id="inv-next-btn">Next →</button>
           </div>
         </div>
       </div>
@@ -150,55 +154,101 @@ App.Views.InventoryTable = (() => {
     /* ── Active filters state ────────────────────────────── */
     window._invFilters = { search:'', cat:'', brand:'', wh:'', status:'' };
 
-    window.applySearch = (q) => { window._invFilters.search = q; rebuildFiltered(); };
+    window.applySearchDebounced = (q) => {
+      clearTimeout(_searchTimeout);
+      _searchTimeout = setTimeout(() => {
+        window._invFilters.search = q;
+        rebuildFiltered();
+      }, 200);
+    };
+
     window.applyFilter = (key, val) => { window._invFilters[key] = val; rebuildFiltered(); };
     window.sortBy      = (col) => { _filtered.sort((a,b) => { const av=a[col], bv=b[col]; return typeof bv==='number'?bv-av:(bv||'').toString().localeCompare((av||'').toString()); }); _page=0; renderPage(); };
     window.prevPage    = () => { if(_page > 0){_page--;renderPage();} };
     window.nextPage    = () => { if((_page+1)*PAGE_SIZE < _filtered.length){_page++;renderPage();} };
-    window.exportCSV   = () => exportToCSV(_filtered);
+    window.exportFiltered = (fmt) => {
+      if (!_filtered.length) {
+        App.UI.toast('No records to export');
+        return;
+      }
+      const fname = `inventory_filtered_${Date.now()}`;
+      if (fmt === 'xlsx') {
+        App.Exporter.exportToXLSX(fname, _filtered);
+      } else {
+        App.Exporter.exportToCSV(fname, _filtered);
+      }
+      App.UI.toast(`Exported ${_filtered.length} filtered records to ${fmt.toUpperCase()} ✅`);
+    };
   }
 
   function rebuildFiltered() {
     const f = window._invFilters;
     _filtered = _allRecords.filter(r => {
-      if (f.search  && !`${r.normalized_product_name} ${r.normalized_brand} ${r.item_id||''}`.toLowerCase().includes(f.search.toLowerCase())) return false;
+      if (f.search) {
+        const fullStr = `${r.normalized_product_name||''} ${r.name||''} ${r.normalized_brand||''} ${r.item_id||''} ${r.upc||''}`.toLowerCase();
+        if (!fullStr.includes(f.search.toLowerCase())) return false;
+      }
       if (f.cat    && r.normalized_category !== f.cat)    return false;
       if (f.brand  && r.normalized_brand    !== f.brand)  return false;
-      if (f.wh     && r.normalized_warehouse!== f.wh)     return false;
-      if (f.status && (r.raw_bad_inventory_type||'unknown') !== f.status) return false;
+      if (f.wh     && (r.normalized_warehouse || r.warehouse_id) !== f.wh) return false;
+      if (f.status && (r.raw_bad_inventory_type || r.status || 'unknown') !== f.status) return false;
       return true;
     });
     _page = 0;
     renderPage();
-    document.getElementById('inv-count').textContent = `${App.Fmt.number(_filtered.length)} records (filtered)`;
+    const countEl = document.getElementById('inv-count');
+    if (countEl) countEl.textContent = `${App.Fmt.number(_filtered.length)} records (filtered)`;
   }
 
   function renderPage() {
     const tbody  = document.getElementById('inv-tbody');
     const info   = document.getElementById('inv-page-info');
+    const prevBtn= document.getElementById('inv-prev-btn');
+    const nextBtn= document.getElementById('inv-next-btn');
     if (!tbody) return;
 
+    const total  = _filtered.length;
     const start  = _page * PAGE_SIZE;
     const slice  = _filtered.slice(start, start + PAGE_SIZE);
-    const total  = _filtered.length;
 
-    tbody.innerHTML = slice.map(r => `
-      <tr>
-        <td class="truncate" style="max-width:200px" title="${r.normalized_product_name||''}">${r.normalized_product_name||'—'}</td>
-        <td>${r.normalized_brand||'—'}</td>
-        <td>${r.normalized_category||'—'}</td>
-        <td>${r.subcategory||'—'}</td>
-        <td><span class="tag">${r.normalized_uom||r.raw_uom||'—'}</span></td>
-        <td>${r.variant_mrp ? App.Fmt.currencyFull(r.variant_mrp) : '—'}</td>
-        <td class="font-semibold">${App.Fmt.number(r.qty)}</td>
-        <td>${r.source_value ? App.Fmt.currency(r.source_value) : '—'}</td>
-        <td>${App.Fmt.weight(r.total_weight)}</td>
-        <td>${r.normalized_warehouse||'—'}</td>
-        <td><span class="badge ${statusBadge(r.raw_bad_inventory_type)}">${r.raw_bad_inventory_type||'unknown'}</span></td>
-        <td><button class="btn btn-sm btn-ghost" onclick="App.UI.openDrawer('${r.id}')">View</button></td>
-      </tr>`).join('');
+    if (total === 0) {
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted)">No matching records found</td></tr>`;
+      if (info) info.textContent = 'Showing 0 of 0 records';
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.disabled = true;
+      return;
+    }
 
-    if (info) info.textContent = `Showing ${start+1}–${Math.min(start+PAGE_SIZE, total)} of ${App.Fmt.number(total)}`;
+    tbody.innerHTML = slice.map(r => {
+      const prodName = App.Fmt.escapeHtml(r.normalized_product_name || r.name || '—');
+      const brand    = App.Fmt.escapeHtml(r.normalized_brand || '—');
+      const cat      = App.Fmt.escapeHtml(r.normalized_category || '—');
+      const subcat   = App.Fmt.escapeHtml(r.subcategory || '—');
+      const uom      = App.Fmt.escapeHtml(r.normalized_uom || r.raw_uom || '—');
+      const wh       = App.Fmt.escapeHtml(r.normalized_warehouse || r.warehouse_id || '—');
+      const status   = App.Fmt.escapeHtml(r.raw_bad_inventory_type || r.status || 'unknown');
+
+      return `
+        <tr>
+          <td class="truncate" style="max-width:200px" title="${prodName}">${prodName}</td>
+          <td>${brand}</td>
+          <td>${cat}</td>
+          <td>${subcat}</td>
+          <td><span class="tag">${uom}</span></td>
+          <td>${r.variant_mrp ? App.Fmt.currencyFull(r.variant_mrp) : (r.mrp ? App.Fmt.currencyFull(r.mrp) : '—')}</td>
+          <td class="font-semibold">${App.Fmt.number(r.qty || 0)}</td>
+          <td>${r.source_value ? App.Fmt.currency(r.source_value) : '—'}</td>
+          <td>${App.Fmt.weight(r.total_weight || r.weight)}</td>
+          <td>${wh}</td>
+          <td><span class="badge ${statusBadge(status)}">${status}</span></td>
+          <td><button class="btn btn-sm btn-ghost" onclick="App.UI.openDrawer('${r.id}')">Inspect</button></td>
+        </tr>`;
+    }).join('');
+
+    const maxPage = Math.ceil(total / PAGE_SIZE);
+    if (info) info.textContent = `Showing ${start+1}–${Math.min(start+PAGE_SIZE, total)} of ${App.Fmt.number(total)} records (Page ${_page+1} of ${maxPage})`;
+    if (prevBtn) prevBtn.disabled = (_page <= 0);
+    if (nextBtn) nextBtn.disabled = ((_page + 1) * PAGE_SIZE >= total);
   }
 
   function statusBadge(type) {
@@ -206,19 +256,10 @@ App.Views.InventoryTable = (() => {
     if (t==='damaged') return 'badge-danger';
     if (t==='expired') return 'badge-purple';
     if (t.includes('expir')) return 'badge-warning';
+    if (t==='saleable') return 'badge-success';
     return 'badge-muted';
-  }
-
-  function exportToCSV(records) {
-    const cols = ['normalized_product_name','normalized_brand','normalized_category','subcategory','normalized_uom','variant_mrp','qty','source_value','total_weight','normalized_warehouse','raw_bad_inventory_type','item_id','upc'];
-    const header = cols.join(',');
-    const rows   = records.map(r => cols.map(c => `"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(','));
-    const csv    = [header,...rows].join('\n');
-    const blob   = new Blob([csv], {type:'text/csv'});
-    const url    = URL.createObjectURL(blob);
-    const a      = document.createElement('a'); a.href=url; a.download='inventory_export.csv'; a.click();
-    URL.revokeObjectURL(url);
   }
 
   return { render };
 })();
+

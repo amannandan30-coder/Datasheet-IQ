@@ -110,7 +110,7 @@ App.Views.Landing = (() => {
                 <div class="stat-sep">•</div>
                 <div class="pill-stat"><span class="stat-num">15,144.22 KG</span> <span class="stat-lbl">Net Weight</span></div>
                 <div class="stat-sep">•</div>
-                <div class="pill-stat tag-green"><span>100% Deterministic</span></div>
+                <div class="pill-stat tag-green"><span>Deterministic Pipeline</span></div>
               </div>
 
             </div>
@@ -169,11 +169,11 @@ App.Views.Landing = (() => {
                 <div class="bento-card-glow"></div>
                 <div class="bento-header-row">
                   <div class="bento-icon-box icon-emerald">⚙️</div>
-                  <span class="bento-status-pill pill-emerald">100% Audit Proof</span>
+                  <span class="bento-status-pill pill-emerald">Audit Traceable</span>
                 </div>
                 <h3 class="bento-title">Zero Data Loss Normalizer</h3>
                 <p class="bento-desc">
-                  Every row in the manifest is accounted for. Discrepancies, summary lines, and pack conversions are logged with 100% mathematical certainty.
+                  Every row in the manifest is accounted for. Discrepancies, summary lines, and pack conversions are logged with traceable mathematical reconciliation.
                 </p>
                 <div class="bento-stat-stack">
                   <div class="stat-mini-bar">
@@ -227,7 +227,7 @@ App.Views.Landing = (() => {
                 <div class="bento-privacy-grid">
                   <div class="privacy-feature-item">
                     <span class="feature-icon">🛡️</span>
-                    <span>100% Local Encryption</span>
+                    <span>Local Storage Isolation</span>
                   </div>
                   <div class="privacy-feature-item">
                     <span class="feature-icon">⚡</span>
@@ -423,17 +423,160 @@ App.Views.Landing = (() => {
                       <span>1-Click XLSX Export</span>
                     </div>
                   </div>
+                <!-- Left Column: Key Stats & Live Highlights -->
+                <div class="command-left-col">
+                  
+                  <!-- Stat Highlights Bar -->
+                  <div class="command-stats-strip">
+                    <div class="cmd-stat-box stat-purple">
+                      <div class="cmd-stat-val">7,980</div>
+                      <div class="cmd-stat-label">Manifest Rows</div>
+                      <div class="cmd-stat-sub">100% Parsed & Cleaned</div>
+                    </div>
+                    <div class="cmd-stat-box stat-cyan">
+                      <div class="cmd-stat-val">20,861</div>
+                      <div class="cmd-stat-label">Total Units</div>
+                      <div class="cmd-stat-sub">12 Categories</div>
+                    </div>
+                    <div class="cmd-stat-box stat-emerald">
+                      <div class="cmd-stat-val">15,144</div>
+                      <div class="cmd-stat-label">Net Weight (KG)</div>
+                      <div class="cmd-stat-sub">Deterministic Sum</div>
+                    </div>
+                  </div>
+
+                  <!-- Live Stream Terminal Preview -->
+                  <div class="command-feed-card">
+                    <div class="feed-header">
+                      <div class="flex items-center gap-8">
+                        <span class="feed-terminal-icon">⚡</span>
+                        <span class="feed-title">REAL-TIME INVENTORY AUDIT STREAM</span>
+                      </div>
+                      <span class="feed-badge">LIVE METRICS</span>
+                    </div>
+                    
+                    <div class="feed-body">
+                      
+                      <div class="feed-item item-accent-purple">
+                        <div class="feed-item-icon">🌾</div>
+                        <div class="feed-item-content">
+                          <div class="feed-item-top">
+                            <span class="feed-item-name">Atta, Flours & Sooji</span>
+                            <span class="feed-item-val font-bold">6,290.00 KG</span>
+                          </div>
+                          <div class="feed-item-meta">
+                            <span>41.5% Manifest Vol</span> • <span>12 SKUs Resolved</span> • <span class="text-success">Zero Loss</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="feed-item item-accent-cyan">
+                        <div class="feed-item-icon">🧴</div>
+                        <div class="feed-item-content">
+                          <div class="feed-item-top">
+                            <span class="feed-item-name">Personal Care & Hygiene</span>
+                            <span class="feed-item-val font-bold">3,613 Units</span>
+                          </div>
+                          <div class="feed-item-meta">
+                            <span>17.3% Unit Volume</span> • <span>Dettol, Nivea, Savlon</span> • <span class="text-cyan">High Velocity</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="feed-item item-accent-indigo">
+                        <div class="feed-item-icon">✨</div>
+                        <div class="feed-item-content">
+                          <div class="feed-item-top">
+                            <span class="feed-item-name">Household & Cleaning</span>
+                            <span class="feed-item-val font-bold">5,038 Units</span>
+                          </div>
+                          <div class="feed-item-meta">
+                            <span>24.1% Unit Volume</span> • <span>Vim, Harpic, Colin</span> • <span class="text-indigo">Verified</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="feed-item item-accent-emerald">
+                        <div class="feed-item-icon">🍵</div>
+                        <div class="feed-item-content">
+                          <div class="feed-item-top">
+                            <span class="feed-item-name">Beverages & Coffee</span>
+                            <span class="feed-item-val font-bold">1,023.50 KG</span>
+                          </div>
+                          <div class="feed-item-meta">
+                            <span>6.8% Manifest Vol</span> • <span>Tata Tea, Red Label</span> • <span class="text-emerald">Standard</span>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Right Column: Interactive Query Sandbox -->
+                <div class="command-right-col">
+                  
+                  <div class="query-sandbox-card">
+                    <div class="sandbox-header">
+                      <div class="sandbox-title-wrap">
+                        <span class="sandbox-spark">🤖</span>
+                        <div>
+                          <div class="sandbox-title">Interactive NLP Query Matrix</div>
+                          <div class="sandbox-sub">Audited Natural Language Intelligence Engine</div>
+                        </div>
+                      </div>
+                      <span class="sandbox-status-pill">ONLINE</span>
+                    </div>
+
+                    <!-- Sandbox Prompt Form -->
+                    <div class="sandbox-input-area">
+                      <div class="sandbox-input-shell">
+                        <span class="sandbox-prompt-char">&gt;</span>
+                        <input type="text" id="landing-hero-nl-input" class="sandbox-input-field" placeholder="Ask anything (e.g. 'How much Atta do we have?')" value="Show me the top 3 highest weight categories" onkeydown="if(event.key==='Enter') App.Views.Landing.runHeroQuery()">
+                        <button class="sandbox-run-btn" onclick="App.Views.Landing.runHeroQuery()">
+                          <span>Execute</span>
+                          <span class="run-arrow">→</span>
+                        </button>
+                      </div>
+                      
+                      <!-- Quick suggestion chips -->
+                      <div class="sandbox-chips-row">
+                        <span class="chip-label">Quick Prompts:</span>
+                        <button class="sandbox-chip" onclick="App.Views.Landing.setQuery('How much Atta do we have?')">Atta Stock</button>
+                        <button class="sandbox-chip" onclick="App.Views.Landing.setQuery('Which brand has highest units?')">Top Brands</button>
+                        <button class="sandbox-chip" onclick="App.Views.Landing.setQuery('Show expiry risk inventory')">Expiry Audit</button>
+                        <button class="sandbox-chip" onclick="App.Views.Landing.setQuery('Summary of Personal Care')">Personal Care</button>
+                      </div>
+                    </div>
+
+                    <!-- Sandbox Output Console -->
+                    <div class="sandbox-console-output" id="landing-hero-nl-output">
+                      <div class="output-row">
+                        <span class="output-tag tag-ready">SYSTEM READY</span>
+                        <span class="output-text">Query engine indexed 7,980 inventory records. Type a question or select a quick prompt above.</span>
+                      </div>
+                    </div>
+
+                  </div>
+
                 </div>
 
               </div>
 
-              <!-- Footer Ticker Line -->
-              <div class="command-footer-ticker">
-                <div class="ticker-item"><span>⚡ Database:</span> SQLite & IndexedDB Ready</div>
-                <div class="ticker-divider">•</div>
-                <div class="ticker-item"><span>📊 Manifest SKUs:</span> 7,980 Parsed</div>
-                <div class="ticker-divider">•</div>
-                <div class="ticker-item"><span>⚖️ Net Weight:</span> 15,144.22 KG Reconciled</div>
+              <!-- Bottom CTA Bar inside HUD -->
+              <div class="command-cta-banner">
+                <div class="cta-banner-left">
+                  <span class="cta-pulse-dot"></span>
+                  <div>
+                    <strong>Ready to audit your own inventory manifest?</strong>
+                    <div class="cta-sub">Upload your Excel file now for zero-data-loss parsing in &lt; 2 seconds.</div>
+                  </div>
+                </div>
+                <button class="btn btn-primary btn-glow" onclick="App.Router.go('uploads')">
+                  <span>Open Ingestion Console</span>
+                  <span class="btn-arrow">→</span>
+                </button>
               </div>
 
             </div>
@@ -441,12 +584,11 @@ App.Views.Landing = (() => {
           </div>
         </section>
 
-        <!-- ── ABOUT / ENTERPRISE TRUST SECTION ─────────────────── -->
-        <section class="landing-section about-section" id="about">
+        <!-- ── MANIFESTO / ENTERPRISE GUARANTEE SECTION ───────────── -->
+        <section class="landing-section manifesto-section" id="about">
           <div class="landing-container">
             
-            <div class="manifesto-card animate-hud">
-              <div class="manifesto-glow-border"></div>
+            <div class="manifesto-card">
               <div class="manifesto-aura"></div>
               
               <!-- Corner Bracket Accents -->
@@ -458,7 +600,7 @@ App.Views.Landing = (() => {
               <div class="manifesto-header">
                 <div class="manifesto-badge">
                   <span class="badge-dot dot-emerald"></span>
-                  <span>ENTERPRISE GUARANTEE & AUDIT MANIFESTO</span>
+                  <span>ENTERPRISE ARCHITECTURE & AUDIT STANDARDS</span>
                 </div>
                 <div class="manifesto-status-tag">
                   <span>SYSTEM AUDIT VERIFIED</span>
@@ -466,7 +608,7 @@ App.Views.Landing = (() => {
               </div>
 
               <h2 class="manifesto-title">
-                Designed for Zero Data Loss & <span class="gradient-text-emerald">Absolute Accuracy</span>
+                Designed for Zero Data Loss & <span class="gradient-text-emerald">Audited Accuracy</span>
               </h2>
 
               <div class="manifesto-callout-box">
@@ -486,7 +628,7 @@ App.Views.Landing = (() => {
                   </div>
                   <div class="guarantee-text">
                     <div class="flex items-center justify-between mb-4">
-                      <div class="guarantee-title">Zero Data Loss</div>
+                      <div class="guarantee-title">Zero Unaccounted Rows</div>
                       <span class="guarantee-tag tag-emerald">0 Rows Dropped</span>
                     </div>
                     <div class="guarantee-desc">Every summary row, duplicate, or excluded item is reconcilable with full mathematical proof.</div>
@@ -500,9 +642,9 @@ App.Views.Landing = (() => {
                   <div class="guarantee-text">
                     <div class="flex items-center justify-between mb-4">
                       <div class="guarantee-title">Deterministic Engine</div>
-                      <span class="guarantee-tag tag-cyan">0% Hallucination</span>
+                      <span class="guarantee-tag tag-cyan">Zero LLM Inferences</span>
                     </div>
-                    <div class="guarantee-desc">100% reproducible pack conversions and weight calculations without AI guesswork.</div>
+                    <div class="guarantee-desc">Reproducible deterministic pack conversions and weight calculations without AI guesswork.</div>
                   </div>
                 </div>
 
@@ -512,7 +654,7 @@ App.Views.Landing = (() => {
                   </div>
                   <div class="guarantee-text">
                     <div class="flex items-center justify-between mb-4">
-                      <div class="guarantee-title">Client-Side Privacy</div>
+                      <div class="guarantee-title">Client-Side Processing</div>
                       <span class="guarantee-tag tag-indigo">Local Browser DB</span>
                     </div>
                     <div class="guarantee-desc">All inventory records stay in your local browser's SQLite / IndexedDB memory.</div>

@@ -179,15 +179,15 @@ body {
 .card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 20px;
+  border-radius: var(--r-xl);
+  padding: 24px 26px;
 }
 
 .card-elevated {
   background: var(--bg-surface-2);
   border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 20px;
+  border-radius: var(--r-xl);
+  padding: 24px 26px;
   box-shadow: var(--shadow-md);
 }
 

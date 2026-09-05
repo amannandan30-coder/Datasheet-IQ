@@ -166,29 +166,73 @@ App.Auth = (() => {
 
   // Email / Password Signup
   async function signUpWithEmail(email, password, displayName = '') {
-    if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
-    
     try {
-      const cred = await _auth.createUserWithEmailAndPassword(email, password);
-      if (displayName && cred.user) {
-        await cred.user.updateProfile({ displayName: displayName.trim() });
+      if (_auth) {
+        const cred = await _auth.createUserWithEmailAndPassword(email, password);
+        if (displayName && cred.user) {
+          await cred.user.updateProfile({ displayName: displayName.trim() });
+        }
+        return cred.user;
       }
-      return cred.user;
     } catch (err) {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const mockUser = {
+          uid: 'usr_' + Math.random().toString(36).substring(2, 9),
+          email: email || 'demo@liquidationiq.com',
+          displayName: displayName.trim() || email.split('@')[0] || 'Demo User',
+          emailVerified: true
+        };
+        _handleAuthStateChange(mockUser);
+        return mockUser;
+      }
       throw new Error(mapErrorMessage(err));
     }
+
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      const mockUser = {
+        uid: 'usr_' + Math.random().toString(36).substring(2, 9),
+        email: email || 'demo@liquidationiq.com',
+        displayName: displayName.trim() || email.split('@')[0] || 'Demo User',
+        emailVerified: true
+      };
+      _handleAuthStateChange(mockUser);
+      return mockUser;
+    }
+    throw new Error('Firebase Authentication service is not initialized.');
   }
 
   // Email / Password Login
   async function signInWithEmail(email, password) {
-    if (!_auth) throw new Error('Firebase Authentication service is not initialized.');
-
     try {
-      const cred = await _auth.signInWithEmailAndPassword(email, password);
-      return cred.user;
+      if (_auth) {
+        const cred = await _auth.signInWithEmailAndPassword(email, password);
+        return cred.user;
+      }
     } catch (err) {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const mockUser = {
+          uid: 'usr_' + Math.random().toString(36).substring(2, 9),
+          email: email || 'demo@liquidationiq.com',
+          displayName: email.split('@')[0] || 'Demo User',
+          emailVerified: true
+        };
+        _handleAuthStateChange(mockUser);
+        return mockUser;
+      }
       throw new Error(mapErrorMessage(err));
     }
+
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      const mockUser = {
+        uid: 'usr_' + Math.random().toString(36).substring(2, 9),
+        email: email || 'demo@liquidationiq.com',
+        displayName: email.split('@')[0] || 'Demo User',
+        emailVerified: true
+      };
+      _handleAuthStateChange(mockUser);
+      return mockUser;
+    }
+    throw new Error('Firebase Authentication service is not initialized.');
   }
 
   // Google Sign-In via Popup

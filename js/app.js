@@ -254,9 +254,25 @@ App.UI = {
     if (!bc) return;
     const crumbs = [{ label: 'Dashboard', route: 'dashboard' }];
     if (route === 'category' && params.name) {
-      crumbs.push({ label: decodeURIComponent(params.name), active: true });
+      if (params.subcat) {
+        crumbs.push({ label: decodeURIComponent(params.name), route: 'category', routeParams: { name: params.name } });
+        crumbs.push({ label: decodeURIComponent(params.subcat), active: true });
+      } else {
+        crumbs.push({ label: decodeURIComponent(params.name), active: true });
+      }
     } else if (route === 'brand' && params.id) {
-      if (params.cat) crumbs.push({ label: decodeURIComponent(params.cat), route: 'category', routeParams: {name:params.cat} });
+      if (params.cat) {
+        crumbs.push({ label: decodeURIComponent(params.cat), route: 'category', routeParams: { name: params.cat } });
+        if (params.subcat) {
+          crumbs.push({
+            label: decodeURIComponent(params.subcat),
+            route: 'category',
+            routeParams: { name: params.cat, subcat: params.subcat }
+          });
+        }
+      } else {
+        crumbs.push({ label: 'All Brands', route: 'brands' });
+      }
       crumbs.push({ label: decodeURIComponent(params.id), active: true });
     } else if (route !== 'dashboard') {
       crumbs.push({ label: route.charAt(0).toUpperCase()+route.slice(1), active: true });
@@ -380,9 +396,9 @@ App.UI = {
     overlay.className = 'modal-overlay';
     overlay.id = 'upload-modal-overlay';
     overlay.innerHTML = `
-      <div class="modal" id="upload-modal">
+      <div class="modal" id="upload-modal" style="max-width:560px">
         <div class="modal-header">
-          <div class="modal-title">📂 Upload Inventory File</div>
+          <div class="modal-title">📂 Upload Inventory Spreadsheet</div>
           <button class="modal-close" onclick="App.UI.closeUploadModal()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -392,22 +408,35 @@ App.UI = {
         <div class="modal-body">
           <div class="drop-zone" id="drop-zone">
             <div class="drop-zone-icon">📊</div>
-            <div class="drop-zone-title">Drag & Drop your Excel file here</div>
-            <div class="drop-zone-sub">or click to browse — supports .xlsx, .xls, .csv (max 50 MB)</div>
+            <div class="drop-zone-title">Drag & Drop your Excel or CSV file here</div>
+            <div class="drop-zone-sub">or click to browse — supports .xlsx, .xls, .csv (up to 100 MB)</div>
             <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
           </div>
 
-          <div id="file-info" style="display:none" class="mt-16">
-            <div class="flex items-center gap-10 mb-12">
-              <span style="font-size:24px">📄</span>
-              <div>
-                <div class="font-semibold" id="file-name"></div>
-                <div class="text-xs text-muted" id="file-size"></div>
+          <div id="file-info" style="display:none" class="mt-16 card" style="background:var(--bg-surface-2);padding:12px 16px">
+            <div class="flex items-center justify-between mb-8">
+              <div class="flex items-center gap-10">
+                <span style="font-size:24px">📄</span>
+                <div>
+                  <div class="font-semibold text-sm" id="file-name"></div>
+                  <div class="text-xs text-muted" id="file-size"></div>
+                </div>
               </div>
+              <span class="badge badge-success" id="file-status-badge">Validated</span>
+            </div>
+            <div id="sheet-preview-list" style="font-size:12px;color:var(--text-muted);border-top:1px solid var(--border-subtle);padding-top:8px;margin-top:8px;display:none">
+              <strong>Detected Worksheets:</strong> <span id="sheet-preview-names"></span>
             </div>
           </div>
 
           <div id="pipeline-stages-wrap" style="display:none" class="mt-16">
+            <div class="flex justify-between items-center mb-8">
+              <div class="text-xs font-semibold text-muted" id="pipeline-current-action">Processing pipeline…</div>
+              <div class="text-xs font-bold text-primary" id="pipeline-progress-pct">0%</div>
+            </div>
+            <div style="width:100%;height:6px;background:var(--bg-surface-2);border-radius:3px;overflow:hidden;margin-bottom:14px">
+              <div id="pipeline-progress-bar" style="width:0%;height:100%;background:linear-gradient(90deg, #6366f1, #10b981);transition:width 0.3s ease"></div>
+            </div>
             <div class="pipeline-stages" id="pipeline-stages">
               ${App.Pipeline.STAGES.map(s => `
                 <div class="pipeline-stage pending" id="stage-${s.id}">
@@ -419,13 +448,18 @@ App.UI = {
           </div>
 
           <div id="upload-error" class="mt-12" style="display:none">
-            <div class="badge badge-danger" id="upload-error-msg"></div>
+            <div class="card" style="background:#ef444415;border:1px solid #ef444455;color:#ef4444;font-size:13px;padding:12px;white-space:pre-wrap;line-height:1.4" id="upload-error-msg"></div>
+          </div>
+
+          <div class="mt-16 flex items-center gap-8" style="font-size:11px;color:var(--text-muted);border-top:1px solid var(--border-subtle);padding-top:10px">
+            <span>🔒</span>
+            <span><strong>Technical Privacy Standard:</strong> Client-Side Execution. File data is processed solely in local browser memory and IndexedDB with zero remote transmission.</span>
           </div>
         </div>
         <div class="modal-footer" id="modal-footer">
           <button class="btn btn-ghost" onclick="App.UI.closeUploadModal()">Cancel</button>
           <button class="btn btn-primary" id="process-btn" onclick="App.UI.processFile()" disabled>
-            Process File
+            Process Spreadsheet
           </button>
         </div>
       </div>`;
@@ -449,7 +483,7 @@ App.UI = {
 
   _pendingFile: null,
 
-  _setFile(file) {
+  async _setFile(file) {
     App.UI._pendingFile = file;
     const validation = App.Validator.validateFile(file);
     const errEl  = document.getElementById('upload-error');
@@ -458,9 +492,11 @@ App.UI = {
     const info   = document.getElementById('file-info');
     const fname  = document.getElementById('file-name');
     const fsize  = document.getElementById('file-size');
+    const sheetListEl = document.getElementById('sheet-preview-list');
+    const sheetNamesEl = document.getElementById('sheet-preview-names');
 
     if (!validation.ok) {
-      errEl.style.display = ''; errMsg.textContent = validation.errors.join(' | ');
+      errEl.style.display = ''; errMsg.textContent = validation.errors.join('\n');
       btn.disabled = true; return;
     }
     errEl.style.display = 'none';
@@ -468,6 +504,21 @@ App.UI = {
     fname.textContent   = file.name;
     fsize.textContent   = `${(file.size/1024/1024).toFixed(2)} MB`;
     btn.disabled        = false;
+
+    // Optional lightweight sheet inspection
+    if (typeof XLSX !== 'undefined' && file.name.endsWith('.xlsx')) {
+      try {
+        const slice = file.slice(0, Math.min(file.size, 1024 * 1024 * 5));
+        const buf = await slice.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array', bookSheets: true });
+        if (wb && wb.SheetNames && wb.SheetNames.length) {
+          sheetListEl.style.display = 'block';
+          sheetNamesEl.textContent = wb.SheetNames.join(', ');
+        }
+      } catch (e) {
+        // Non-blocking preview failure
+      }
+    }
   },
 
   async processFile() {
@@ -479,26 +530,49 @@ App.UI = {
     document.getElementById('pipeline-stages-wrap').style.display = '';
     document.getElementById('modal-footer').style.display = 'none';
 
+    const stageIds = App.Pipeline.STAGES.map(s => s.id);
+    let completedStages = 0;
+
     const result = await App.Pipeline.run(file, (stageId, status, msg) => {
       const stageEl   = document.getElementById(`stage-${stageId}`);
       const iconEl    = document.getElementById(`stage-icon-${stageId}`);
       const statusEl  = document.getElementById(`stage-status-${stageId}`);
+      const pctEl     = document.getElementById(`pipeline-progress-pct`);
+      const barEl     = document.getElementById(`pipeline-progress-bar`);
+      const actEl     = document.getElementById(`pipeline-current-action`);
+
       if (!stageEl) return;
 
       stageEl.className = `pipeline-stage ${status}`;
-      if (status === 'active') iconEl.innerHTML = '<div class="spinner" style="width:16px;height:16px"></div>';
-      if (status === 'done')   iconEl.textContent = '✅';
-      if (status === 'error')  iconEl.textContent = '❌';
+      if (status === 'active') {
+        iconEl.innerHTML = '<div class="spinner" style="width:16px;height:16px"></div>';
+        if (actEl) actEl.textContent = msg || `Running stage: ${stageId}`;
+      }
+      if (status === 'done') {
+        iconEl.textContent = '✅';
+        completedStages++;
+        const pct = Math.min(Math.round((completedStages / stageIds.length) * 100), 100);
+        if (pctEl) pctEl.textContent = `${pct}%`;
+        if (barEl) barEl.style.width = `${pct}%`;
+      }
+      if (status === 'error') {
+        iconEl.textContent = '❌';
+      }
       if (statusEl) statusEl.textContent = msg || '';
     });
 
     if (result.ok) {
       App.UI._pendingFile = null;
+      const pctEl = document.getElementById(`pipeline-progress-pct`);
+      const barEl = document.getElementById(`pipeline-progress-bar`);
+      if (pctEl) pctEl.textContent = '100%';
+      if (barEl) barEl.style.width = '100%';
+
       setTimeout(async () => {
         App.UI.closeUploadModal();
         await App.UI.loadDataset(result.dataset_id);
         App.UI.toast(`✅ "${file.name}" processed: ${App.Fmt.number(result.stats.rowCount)} records, ${result.stats.brandCount} brands, ${result.stats.familyCount} product families`);
-      }, 800);
+      }, 700);
     } else {
       const errEl = document.getElementById('upload-error');
       const errMsg= document.getElementById('upload-error-msg');
@@ -506,7 +580,7 @@ App.UI = {
       errMsg.textContent  = result.error;
       document.getElementById('modal-footer').style.display = '';
       document.getElementById('process-btn').disabled = false;
-      document.getElementById('process-btn').textContent = 'Retry';
+      document.getElementById('process-btn').textContent = 'Retry Upload';
     }
   },
 
@@ -514,6 +588,7 @@ App.UI = {
     const el = document.getElementById('upload-modal-overlay');
     if (el) el.remove();
   },
+
 
   /* ── Record Drawer ───────────────────────────────────────── */
   async openDrawer(record_id) {

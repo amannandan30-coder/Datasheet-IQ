@@ -51,6 +51,17 @@ App.Views.Dashboard = (() => {
     const records = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
     if (!records.length) { renderWelcome(container); return; }
 
+    // Ensure accurate real-time category & subcategory classification matching canonical pipeline
+    if (window.App && window.App.Categorizer && typeof window.App.Categorizer.classify === 'function') {
+      for (const r of records) {
+        const res = App.Categorizer.classify(r.source_category || r.normalized_category, r.normalized_product_name, r.normalized_brand);
+        if (res) {
+          if (res.normalized_category) r.normalized_category = res.normalized_category;
+          if (res.subcategory) r.subcategory = res.subcategory;
+        }
+      }
+    }
+
     // Compute category aggregates fresh from records
     const catMap = new Map();
     for (const r of records) {
@@ -142,6 +153,45 @@ App.Views.Dashboard = (() => {
           </div>
         </div>
       `);
+    }
+
+    /* ── Business Reporting Scopes Banner ────────────────────────── */
+    if (App.ReportingMapper && typeof App.ReportingMapper.getScopesSummary === 'function') {
+      const scopes = App.ReportingMapper.getScopesSummary(records);
+      if (scopes && (scopes.dedicated_atta?.records > 0 || scopes.saleable_only?.records > 0)) {
+        container.insertAdjacentHTML('beforeend', `
+          <div class="card mb-24 business-scopes-card">
+            <div class="flex items-center justify-between mb-14">
+              <div class="font-bold text-sm flex items-center gap-8 text-primary">
+                <span style="font-size:16px">🎯</span> Business Reporting & Data Scopes
+              </div>
+              <div class="badge badge-primary" style="font-size:11px;padding:3px 8px">Explicit Scope Traceability</div>
+            </div>
+            <div class="grid-4" style="gap:12px">
+              <div class="reconciliation-box" style="border-left:3px solid #6366f1">
+                <div class="text-xs text-muted font-medium">All Sheets (Total Inventory)</div>
+                <div class="font-bold text-base mt-4 text-primary">${App.Fmt.currency(scopes.all_sheets?.value || totalValue)}</div>
+                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.all_sheets?.records || records.length)} records · ${App.Fmt.number(scopes.all_sheets?.units || kpis.total_units)} units</div>
+              </div>
+              <div class="reconciliation-box" style="border-left:3px solid #10b981">
+                <div class="text-xs text-muted font-medium">Saleable Inventory Scope</div>
+                <div class="font-bold text-base mt-4 text-success">${App.Fmt.currency(scopes.saleable_only?.value || 0)}</div>
+                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.saleable_only?.records || 0)} records · ${App.Fmt.number(scopes.saleable_only?.units || 0)} units</div>
+              </div>
+              <div class="reconciliation-box" style="border-left:3px solid #f59e0b">
+                <div class="text-xs text-muted font-medium">Business FM Scope (20 Buckets)</div>
+                <div class="font-bold text-base mt-4 text-warning">${App.Fmt.currency(scopes.business_fm_scope?.value || 0)}</div>
+                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.business_fm_scope?.records || 0)} records · ₹708,495 Target</div>
+              </div>
+              <div class="reconciliation-box" style="border-left:3px solid #06b6d4">
+                <div class="text-xs text-muted font-medium">Dedicated Atta Scope</div>
+                <div class="font-bold text-base mt-4 text-info">${App.Fmt.currency(scopes.dedicated_atta?.value || 0)}</div>
+                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.dedicated_atta?.records || 0)} records (atta sheet)</div>
+              </div>
+            </div>
+          </div>
+        `);
+      }
     }
 
     /* ── Status Distribution ─────────────────────────────── */
