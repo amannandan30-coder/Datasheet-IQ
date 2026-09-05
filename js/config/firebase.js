@@ -2,11 +2,15 @@ window.App = window.App || {};
 window.App.Config = window.App.Config || {};
 
 /* ============================================================
-   FIREBASE WEB CLIENT CONFIGURATION
+   GOOGLE OAUTH & FIREBASE WEB CLIENT CONFIGURATION
    ============================================================
    Project: liquidation-iq
-   Connected: Firebase Web App Configuration
+   Client Type: Web Application (SPA)
    ============================================================ */
+
+window.App.Config.Google = window.ENV?.GOOGLE_CONFIG || {
+  clientId: "620262657589-tonivq9lcbq99i5ic7stsorpehbqrvv5.apps.googleusercontent.com"
+};
 
 window.App.Config.Firebase = window.ENV?.FIREBASE_CONFIG || {
   apiKey: "AIzaSyDwpmWVrpTkCup4p12BPVXoJo3VMhvSv-8",

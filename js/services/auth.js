@@ -246,6 +246,7 @@ App.Auth = (() => {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.addScope('email');
     provider.addScope('profile');
+    provider.setCustomParameters({ prompt: 'select_account' });
 
     // ── DIAGNOSTIC: detect when main window regains focus (popup closed) ──────
     let _focusTime = null;
@@ -333,10 +334,9 @@ App.Auth = (() => {
         return _auth.currentUser;
       }
 
-      // If popup was blocked by browser
-      if (err.code === 'auth/popup-blocked' && window.location.protocol.startsWith('http')) {
-        await _auth.signInWithRedirect(provider);
-        return null;
+      // If popup was blocked by browser, provide clear instruction rather than triggering malformed hash redirect
+      if (err.code === 'auth/popup-blocked') {
+        throw new Error('Sign-in popup was blocked by your browser. Please allow popups for this site and try again.');
       }
 
       throw new Error(mapErrorMessage(err));
@@ -377,7 +377,7 @@ App.Auth = (() => {
 
   /* User-Friendly Error Mapper */
   function mapErrorMessage(error) {
-    if (!error) return 'An unknown error occurred.';
+    if (!error) return 'Google sign-in could not be started. Please try again.';
     const code = error.code || error.message || '';
 
     switch (code) {
@@ -394,9 +394,10 @@ App.Auth = (() => {
       case 'auth/too-many-requests':
         return 'Access to this account has been temporarily disabled due to multiple failed login attempts. Please reset your password or try again later.';
       case 'auth/popup-closed-by-user':
+      case 'auth/cancelled-popup-request':
         return 'Google Sign-In popup was closed before completing.';
       case 'auth/popup-blocked':
-        return 'Sign-In popup was blocked by your browser. Please allow popups for this site.';
+        return 'Sign-In popup was blocked by your browser. Please allow popups for this site and try again.';
       case 'auth/network-request-failed':
         return 'Network connection failed. Please check your internet connection and try again.';
       case 'auth/operation-not-allowed':
@@ -411,7 +412,7 @@ App.Auth = (() => {
         if (typeof code === 'string' && code.startsWith('auth/')) {
           return code.replace('auth/', '').replace(/-/g, ' ').replace(/^\w/, c => c.toUpperCase());
         }
-        return error.message || 'Authentication failed. Please check your details and try again.';
+        return error.message || 'Google sign-in could not be started. Please try again.';
     }
   }
 

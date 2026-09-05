@@ -203,7 +203,7 @@ App.Views.Login = (() => {
         console.log(`[ROUTE-DIAG] HASH_AFTER=${window.location.hash} | ROUTE_AFTER=${App.State?.route}`);
         return;
       }
-      showError(err.message);
+      showError(err.message || 'Google sign-in could not be started. Please try again.');
       if (googleBtn) {
         googleBtn.disabled = false;
         googleBtn.style.opacity = '1';

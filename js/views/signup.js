@@ -224,7 +224,7 @@ App.Views.Signup = (() => {
       }
     } catch (err) {
       console.error(`[AUTH-FLOW] SIGNUP.handleGoogleSignIn ERROR: ${err.message}`);
-      showError(err.message);
+      showError(err.message || 'Google sign-in could not be started. Please try again.');
       if (googleBtn) {
         googleBtn.disabled = false;
         googleBtn.style.opacity = '1';
