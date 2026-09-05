@@ -7,12 +7,12 @@ App.Views = App.Views || {};
 App.Views.NLQuery = (() => {
 
   const EXAMPLES = [
-    'How much atta do we have?',
-    'Show all atta brands',
-    'Which atta brand has the most units?',
-    'Top 20 products by value',
+    'What is the total value of my inventory?',
+    'Which category has the highest value?',
+    'Which brand has the most units?',
+    'Top 10 products by value',
     'Show damaged inventory',
-    'Which category has highest value?',
+    'How much inventory is near expiry?',
   ];
 
   function render(container, dataset_id) {
@@ -22,7 +22,7 @@ App.Views.NLQuery = (() => {
           <div class="nl-ai-icon-box">🤖</div>
           <span class="nl-title">Ask about your inventory…</span>
         </div>
-        <input class="nl-query-input" id="nl-input" placeholder="e.g. How much atta do we have? / Which brand has the most units?" 
+        <input class="nl-query-input" id="nl-input" placeholder="e.g. What is the total value? / Which brand has the most units?" 
                autocomplete="off">
         <div class="nl-examples" id="nl-examples">
           ${EXAMPLES.map(e => `<span class="nl-example-chip" onclick="setNLQuery(this.textContent)">${e}</span>`).join('')}
@@ -198,10 +198,32 @@ App.Views.NLQuery = (() => {
    ============================================================ */
 App.Views.AllBrands = (() => {
   async function render(container, params, dataset_id) {
+    if (!dataset_id) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Dataset Loaded</div>
+          <div class="text-sm text-muted mb-16">Please upload or select an inventory spreadsheet to view brands.</div>
+          <button class="btn btn-primary" onclick="App.UI.showUploadModal()"><span>📂</span> Upload Spreadsheet</button>
+        </div>`;
+      return;
+    }
+
     container.innerHTML = `<div class="flex items-center gap-12"><div class="spinner"></div><span class="text-muted">Loading brands…</span></div>`;
 
     const brands  = await App.DB.getAllByIndex('brands','dataset_id',dataset_id);
     const records = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
+
+    if (!records.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Records Found</div>
+          <div class="text-sm text-muted mb-16">No brand records found in the active dataset.</div>
+          <button class="btn btn-secondary" onclick="App.Router.go('dashboard')">Back to Dashboard</button>
+        </div>`;
+      return;
+    }
 
     // Build brand stats from records
     const brandStats = new Map();

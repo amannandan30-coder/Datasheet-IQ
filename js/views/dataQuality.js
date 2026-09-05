@@ -7,7 +7,30 @@ App.Views = App.Views || {};
 App.Views.DataQuality = (() => {
 
   async function render(container, params, dataset_id) {
+    if (!dataset_id) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Dataset Loaded</div>
+          <div class="text-sm text-muted mb-16">Please upload or select an inventory spreadsheet to view data quality metrics.</div>
+          <button class="btn btn-primary" onclick="App.UI.showUploadModal()"><span>📂</span> Upload Spreadsheet</button>
+        </div>`;
+      return;
+    }
+
     container.innerHTML = `<div class="flex items-center gap-12"><div class="spinner"></div><span class="text-muted">Loading data quality…</span></div>`;
+
+    const dataset     = await App.DB.getDataset(dataset_id);
+    if (!dataset) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Dataset Loaded</div>
+          <div class="text-sm text-muted mb-16">Please upload or select an inventory spreadsheet to view data quality metrics.</div>
+          <button class="btn btn-primary" onclick="App.UI.showUploadModal()"><span>📂</span> Upload Spreadsheet</button>
+        </div>`;
+      return;
+    }
 
     const issues      = await App.DB.getAllByIndex('data_quality_issues','dataset_id',dataset_id);
     const suggestions = (await App.DB.getAllByIndex('normalization_suggestions','dataset_id',dataset_id))
@@ -28,8 +51,6 @@ App.Views.DataQuality = (() => {
     const high   = issues.filter(i => i.severity === 'high').length;
     const medium = issues.filter(i => i.severity === 'medium').length;
     const low    = issues.filter(i => i.severity === 'low').length;
-
-    const dataset = await App.DB.getDataset(dataset_id);
     const confStats = dataset?.kpis?.confidence_distribution || { high: 0, medium: 0, low: 0 };
 
     container.insertAdjacentHTML('beforeend', `
@@ -141,7 +162,6 @@ App.Views.DataQuality = (() => {
 
     /* ── Reconciliation section ──────────────────────────── */
     const records = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
-    const dataset = await App.DB.getDataset(dataset_id);
     if (records.length && dataset) {
       renderReconciliation(container, records, dataset);
     }

@@ -8,6 +8,18 @@ App.Views.WarehouseView = (() => {
 
   async function render(container, params, dataset_id) {
     const whName = params && params.name ? decodeURIComponent(params.name) : null;
+
+    if (!dataset_id) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Dataset Loaded</div>
+          <div class="text-sm text-muted mb-16">Please upload or select an inventory spreadsheet to view warehouse breakdown.</div>
+          <button class="btn btn-primary" onclick="App.UI.showUploadModal()"><span>📂</span> Upload Spreadsheet</button>
+        </div>`;
+      return;
+    }
+
     container.innerHTML = `<div class="flex items-center gap-12"><div class="spinner"></div><span class="text-muted">Loading warehouses…</span></div>`;
 
     if (whName) {
@@ -17,6 +29,17 @@ App.Views.WarehouseView = (() => {
 
     const warehouses = await App.DB.getAllByIndex('warehouses','dataset_id',dataset_id);
     const records    = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
+
+    if (!records.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Records Found</div>
+          <div class="text-sm text-muted mb-16">No warehouse records found in the active dataset.</div>
+          <button class="btn btn-secondary" onclick="App.Router.go('dashboard')">Back to Dashboard</button>
+        </div>`;
+      return;
+    }
 
     container.innerHTML = '';
 

@@ -142,41 +142,69 @@ App.ReportingMapper = (() => {
     if (!records || !records.length) return {};
     
     const allRecords = records.filter(r => (r._sheet_name || r._raw_sheet_name) !== 'Summary');
-    const saleableRecords = allRecords.filter(r => (r._sheet_name || r._raw_sheet_name || 'Saleable') === 'Saleable');
-    const attaRecords = allRecords.filter(r => (r._sheet_name || r._raw_sheet_name) === 'atta');
-    const dumpRecords = allRecords.filter(r => (r._sheet_name || r._raw_sheet_name) === 'Dump');
-
     const sumVal = (arr) => Number(arr.reduce((s, r) => s + (Number(r.source_value) || 0), 0).toFixed(2));
     const sumQty = (arr) => arr.reduce((s, r) => s + (Number(r.qty) || 0), 0);
 
-    const fmResult = mapToBusinessProfile(records, PROFILES.GROFERS_FM_20, { scope: 'business_fm_scope' });
+    // Group records by sheet dynamically
+    const sheetMap = {};
+    for (const r of allRecords) {
+      const sheet = r._sheet_name || r._raw_sheet_name || 'Main';
+      if (!sheetMap[sheet]) {
+        sheetMap[sheet] = { name: sheet, records: [], units: 0, value: 0 };
+      }
+      sheetMap[sheet].records.push(r);
+    }
+    for (const sheet of Object.values(sheetMap)) {
+      sheet.units = sumQty(sheet.records);
+      sheet.value = sumVal(sheet.records);
+      sheet.recordCount = sheet.records.length;
+    }
 
-    return {
+    const saleableRecords = allRecords.filter(r => (r._sheet_name || r._raw_sheet_name || 'Saleable') === 'Saleable');
+    const attaRecords = allRecords.filter(r => (r._sheet_name || r._raw_sheet_name) === 'atta');
+    const isGrofersApplicable = isProfileApplicable(PROFILES.GROFERS_FM_20, records);
+
+    const result = {
       all_sheets: {
         label: 'All Sheets (Total Inventory)',
         records: allRecords.length,
         units: sumQty(allRecords),
         value: sumVal(allRecords)
       },
-      saleable_only: {
-        label: 'Saleable Inventory Only',
+      sheets: sheetMap,
+      has_multiple_sheets: Object.keys(sheetMap).length > 1,
+      is_grofers_applicable: isGrofersApplicable
+    };
+
+    if (saleableRecords.length > 0) {
+      result.saleable_only = {
+        label: 'Saleable Inventory Scope',
         records: saleableRecords.length,
         units: sumQty(saleableRecords),
         value: sumVal(saleableRecords)
-      },
-      dedicated_atta: {
+      };
+    }
+
+    if (attaRecords.length > 0) {
+      result.dedicated_atta = {
         label: 'Dedicated Atta Sheet (Business Reference)',
         records: attaRecords.length,
         units: sumQty(attaRecords),
         value: sumVal(attaRecords)
-      },
-      business_fm_scope: {
+      };
+    }
+
+    if (isGrofersApplicable) {
+      const fmResult = mapToBusinessProfile(records, PROFILES.GROFERS_FM_20, { scope: 'business_fm_scope' });
+      result.business_fm_scope = {
         label: 'Business FM Scope (Saleable + Atta Sheet)',
         records: fmResult.fmRecords,
         units: fmResult.fmUnits,
         value: fmResult.fmValue
-      }
-    };
+      };
+    }
+
+    return result;
   }
 
   function isProfileApplicable(profileName, records) {

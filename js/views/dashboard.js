@@ -155,39 +155,77 @@ App.Views.Dashboard = (() => {
       `);
     }
 
-    /* ── Business Reporting Scopes Banner ────────────────────────── */
+    /* ── Dynamic Worksheet & Reporting Scopes Banner ─────────────────── */
     if (App.ReportingMapper && typeof App.ReportingMapper.getScopesSummary === 'function') {
       const scopes = App.ReportingMapper.getScopesSummary(records);
-      if (scopes && (scopes.dedicated_atta?.records > 0 || scopes.saleable_only?.records > 0)) {
+      const shouldShowScopes = scopes && (scopes.has_multiple_sheets || scopes.is_grofers_applicable || scopes.saleable_only || scopes.dedicated_atta);
+      
+      if (shouldShowScopes) {
+        let scopeBoxesHtml = '';
+
+        // All sheets total
+        scopeBoxesHtml += `
+          <div class="reconciliation-box" style="border-left:3px solid #6366f1">
+            <div class="text-xs text-muted font-medium">All Sheets (Total Inventory)</div>
+            <div class="font-bold text-base mt-4 text-primary">${App.Fmt.currency(scopes.all_sheets?.value || totalValue)}</div>
+            <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.all_sheets?.records || records.length)} records · ${App.Fmt.number(scopes.all_sheets?.units || kpis.total_units)} units</div>
+          </div>
+        `;
+
+        // If Grofers profile is applicable
+        if (scopes.is_grofers_applicable && scopes.business_fm_scope) {
+          if (scopes.saleable_only) {
+            scopeBoxesHtml += `
+              <div class="reconciliation-box" style="border-left:3px solid #10b981">
+                <div class="text-xs text-muted font-medium">Saleable Inventory Scope</div>
+                <div class="font-bold text-base mt-4 text-success">${App.Fmt.currency(scopes.saleable_only.value)}</div>
+                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.saleable_only.records)} records · ${App.Fmt.number(scopes.saleable_only.units)} units</div>
+              </div>
+            `;
+          }
+          scopeBoxesHtml += `
+            <div class="reconciliation-box" style="border-left:3px solid #f59e0b">
+              <div class="text-xs text-muted font-medium">Business FM Scope (20 Buckets)</div>
+              <div class="font-bold text-base mt-4 text-warning">${App.Fmt.currency(scopes.business_fm_scope.value)}</div>
+              <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.business_fm_scope.records)} records · ${App.Fmt.number(scopes.business_fm_scope.units)} units</div>
+            </div>
+          `;
+          if (scopes.dedicated_atta) {
+            scopeBoxesHtml += `
+              <div class="reconciliation-box" style="border-left:3px solid #06b6d4">
+                <div class="text-xs text-muted font-medium">Dedicated Atta Scope</div>
+                <div class="font-bold text-base mt-4 text-info">${App.Fmt.currency(scopes.dedicated_atta.value)}</div>
+                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.dedicated_atta.records)} records · ${App.Fmt.number(scopes.dedicated_atta.units)} units</div>
+              </div>
+            `;
+          }
+        } else if (scopes.sheets && Object.keys(scopes.sheets).length > 1) {
+          // Generic multi-sheet workbook: dynamically render each worksheet box
+          const sheetColors = ['#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#ec4899', '#3b82f6'];
+          let colorIdx = 0;
+          for (const [sheetName, sheetData] of Object.entries(scopes.sheets)) {
+            const color = sheetColors[colorIdx % sheetColors.length];
+            colorIdx++;
+            scopeBoxesHtml += `
+              <div class="reconciliation-box" style="border-left:3px solid ${color}">
+                <div class="text-xs text-muted font-medium">${App.Fmt.escapeHtml(sheetName)} Sheet</div>
+                <div class="font-bold text-base mt-4" style="color:${color}">${App.Fmt.currency(sheetData.value)}</div>
+                <div class="text-xs text-muted mt-2">${App.Fmt.number(sheetData.recordCount)} records · ${App.Fmt.number(sheetData.units)} units</div>
+              </div>
+            `;
+          }
+        }
+
         container.insertAdjacentHTML('beforeend', `
           <div class="card mb-24 business-scopes-card">
             <div class="flex items-center justify-between mb-14">
               <div class="font-bold text-sm flex items-center gap-8 text-primary">
-                <span style="font-size:16px">🎯</span> Business Reporting & Data Scopes
+                <span style="font-size:16px">🎯</span> Worksheet & Inventory Scopes
               </div>
-              <div class="badge badge-primary" style="font-size:11px;padding:3px 8px">Explicit Scope Traceability</div>
+              <div class="badge badge-primary" style="font-size:11px;padding:3px 8px">Dynamic Scope Breakdown</div>
             </div>
             <div class="grid-4" style="gap:12px">
-              <div class="reconciliation-box" style="border-left:3px solid #6366f1">
-                <div class="text-xs text-muted font-medium">All Sheets (Total Inventory)</div>
-                <div class="font-bold text-base mt-4 text-primary">${App.Fmt.currency(scopes.all_sheets?.value || totalValue)}</div>
-                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.all_sheets?.records || records.length)} records · ${App.Fmt.number(scopes.all_sheets?.units || kpis.total_units)} units</div>
-              </div>
-              <div class="reconciliation-box" style="border-left:3px solid #10b981">
-                <div class="text-xs text-muted font-medium">Saleable Inventory Scope</div>
-                <div class="font-bold text-base mt-4 text-success">${App.Fmt.currency(scopes.saleable_only?.value || 0)}</div>
-                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.saleable_only?.records || 0)} records · ${App.Fmt.number(scopes.saleable_only?.units || 0)} units</div>
-              </div>
-              <div class="reconciliation-box" style="border-left:3px solid #f59e0b">
-                <div class="text-xs text-muted font-medium">Business FM Scope (20 Buckets)</div>
-                <div class="font-bold text-base mt-4 text-warning">${App.Fmt.currency(scopes.business_fm_scope?.value || 0)}</div>
-                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.business_fm_scope?.records || 0)} records · ₹708,495 Target</div>
-              </div>
-              <div class="reconciliation-box" style="border-left:3px solid #06b6d4">
-                <div class="text-xs text-muted font-medium">Dedicated Atta Scope</div>
-                <div class="font-bold text-base mt-4 text-info">${App.Fmt.currency(scopes.dedicated_atta?.value || 0)}</div>
-                <div class="text-xs text-muted mt-2">${App.Fmt.number(scopes.dedicated_atta?.records || 0)} records (atta sheet)</div>
-              </div>
+              ${scopeBoxesHtml}
             </div>
           </div>
         `);
@@ -407,10 +445,10 @@ App.Views.Dashboard = (() => {
     container.innerHTML = `
       <div class="welcome-screen">
         <div class="welcome-logo">📦</div>
-        <div class="welcome-title">Liquidation Inventory Intelligence</div>
-        <div class="welcome-sub">Upload your Excel inventory file to get started. The app will automatically parse, normalize, and organize your inventory data into a clean, drillable dashboard.</div>
+        <div class="welcome-title">No Dataset Loaded</div>
+        <div class="welcome-sub">Upload an Excel (.xlsx, .xls) or CSV inventory spreadsheet to get started. Liquidation IQ will automatically parse, normalize, and calculate live metrics for your active dataset.</div>
         <button class="btn btn-primary btn-lg" onclick="App.UI.showUploadModal()">
-          <span>📂</span> Upload Inventory File
+          <span>📂</span> Upload Inventory Spreadsheet
         </button>
         <div class="welcome-features">
           <div class="welcome-feature">
@@ -421,12 +459,12 @@ App.Views.Dashboard = (() => {
           <div class="welcome-feature">
             <div class="welcome-feature-icon">🏷️</div>
             <div class="welcome-feature-name">Category Drill-down</div>
-            <div class="welcome-feature-desc">Category → Brand → Product → Variant</div>
+            <div class="welcome-feature-desc">Category → Subcategory → Brand → Product → Variant</div>
           </div>
           <div class="welcome-feature">
             <div class="welcome-feature-icon">🔍</div>
             <div class="welcome-feature-name">NL Search</div>
-            <div class="welcome-feature-desc">"Which atta brand has most units?"</div>
+            <div class="welcome-feature-desc">"Which category has the highest value?"</div>
           </div>
         </div>
       </div>`;

@@ -80,11 +80,33 @@ App.Views.InventoryTable = (() => {
   let _searchTimeout = null;
 
   async function render(container, params, dataset_id) {
+    if (!dataset_id) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Dataset Loaded</div>
+          <div class="text-sm text-muted mb-16">Please upload or select an inventory spreadsheet to view inventory records.</div>
+          <button class="btn btn-primary" onclick="App.UI.showUploadModal()"><span>📂</span> Upload Spreadsheet</button>
+        </div>`;
+      return;
+    }
+
     container.innerHTML = `<div class="flex items-center gap-12"><div class="spinner"></div><span class="text-muted">Loading inventory…</span></div>`;
 
     _allRecords = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
     _filtered   = [..._allRecords];
     _page       = 0;
+
+    if (!_allRecords.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Records Found</div>
+          <div class="text-sm text-muted mb-16">No inventory records found in the active dataset.</div>
+          <button class="btn btn-secondary" onclick="App.Router.go('dashboard')">Back to Dashboard</button>
+        </div>`;
+      return;
+    }
 
     container.innerHTML = '';
 

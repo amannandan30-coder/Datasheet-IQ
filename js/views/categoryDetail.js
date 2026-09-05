@@ -9,13 +9,30 @@ App.Views.CategoryDetail = (() => {
 
   async function render(container, params, dataset_id) {
     const catName = decodeURIComponent(params.name || '');
+    if (!dataset_id) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Dataset Loaded</div>
+          <div class="text-sm text-muted mb-16">Please upload or select an inventory spreadsheet to view category details.</div>
+          <button class="btn btn-primary" onclick="App.UI.showUploadModal()"><span>📂</span> Upload Spreadsheet</button>
+        </div>`;
+      return;
+    }
+
     container.innerHTML = `<div class="flex items-center gap-12"><div class="spinner"></div><span class="text-muted">Loading ${catName}…</span></div>`;
 
     const records = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
     const catRecords = records.filter(r => r.normalized_category === catName);
 
     if (!catRecords.length) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div>No records found for "${catName}"</div></div>`;
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <div class="font-bold text-base mb-8">No Records Found</div>
+          <div class="text-sm text-muted mb-16">No records found for category "${catName}" in the active dataset.</div>
+          <button class="btn btn-secondary" onclick="App.Router.go('dashboard')">Back to Dashboard</button>
+        </div>`;
       return;
     }
 
