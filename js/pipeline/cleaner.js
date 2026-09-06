@@ -184,12 +184,18 @@ App.Cleaner = (() => {
     const raw_condition = norm(rec.condition || rec.Condition || raw.Condition || raw.condition || raw['Stock Condition'] || '');
     const raw_disposition = norm(rec.disposition || rec.Disposition || raw.Disposition || raw.disposition || raw.Action || raw.action || '');
 
-    // If singular Remark contains an explicit status token (saleable/non_saleable/etc), promote to inventory_status if empty
+    // If Remark/Remarks contains an explicit status token (saleable/non_saleable/etc), promote to inventory_status if empty
     let effective_inv_status = raw_inv_status;
-    if (!effective_inv_status && raw_remark_singular) {
-      const normSingular = normLower(raw_remark_singular);
-      if (['saleable', 'salable', 'sellable', 'non saleable', 'nonsaleable', 'non sellable', 'damaged', 'expired', 'quarantine', 'active', 'in stock'].includes(normSingular)) {
-        effective_inv_status = raw_remark_singular;
+    if (!effective_inv_status && raw_remarks) {
+      if (typeof App.InventoryStatusResolver !== 'undefined' && App.InventoryStatusResolver.hasSellableSignal) {
+        if (App.InventoryStatusResolver.hasSellableSignal(raw_remarks) || App.InventoryStatusResolver.hasNonSellableSignal(raw_remarks)) {
+          effective_inv_status = raw_remarks;
+        }
+      } else {
+        const normRem = normLower(raw_remarks);
+        if (['saleable', 'salable', 'sellable', 'non saleable', 'nonsaleable', 'non sellable', 'damaged', 'expired', 'quarantine', 'active', 'in stock'].includes(normRem)) {
+          effective_inv_status = raw_remarks;
+        }
       }
     }
 

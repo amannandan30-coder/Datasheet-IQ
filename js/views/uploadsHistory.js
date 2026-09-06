@@ -73,6 +73,25 @@ App.Views.UploadsHistory = (() => {
    ============================================================ */
 App.Views.InventoryTable = (() => {
 
+  function getRecordStatus(r) {
+    if (r.status) return r.status;
+    if (r.resolved_status) return r.resolved_status;
+    if (typeof App.InventoryStatusResolver !== 'undefined' && App.InventoryStatusResolver.resolveRecordStatus) {
+      return App.InventoryStatusResolver.resolveRecordStatus(r);
+    }
+    return 'unknown';
+  }
+
+  function formatStatusLabel(st) {
+    if (!st) return 'Unknown';
+    const s = String(st).toLowerCase();
+    if (s === 'sellable' || s === 'saleable') return 'Sellable';
+    if (s === 'non_sellable' || s === 'non-sellable' || s === 'nonsaleable') return 'Non-Sellable';
+    if (s === 'unknown') return 'Unknown';
+    return App.Cleaner ? App.Cleaner.normTitle(s) : (s.charAt(0).toUpperCase() + s.slice(1));
+  }
+
+
   let _allRecords = [];
   let _filtered   = [];
   let _page       = 0;
@@ -114,7 +133,7 @@ App.Views.InventoryTable = (() => {
     const cats    = [...new Set(_allRecords.map(r => r.normalized_category).filter(Boolean))].sort();
     const brands  = [...new Set(_allRecords.map(r => r.normalized_brand).filter(Boolean))].sort();
     const whs     = [...new Set(_allRecords.map(r => r.normalized_warehouse || r.warehouse_id).filter(Boolean))].sort();
-    const statuses= [...new Set(_allRecords.map(r => r.raw_bad_inventory_type || r.status || 'unknown'))].sort();
+    const statuses= [...new Set(_allRecords.map(r => getRecordStatus(r)))].filter(Boolean).sort();
 
     container.insertAdjacentHTML('beforeend', `
       <div class="page-header">
@@ -134,7 +153,7 @@ App.Views.InventoryTable = (() => {
           <select class="select" onchange="applyFilter('cat',this.value)"><option value="">All Categories</option>${cats.map(c=>`<option value="${App.Fmt.escapeHtml(c)}">${App.Fmt.escapeHtml(c)}</option>`).join('')}</select>
           <select class="select" onchange="applyFilter('brand',this.value)"><option value="">All Brands</option>${brands.map(b=>`<option value="${App.Fmt.escapeHtml(b)}">${App.Fmt.escapeHtml(b)}</option>`).join('')}</select>
           <select class="select" onchange="applyFilter('wh',this.value)"><option value="">All Warehouses</option>${whs.map(w=>`<option value="${App.Fmt.escapeHtml(w)}">${App.Fmt.escapeHtml(w)}</option>`).join('')}</select>
-          <select class="select" onchange="applyFilter('status',this.value)"><option value="">All Statuses</option>${statuses.map(s=>`<option value="${App.Fmt.escapeHtml(s)}">${App.Fmt.escapeHtml(s)}</option>`).join('')}</select>
+          <select class="select" onchange="applyFilter('status',this.value)"><option value="">All Statuses</option>${statuses.map(s=>`<option value="${App.Fmt.escapeHtml(s)}">${App.Fmt.escapeHtml(formatStatusLabel(s))}</option>`).join('')}</select>
         </div>
         <div id="active-filters" class="filter-bar" style="margin-top:8px;display:none"></div>
       </div>
@@ -154,7 +173,7 @@ App.Views.InventoryTable = (() => {
                 <th onclick="sortBy('source_value')">Value</th>
                 <th onclick="sortBy('total_weight')">Weight</th>
                 <th onclick="sortBy('normalized_warehouse')">Warehouse</th>
-                <th onclick="sortBy('raw_bad_inventory_type')">Status</th>
+                <th onclick="sortBy('status')">Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -185,7 +204,7 @@ App.Views.InventoryTable = (() => {
     };
 
     window.applyFilter = (key, val) => { window._invFilters[key] = val; rebuildFiltered(); };
-    window.sortBy      = (col) => { _filtered.sort((a,b) => { const av=a[col], bv=b[col]; return typeof bv==='number'?bv-av:(bv||'').toString().localeCompare((av||'').toString()); }); _page=0; renderPage(); };
+    window.sortBy      = (col) => { _filtered.sort((a,b) => { const av = col === 'status' ? getRecordStatus(a) : a[col]; const bv = col === 'status' ? getRecordStatus(b) : b[col]; return typeof bv==='number'?bv-av:(bv||'').toString().localeCompare((av||'').toString()); }); _page=0; renderPage(); };
     window.prevPage    = () => { if(_page > 0){_page--;renderPage();} };
     window.nextPage    = () => { if((_page+1)*PAGE_SIZE < _filtered.length){_page++;renderPage();} };
     window.exportFiltered = (fmt) => {
@@ -213,7 +232,7 @@ App.Views.InventoryTable = (() => {
       if (f.cat    && r.normalized_category !== f.cat)    return false;
       if (f.brand  && r.normalized_brand    !== f.brand)  return false;
       if (f.wh     && (r.normalized_warehouse || r.warehouse_id) !== f.wh) return false;
-      if (f.status && (r.raw_bad_inventory_type || r.status || 'unknown') !== f.status) return false;
+      if (f.status && getRecordStatus(r) !== f.status) return false;
       return true;
     });
     _page = 0;
@@ -248,7 +267,8 @@ App.Views.InventoryTable = (() => {
       const subcat   = App.Fmt.escapeHtml(r.subcategory || '—');
       const uom      = App.Fmt.escapeHtml(r.normalized_uom || r.raw_uom || '—');
       const wh       = App.Fmt.escapeHtml(r.normalized_warehouse || r.warehouse_id || '—');
-      const status   = App.Fmt.escapeHtml(r.raw_bad_inventory_type || r.status || 'unknown');
+      const rawSt    = getRecordStatus(r);
+      const status   = App.Fmt.escapeHtml(formatStatusLabel(rawSt));
 
       return `
         <tr>
@@ -262,7 +282,7 @@ App.Views.InventoryTable = (() => {
           <td>${r.source_value ? App.Fmt.currency(r.source_value) : '—'}</td>
           <td>${App.Fmt.weight(r.total_weight || r.weight)}</td>
           <td>${wh}</td>
-          <td><span class="badge ${statusBadge(status)}">${status}</span></td>
+          <td><span class="badge ${statusBadge(rawSt)}">${status}</span></td>
           <td><button class="btn btn-sm btn-ghost" onclick="App.UI.openDrawer('${r.id}')">Inspect</button></td>
         </tr>`;
     }).join('');
@@ -274,11 +294,11 @@ App.Views.InventoryTable = (() => {
   }
 
   function statusBadge(type) {
-    const t = (type||'').toLowerCase();
-    if (t==='damaged') return 'badge-danger';
-    if (t==='expired') return 'badge-purple';
+    const t = (type || '').toLowerCase();
+    if (t === 'sellable' || t === 'saleable') return 'badge-success';
+    if (t === 'non_sellable' || t === 'non-sellable' || t === 'nonsaleable' || t === 'damaged') return 'badge-danger';
+    if (t === 'expired') return 'badge-purple';
     if (t.includes('expir')) return 'badge-warning';
-    if (t==='saleable') return 'badge-success';
     return 'badge-muted';
   }
 

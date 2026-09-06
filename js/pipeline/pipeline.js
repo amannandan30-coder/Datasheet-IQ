@@ -68,6 +68,19 @@ App.Pipeline = (() => {
       // ── 5. Clean ──────────────────────────────────────────
       prog('clean','active','Normalizing text & numbers...');
       const cleaned = App.Cleaner.cleanAll(rawRecords);
+      // Resolve and persist canonical inventory status on all records
+      if (App.InventoryStatusResolver && typeof App.InventoryStatusResolver.resolveRecordStatusDetailed === 'function') {
+        for (const rec of cleaned) {
+          const res = App.InventoryStatusResolver.resolveRecordStatusDetailed(rec);
+          rec.status = res.status;
+          rec.resolved_status = res.status;
+          rec.resolution_source = res.resolution_source;
+          rec.resolution_rule = res.resolution_rule;
+          rec.status_confidence = res.confidence;
+          rec.is_status_conflict = res.is_status_conflict;
+          rec.status_conflict_reason = res.status_conflict_reason;
+        }
+      }
       prog('clean','done','UOM, brand names, weights normalized');
 
       // ── 6. Categorize ─────────────────────────────────────

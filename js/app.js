@@ -607,8 +607,9 @@ App.UI = {
     drawer.className = 'drawer';
     drawer.onclick = e => e.stopPropagation();
 
-    const invType  = (rec.raw_bad_inventory_type||'unknown').toLowerCase();
-    const badgeCls = invType==='damaged'?'badge-danger':invType.includes('expir')?'badge-warning':'badge-muted';
+    const rawSt    = rec.status || rec.resolved_status || (typeof App.InventoryStatusResolver !== 'undefined' ? App.InventoryStatusResolver.resolveRecordStatus(rec) : 'unknown');
+    const displayStatus = (rawSt === 'sellable' || rawSt === 'saleable') ? 'Sellable' : ((rawSt === 'non_sellable' || rawSt === 'non-sellable') ? 'Non-Sellable' : (rawSt === 'unknown' ? 'Unknown' : (rawSt.charAt(0).toUpperCase() + rawSt.slice(1))));
+    const badgeCls = (rawSt === 'sellable' || rawSt === 'saleable') ? 'badge-success' : ((rawSt === 'non_sellable' || rawSt === 'non-sellable' || rawSt === 'damaged') ? 'badge-danger': rawSt.includes('expir') ? 'badge-warning' : 'badge-muted');
 
     drawer.innerHTML = `
       <div class="drawer-header">
@@ -620,7 +621,7 @@ App.UI = {
           <button class="btn btn-ghost btn-icon" onclick="document.getElementById('drawer-overlay').remove()">✕</button>
         </div>
         <div class="flex gap-6 mt-10">
-          <span class="badge ${badgeCls}">${rec.raw_bad_inventory_type||'unknown'}</span>
+          <span class="badge ${badgeCls}">${displayStatus}</span>
           <span class="badge badge-muted">${rec.subcategory||'—'}</span>
           ${rec.normalization_confidence ? `<span class="badge ${App.Fmt.badge_confidence(rec.normalization_confidence)}">${rec.normalization_confidence}</span>` : ''}
         </div>
@@ -636,6 +637,10 @@ App.UI = {
           ${drawerField('Total Weight', rec.total_weight ? App.Fmt.weight(rec.total_weight) : '—', '⚖️')}
           ${drawerField('UOM',          rec.normalized_uom || rec.raw_uom || '—', '📏')}
           ${drawerField('Warehouse',    rec.normalized_warehouse || '—', '🏭')}
+          ${drawerField('Status', displayStatus, '🏷️')}
+          ${rec.resolution_source ? drawerField('Resolution Source', rec.resolution_source, '🔍') : ''}
+          ${rec.resolution_rule ? drawerField('Resolution Rule', rec.resolution_rule, '📜') : ''}
+          ${rec.raw_bad_inventory_type && rec.raw_bad_inventory_type !== 'unknown' ? drawerField('Condition / Bad Bucket', rec.raw_bad_inventory_type, '⚠️') : ''}
         </div>
 
         <div class="drawer-section">
@@ -947,7 +952,8 @@ function setupGlobalSearch() {
         const cat = escapeHtml(r.normalized_category || '');
         const uom = escapeHtml(r.uom || r.variant_uom_text || '');
         const wh = escapeHtml(r.warehouse_id || r.normalized_warehouse || 'Unknown Warehouse');
-        const status = r.raw_bad_inventory_type || r.bad_inventory_type || r.status || '';
+        const rawSt = r.status || r.resolved_status || (typeof App.InventoryStatusResolver !== 'undefined' ? App.InventoryStatusResolver.resolveRecordStatus(r) : '');
+        const status = (rawSt === 'sellable' || rawSt === 'saleable') ? 'Sellable' : ((rawSt === 'non_sellable' || rawSt === 'non-sellable') ? 'Non-Sellable' : (rawSt === 'unknown' ? 'Unknown' : rawSt));
 
         const metaParts = [];
         if (brand) metaParts.push(brand);
