@@ -2,10 +2,14 @@ window.App = window.App || {};
 App.Views = App.Views || {};
 
 /* ============================================================
-   CATEGORY DETAIL VIEW
-   Shows subcategories + brand table for one category
+   CATEGORY DETAIL VIEW (SCOPE-AWARE & CANONICAL COMPATIBLE)
+   Shows subcategories + brand table for one category, with
+   row-level scope-aware business reference reconciliation.
    ============================================================ */
 App.Views.CategoryDetail = (() => {
+
+  let _activeScopeMode = 'all'; // 'all' | 'business' | 'delta_canonical' | 'delta_biz'
+  let _currentRecon = null;
 
   async function render(container, params, dataset_id) {
     const catName = decodeURIComponent(params.name || '');
@@ -22,8 +26,8 @@ App.Views.CategoryDetail = (() => {
 
     container.innerHTML = `<div class="flex items-center gap-12"><div class="spinner"></div><span class="text-muted">Loading ${catName}…</span></div>`;
 
-    const records = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
-    const catRecords = records.filter(r => r.normalized_category === catName);
+    const allDatasetRecords = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
+    const catRecords = allDatasetRecords.filter(r => r.normalized_category === catName);
 
     if (!catRecords.length) {
       container.innerHTML = `
@@ -36,7 +40,7 @@ App.Views.CategoryDetail = (() => {
       return;
     }
 
-    const catCfg    = App.Categorizer.getCategoryConfig(catName);
+    const catCfg     = App.Categorizer.getCategoryConfig(catName);
     const totalUnits = catRecords.reduce((s,r) => s+(r.qty||0), 0);
     const totalValue = catRecords.reduce((s,r) => s+(r.source_value||0), 0);
     const totalWeight= catRecords.reduce((s,r) => s+(r.total_weight||0), 0);
@@ -57,142 +61,256 @@ App.Views.CategoryDetail = (() => {
     const subcatMap = new Map();
     for (const r of catRecords) {
       const sc = r.subcategory || 'General';
-      if (!subcatMap.has(sc)) subcatMap.set(sc, { name:sc, qty:0, value:0, weight:0, skus:new Set(), brands:new Set() });
+      if (!subcatMap.has(sc)) subcatMap.set(sc, { name:sc, qty:0, value:0, weight:0, skus:new Set(), brands:new Set(), records:[] });
       const s = subcatMap.get(sc);
       s.qty    += (r.qty||0);
       s.value  += (r.source_value||0);
       s.weight += (r.total_weight||0);
       s.skus.add(r.product_family_id);
       s.brands.add(r.normalized_brand);
+      s.records.push(r);
     }
-
-    container.innerHTML = '';
-
-    /* ── Header ──────────────────────────────────────────── */
-    container.insertAdjacentHTML('beforeend', `
-      <div class="page-header">
-        <div class="flex items-center gap-12">
-          <div style="font-size:32px">${catCfg.icon||'📦'}</div>
-          <div>
-            <div class="page-title">${catName}</div>
-            <div class="page-sub">${brandSet.size} brands · ${totalSKUs} SKUs</div>
-          </div>
-        </div>
-        <div class="flex gap-8">
-          <select class="select" id="cat-sort" onchange="App.Views.CategoryDetail.sort(this.value)">
-            <option value="value">Sort by Value</option>
-            <option value="units">Sort by Units</option>
-            <option value="weight">Sort by Weight</option>
-            <option value="alpha">Alphabetical</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="grid-4 mb-24">
-        ${kpi('SKUs',    App.Fmt.number(totalSKUs),    '📦', '#6366f1')}
-        ${kpi('Units',   App.Fmt.number(totalUnits),   '📊', '#10b981')}
-        ${kpi('Value',   App.Fmt.currency(totalValue), '💰', '#f59e0b')}
-        ${kpi('Weight',  App.Fmt.weight(totalWeight),  '⚖️', '#38bdf8')}
-      </div>
-    `);
-
-    /* ── Subcategory tabs ────────────────────────────────── */
-    const initialSubcat = decodeURIComponent(params.subcat || '');
-    let activeSubcat = initialSubcat;
-    window._activeSubcat = activeSubcat;
 
     const subcats = [...subcatMap.values()].sort((a,b) => b.value - a.value);
-    if (subcats.length > 1) {
-      const tabsHtml = `
-        <button class="subcat-tab ${!activeSubcat ? 'active' : ''}"
-                onclick="App.Views.CategoryDetail.showSubcat('')"
-                data-subcat=""
-                id="tab-all">
-          All Subcategories
-          <span class="subcat-tab-badge">${App.Fmt.number(totalUnits)}</span>
-        </button>
-        ${subcats.map(sc => {
-          const safeId = `tab-${sc.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
-          const isActive = activeSubcat === sc.name;
-          return `
-            <button class="subcat-tab ${isActive ? 'active' : ''}"
-                    onclick="App.Views.CategoryDetail.showSubcat(this.dataset.subcat)"
-                    data-subcat="${escHtml(sc.name)}"
-                    id="${safeId}">
-              ${escHtml(sc.name)}
-              <span class="subcat-tab-badge">${App.Fmt.number(sc.qty)}</span>
-            </button>`;
-        }).join('')}
-      `;
-      container.insertAdjacentHTML('beforeend', `
-        <div class="subcat-tabs-wrap mb-20" id="subcat-tabs">${tabsHtml}</div>
-      `);
 
-      /* ── Subcategory Summary Panel ─────────────────────── */
-      container.insertAdjacentHTML('beforeend', `
-        <div class="subcat-summary-panel" id="subcat-summary">
-          <div class="subcat-summary-inner">
-            <div class="subcat-summary-header">
-              <div class="subcat-summary-title" id="subcat-summary-title"></div>
-              <button class="subcat-summary-close" onclick="App.Views.CategoryDetail.closeSummary()" title="Close summary">✕</button>
-            </div>
-            <div class="subcat-summary-grid" id="subcat-summary-grid"></div>
-          </div>
+    // Initial selected subcat from params or default to all
+    const initialSubcat = params.subcat ? decodeURIComponent(params.subcat) : '';
+
+    container.innerHTML = `
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <span class="breadcrumb-item" onclick="App.Router.go('dashboard')">Dashboard</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-item active">${catCfg.icon||'📦'} ${catName}</span>
+      </div>
+
+      <!-- Category Header -->
+      <div class="category-header mb-24">
+        <div class="cat-header-icon" style="background:${catCfg.color}22;color:${catCfg.color}">
+          ${catCfg.icon||'📦'}
         </div>
-      `);
+        <div class="cat-header-info">
+          <div class="flex items-center gap-12 mb-4">
+            <h1 class="text-2xl font-bold">${catName}</h1>
+            <span class="badge badge-neutral">${subcats.length} subcategories</span>
+            <span class="badge badge-neutral">${brandSet.size} brands</span>
+          </div>
+          <div class="text-sm text-muted">Complete breakdown of inventory, brand share, and scope-aware reconciliation.</div>
+        </div>
+        <button class="btn btn-secondary" onclick="App.Router.go('dashboard')">
+          <span>←</span> Back to Dashboard
+        </button>
+      </div>
 
-      // Show summary for active subcategory if selected
-      if (activeSubcat && subcatMap.has(activeSubcat)) {
-        _showSubcatSummary(subcatMap.get(activeSubcat), totalValue, totalUnits, totalWeight, totalSKUs);
-      }
-    }
+      <!-- Category KPIs (Canonical Totals) -->
+      <div class="kpi-grid mb-24">
+        ${kpi('Total Value (Canonical)', App.Fmt.currency(totalValue), '💰', '#10b981')}
+        ${kpi('Total Units',            App.Fmt.number(totalUnits),   '📊', '#6366f1')}
+        ${kpi('Total Weight',           App.Fmt.weight(totalWeight),  '⚖️', '#38bdf8')}
+        ${kpi('Total SKUs',             App.Fmt.number(totalSKUs),    '📦', '#f59e0b')}
+        ${kpi('Active Brands',          App.Fmt.number(brandSet.size),'🏷️', '#a78bfa')}
+      </div>
 
-    /* ── Brand table ─────────────────────────────────────── */
-    container.insertAdjacentHTML('beforeend', `
-      <div class="section-header">
-        <div class="section-title">Brands</div>
-        <div class="flex gap-8">
-          <input class="input" style="width:200px" placeholder="Search brands…" oninput="filterBrands(this.value)" id="brand-search">
+      <!-- Scope-Aware Business Reconciliation Section -->
+      <div id="scope-recon-container" class="mb-24"></div>
+
+      <!-- Subcategory Tabs -->
+      <div class="subcat-tabs-wrap mb-20">
+        <div class="subcat-tabs" id="subcat-tabs">
+          <button class="subcat-tab ${!initialSubcat ? 'active' : ''}" data-subcat="" onclick="App.Views.CategoryDetail.showSubcat('')">
+            All ${catName}
+          </button>
+          ${subcats.map(sc => `
+            <button class="subcat-tab ${initialSubcat === sc.name ? 'active' : ''}" data-subcat="${escHtml(sc.name)}" onclick="App.Views.CategoryDetail.showSubcat('${escHtml(sc.name)}')">
+              ${escHtml(sc.name)}
+              <span class="subcat-tab-badge">${App.Fmt.currency(sc.value)}</span>
+            </button>
+          `).join('')}
         </div>
       </div>
-      <div class="card" id="brand-list-wrap"></div>
-    `);
 
-    window._catBrandMap  = new Map();
-    window._catRecords   = catRecords;
-    window._catTotalVal  = totalValue;
-    window._catName      = catName;
+      <!-- Subcategory Summary Panel -->
+      <div id="subcat-summary" class="subcat-summary-panel mb-24">
+        <div class="subcat-summary-header">
+          <div class="subcat-summary-title" id="subcat-summary-title"></div>
+          <button class="subcat-summary-close" onclick="App.Views.CategoryDetail.closeSummary()">✕</button>
+        </div>
+        <div class="subcat-summary-grid" id="subcat-summary-grid"></div>
+      </div>
 
-    // Store totals for subcategory summary calculations
-    window._catTotalUnits  = totalUnits;
-    window._catTotalWeight = totalWeight;
-    window._catTotalSKUs   = totalSKUs;
-    window._subcatMap      = subcatMap;
+      <!-- Scope Row Filter Bar -->
+      <div id="scope-filter-bar" class="flex items-center justify-between mb-16" style="display:none;"></div>
 
-    const initialRecords = activeSubcat ? catRecords.filter(r => (r.subcategory||'General') === activeSubcat) : catRecords;
-    buildBrandList(initialRecords, container.querySelector('#brand-list-wrap'), totalValue, 'value', activeSubcat);
+      <!-- Brand Breakdown Table -->
+      <div class="card p-20">
+        <div class="flex items-center justify-between mb-16">
+          <div>
+            <div class="font-bold text-base" id="brand-list-title">Brand Breakdown</div>
+            <div class="text-xs text-muted" id="brand-list-subtitle">Ranked by inventory valuation</div>
+          </div>
+          <div class="flex items-center gap-8">
+            <span class="text-xs text-muted">Sort by:</span>
+            <button class="btn btn-xs btn-secondary" onclick="App.Views.CategoryDetail.sort('value')">Value</button>
+            <button class="btn btn-xs btn-secondary" onclick="App.Views.CategoryDetail.sort('units')">Units</button>
+            <button class="btn btn-xs btn-secondary" onclick="App.Views.CategoryDetail.sort('weight')">Weight</button>
+            <button class="btn btn-xs btn-secondary" onclick="App.Views.CategoryDetail.sort('alpha')">A–Z</button>
+          </div>
+        </div>
+        <div id="brand-list-wrap"></div>
+      </div>
+    `;
 
-    // Subcategory selector
-    window.filterBrands = (q) => {
-      const items = document.querySelectorAll('.brand-row[data-brand]');
-      items.forEach(el => {
-        const match = el.dataset.brand.toLowerCase().includes(q.toLowerCase());
-        el.style.display = match ? '' : 'none';
-      });
-    };
+    // Save globals for view lifecycle
+    window._catRecords = catRecords;
+    window._allDatasetRecords = allDatasetRecords;
+    window._catName = catName;
+    window._activeSubcat = initialSubcat;
+    window._subcatMap = subcatMap;
+    window._activeScopeMode = 'all';
 
+    // Helper to render scope reconciliation
+    function renderScopeReconciliation(scName) {
+      const reconWrap = container.querySelector('#scope-recon-container');
+      if (!reconWrap) return;
+
+      if (!App.ReportingMapper || typeof App.ReportingMapper.getCategoryReconciliation !== 'function') {
+        reconWrap.innerHTML = '';
+        return;
+      }
+
+      const recon = App.ReportingMapper.getCategoryReconciliation(catName, scName, allDatasetRecords);
+      _currentRecon = recon;
+
+      if (!recon || !recon.hasBusinessScope) {
+        reconWrap.innerHTML = '';
+        return;
+      }
+
+      const deltaVal = recon.canonical.value - recon.business.value;
+      const deltaRows = recon.canonical.records - recon.business.records;
+      const isExactMatch = deltaVal === 0 && deltaRows === 0;
+
+      reconWrap.innerHTML = `
+        <div class="card p-20" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px;">
+          <div class="flex items-center justify-between mb-16 flex-wrap gap-8">
+            <div class="flex items-center gap-10">
+              <span style="font-size: 20px;">🎯</span>
+              <div>
+                <div class="font-bold text-base flex items-center gap-8">
+                  <span>Scope-Aware Business Reconciliation</span>
+                  <span class="badge badge-primary">${escHtml(recon.bucketName)}</span>
+                  <span class="badge badge-neutral">${escHtml(recon.scopeLabel)}</span>
+                </div>
+                <div class="text-xs text-muted">${escHtml(recon.scopeDescription)} — ${escHtml(recon.profileName)}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-8">
+              <span class="text-xs font-semibold px-8 py-4 rounded" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                Target: ${App.Fmt.currency(recon.targetValue)}
+              </span>
+            </div>
+          </div>
+
+          <!-- Comparative Scope Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;" class="mb-16">
+            <!-- Canonical Scope Card -->
+            <div class="p-12 rounded" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);">
+              <div class="text-xs text-muted mb-4 font-semibold uppercase">Canonical All-Inventory</div>
+              <div class="text-xl font-bold" style="color: #6366f1;">${App.Fmt.currency(recon.canonical.value)}</div>
+              <div class="text-xs text-muted mt-2">${App.Fmt.number(recon.canonical.records)} source rows | ${App.Fmt.number(recon.canonical.units)} units</div>
+            </div>
+
+            <!-- Business Reference Scope Card -->
+            <div class="p-12 rounded" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25);">
+              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #10b981;">Business Reference Scope</div>
+              <div class="text-xl font-bold" style="color: #10b981;">${App.Fmt.currency(recon.business.value)}</div>
+              <div class="text-xs text-muted mt-2">${App.Fmt.number(recon.business.records)} scoped rows | ${App.Fmt.number(recon.business.units)} units</div>
+            </div>
+
+            <!-- Scope Delta Card -->
+            <div class="p-12 rounded" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25);">
+              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #f59e0b;">Scope Reconciliation Delta</div>
+              <div class="text-xl font-bold" style="color: ${deltaVal === 0 ? '#10b981' : '#f59e0b'};">
+                ${deltaVal > 0 ? '+' : ''}${App.Fmt.currency(deltaVal)}
+              </div>
+              <div class="text-xs text-muted mt-2">${deltaRows > 0 ? '+' : ''}${deltaRows} rows difference</div>
+            </div>
+
+            <!-- Overlap / Intersection Card -->
+            <div class="p-12 rounded" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25);">
+              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #38bdf8;">Exact Row Overlap</div>
+              <div class="text-xl font-bold" style="color: #38bdf8;">${App.Fmt.currency(recon.reconciliation.intersectionValue)}</div>
+              <div class="text-xs text-muted mt-2">${recon.reconciliation.intersectionCount} rows in both scopes</div>
+            </div>
+          </div>
+
+          <!-- Scope Row Set Filter Tabs -->
+          <div class="flex items-center justify-between flex-wrap gap-8 pt-12" style="border-top: 1px solid rgba(255, 255, 255, 0.08);">
+            <div class="flex items-center gap-6 flex-wrap">
+              <span class="text-xs font-semibold text-muted mr-4">View Scope:</span>
+              <button class="btn btn-xs ${_activeScopeMode === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('all')">
+                📊 All Canonical (${recon.canonical.records})
+              </button>
+              <button class="btn btn-xs ${_activeScopeMode === 'business' ? 'btn-success' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('business')">
+                🎯 Business Scope (${recon.business.records})
+              </button>
+              ${recon.reconciliation.canonicalOnlyCount > 0 ? `
+                <button class="btn btn-xs ${_activeScopeMode === 'delta_canonical' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_canonical')">
+                  🔵 Canonical-Only (${recon.reconciliation.canonicalOnlyCount})
+                </button>
+              ` : ''}
+              ${recon.reconciliation.businessOnlyCount > 0 ? `
+                <button class="btn btn-xs ${_activeScopeMode === 'delta_biz' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_biz')">
+                  🟠 Business-Only (${recon.reconciliation.businessOnlyCount})
+                </button>
+              ` : ''}
+            </div>
+            <div class="text-xs text-muted">
+              ${_activeScopeMode === 'business' ? `Displaying exact ${recon.business.records} ${recon.scopeLabel} rows (${App.Fmt.currency(recon.business.value)})` : 
+                _activeScopeMode === 'delta_canonical' ? `Displaying ${recon.reconciliation.canonicalOnlyCount} rows present in Canonical but outside ${recon.scopeLabel}` :
+                _activeScopeMode === 'delta_biz' ? `Displaying ${recon.reconciliation.businessOnlyCount} rows mapped to ${recon.bucketName} in Business Profile` :
+                `Displaying independent Canonical Category inventory (${App.Fmt.currency(recon.canonical.value)})`}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Function to filter displayed records by current active scope mode
+    function getActiveDisplayRecords(sc) {
+      if (!_currentRecon || !_currentRecon.hasBusinessScope || _activeScopeMode === 'all') {
+        return sc ? catRecords.filter(r => (r.subcategory||'General') === sc) : catRecords;
+      }
+      if (_activeScopeMode === 'business') {
+        return _currentRecon.business.rows;
+      }
+      if (_activeScopeMode === 'delta_canonical') {
+        return _currentRecon.reconciliation.canonicalOnlyRows;
+      }
+      if (_activeScopeMode === 'delta_biz') {
+        return _currentRecon.reconciliation.businessOnlyRows;
+      }
+      return sc ? catRecords.filter(r => (r.subcategory||'General') === sc) : catRecords;
+    }
+
+    // Bind subcategory click handler
     App.Views.CategoryDetail.showSubcat = (sc) => {
-      window._activeSubcat = sc || '';
-      App.State.params.subcat = sc || '';
-      App.UI.updateBreadcrumb('category', { name: catName, subcat: sc || '' });
+      window._activeSubcat = sc;
+      _activeScopeMode = 'all';
 
-      const newHash = '#/category?name=' + encodeURIComponent(catName) + (sc ? '&subcat=' + encodeURIComponent(sc) : '');
+      // Update URL hash without re-rendering everything
+      const newHash = sc 
+        ? `#/category?name=${encodeURIComponent(catName)}&subcat=${encodeURIComponent(sc)}`
+        : `#/category?name=${encodeURIComponent(catName)}`;
       if (window.location.hash !== newHash) {
         window.history.pushState(null, '', newHash);
       }
 
-      const filtered = sc ? catRecords.filter(r => (r.subcategory||'General') === sc) : catRecords;
-      buildBrandList(filtered, container.querySelector('#brand-list-wrap'), totalValue, 'value', sc || '');
+      renderScopeReconciliation(sc);
+
+      const filtered = getActiveDisplayRecords(sc);
+      const displayTotalVal = filtered.reduce((s, r) => s + (r.source_value || 0), 0);
+      buildBrandList(filtered, container.querySelector('#brand-list-wrap'), displayTotalVal || totalValue, 'value', sc || '');
 
       document.querySelectorAll('#subcat-tabs .subcat-tab').forEach(b => {
         if ((b.dataset.subcat || '') === (sc || '')) {
@@ -204,10 +322,20 @@ App.Views.CategoryDetail = (() => {
 
       // Show subcategory summary
       if (sc && window._subcatMap?.has(sc)) {
-        _showSubcatSummary(window._subcatMap.get(sc), totalValue, totalUnits, totalWeight, totalSKUs);
+        _showSubcatSummary(window._subcatMap.get(sc), totalValue, totalUnits, totalWeight, totalSKUs, _currentRecon);
       } else {
         App.Views.CategoryDetail.closeSummary();
       }
+    };
+
+    App.Views.CategoryDetail.setScopeMode = (mode) => {
+      _activeScopeMode = mode;
+      const currentSc = window._activeSubcat;
+      renderScopeReconciliation(currentSc);
+
+      const filtered = getActiveDisplayRecords(currentSc);
+      const displayTotalVal = filtered.reduce((s, r) => s + (r.source_value || 0), 0);
+      buildBrandList(filtered, container.querySelector('#brand-list-wrap'), displayTotalVal || totalValue, 'value', currentSc || '');
     };
 
     App.Views.CategoryDetail.closeSummary = () => {
@@ -219,12 +347,22 @@ App.Views.CategoryDetail = (() => {
 
     App.Views.CategoryDetail.sort = (by) => {
       const currentSc = window._activeSubcat;
-      const filtered = currentSc ? catRecords.filter(r => (r.subcategory||'General') === currentSc) : catRecords;
-      buildBrandList(filtered, container.querySelector('#brand-list-wrap'), totalValue, by, currentSc);
+      const filtered = getActiveDisplayRecords(currentSc);
+      const displayTotalVal = filtered.reduce((s, r) => s + (r.source_value || 0), 0);
+      buildBrandList(filtered, container.querySelector('#brand-list-wrap'), displayTotalVal || totalValue, by, currentSc);
     };
+
+    // Initial render
+    renderScopeReconciliation(initialSubcat);
+    const initialFiltered = getActiveDisplayRecords(initialSubcat);
+    buildBrandList(initialFiltered, container.querySelector('#brand-list-wrap'), totalValue, 'value', initialSubcat);
+
+    if (initialSubcat && subcatMap.has(initialSubcat)) {
+      _showSubcatSummary(subcatMap.get(initialSubcat), totalValue, totalUnits, totalWeight, totalSKUs, _currentRecon);
+    }
   }
 
-  function _showSubcatSummary(scData, totalValue, totalUnits, totalWeight, totalSKUs) {
+  function _showSubcatSummary(scData, totalValue, totalUnits, totalWeight, totalSKUs, recon) {
     const panel = document.getElementById('subcat-summary');
     const titleEl = document.getElementById('subcat-summary-title');
     const gridEl = document.getElementById('subcat-summary-grid');
@@ -235,7 +373,20 @@ App.Views.CategoryDetail = (() => {
     const valuePct = totalValue ? ((scData.value / totalValue) * 100).toFixed(1) : '0';
     const unitsPct = totalUnits ? ((scData.qty / totalUnits) * 100).toFixed(1) : '0';
 
-    titleEl.innerHTML = `<span class="subcat-summary-icon">📋</span> ${scData.name}`;
+    titleEl.innerHTML = `<span class="subcat-summary-icon">📋</span> ${escHtml(scData.name)}`;
+
+    let businessScopeCardHtml = '';
+    if (recon && recon.hasBusinessScope) {
+      businessScopeCardHtml = `
+        <div class="subcat-stat-card" style="--stat-color: #ec4899">
+          <div class="subcat-stat-icon">🎯</div>
+          <div class="subcat-stat-info">
+            <div class="subcat-stat-value">${App.Fmt.currency(recon.business.value)}</div>
+            <div class="subcat-stat-label">Business Scope (${recon.scopeLabel})</div>
+          </div>
+        </div>
+      `;
+    }
 
     gridEl.innerHTML = `
       <div class="subcat-stat-card" style="--stat-color: #6366f1">
@@ -256,9 +407,10 @@ App.Views.CategoryDetail = (() => {
         <div class="subcat-stat-icon">💰</div>
         <div class="subcat-stat-info">
           <div class="subcat-stat-value">${App.Fmt.currency(scData.value)}</div>
-          <div class="subcat-stat-label">Value <span class="subcat-stat-pct">(${valuePct}%)</span></div>
+          <div class="subcat-stat-label">Canonical Value <span class="subcat-stat-pct">(${valuePct}%)</span></div>
         </div>
       </div>
+      ${businessScopeCardHtml}
       <div class="subcat-stat-card" style="--stat-color: #38bdf8">
         <div class="subcat-stat-icon">⚖️</div>
         <div class="subcat-stat-info">
@@ -336,7 +488,7 @@ App.Views.CategoryDetail = (() => {
           </div>
           <div class="brand-stat-item">
             <div class="brand-stat-val">${pct}%</div>
-            <div class="brand-stat-lbl">of Category</div>
+            <div class="brand-stat-lbl">of View</div>
           </div>
         </div>
         <div class="brand-pct-bar"><div class="brand-pct-fill" style="width:${Math.min(100,parseFloat(pct)*3)}%"></div></div>
@@ -356,7 +508,7 @@ App.Views.CategoryDetail = (() => {
     });
 
     if (!brands.length) {
-      wrap.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div>No brands found</div></div>';
+      wrap.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div>No brands found in this scope</div></div>';
     }
   }
 
@@ -368,17 +520,14 @@ App.Views.CategoryDetail = (() => {
     </div>`;
   }
 
-  // escHtml: produces HTML-attribute-safe strings using proper entity encoding.
-  // IMPORTANT: Only use this for display/HTML insertion. NEVER use the output
-  // as a data key or query value — use the original string for all app logic.
   function escHtml(s) {
     return (s||'')
-      .replace(/&/g, '&amp;')   // must be first — prevents double-encoding
+      .replace(/&/g, '&amp;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
   }
 
-  return { render, showSubcat:()=>{}, sort:()=>{}, closeSummary:()=>{} };
+  return { render, showSubcat:()=>{}, sort:()=>{}, setScopeMode:()=>{}, closeSummary:()=>{} };
 })();
