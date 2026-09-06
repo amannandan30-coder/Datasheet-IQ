@@ -31,6 +31,22 @@ App.InventoryStatusResolver = (() => {
     'general', 'unknown', 'custom', 'default'
   ]);
 
+  const DOMAIN_CATEGORY_SHEETS = new Set([
+    'atta', 'flour', 'rice', 'oil', 'dal', 'pulses', 'spices', 'staples',
+    'grocery', 'fmcg', 'dairy', 'beverages', 'personal care', 'home care',
+    'snacks', 'packaged foods', 'food', 'no variant', 'catalog', 'active catalog',
+    'tea', 'coffee', 'sugar', 'salt', 'biscuits', 'cleaning', 'household'
+  ]);
+
+  function isDomainCategorySheet(sheetVal) {
+    if (!sheetVal) return false;
+    if (DOMAIN_CATEGORY_SHEETS.has(sheetVal)) return true;
+    for (const cat of DOMAIN_CATEGORY_SHEETS) {
+      if (sheetVal === cat || sheetVal.startsWith(cat + ' ') || sheetVal.endsWith(' ' + cat)) return true;
+    }
+    return false;
+  }
+
   function normalizeText(val) {
     if (val == null) return '';
     return String(val).toLowerCase().trim().replace(/[\-_]/g, ' ').replace(/\s+/g, ' ');
@@ -327,8 +343,8 @@ App.InventoryStatusResolver = (() => {
           evidence
         };
       }
-      // Named categorical inventory sheets (e.g. 'atta', 'flour', 'catalog', 'no variant', 'spices')
-      if (!GENERIC_NEUTRAL_SHEETS.has(sheetVal)) {
+      // Cautious Domain Category Fallback: only recognized active inventory categories fallback to sellable
+      if (isDomainCategorySheet(sheetVal)) {
         return {
           status: 'sellable',
           confidence: 'MEDIUM',
