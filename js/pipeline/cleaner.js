@@ -1,136 +1,135 @@
 ﻿window.App = window.App || {};
 
 /* ============================================================
-   CLEANER — Text normalization without losing raw data
+   CLEANER - Text normalization without losing raw data
    ============================================================ */
 App.Cleaner = (() => {
 
-  /* ── String helpers ── */
-  function norm(s) {
-    if (s == null) return '';
-    return String(s).trim().replace(/\s+/g, ' ');
+  /* ── String helpers ─────────────────────────────────────── */
+  function norm(str) {
+    if (str == null) return '';
+    return String(str).trim();
   }
 
-  function normLower(s) { return norm(s).toLowerCase(); }
-
-  function normTitle(s) {
-    const n = norm(s);
-    if (!n) return '';
-    return n.replace(/\b\w/g, c => c.toUpperCase());
+  function normLower(str) {
+    if (str == null) return '';
+    return String(str).toLowerCase().trim().replace(/[\-_]/g, ' ').replace(/\s+/g, ' ');
   }
 
-  /* ── UOM Normalization ── */
+  function normTitle(str) {
+    if (str == null) return '';
+    const clean = String(str).trim();
+    if (!clean) return '';
+    return clean
+      .toLowerCase()
+      .split(' ')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
+
+  /* ── UOM Normalizer ─────────────────────────────────────── */
   const UOM_PATTERNS = [
-    { re: /(\d+(?:\.\d+)?)\s*(?:metric\s*tonnes?|metric\s*tons?|tonnes?|tons?|mt)\b/i, fn: m => `${parseFloat(m[1]) * 1000} KG` },
-    { re: /(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i,                              fn: m => `${parseFloat(m[1])} KG` },
-    { re: /(\d+(?:\.\d+)?)\s*(?:gm?s?|grams?)\b/i,                                  fn: m => `${parseFloat(m[1])} G`  },
-    { re: /(\d+(?:\.\d+)?)\s*(?:mg|milligrams?)\b/i,                                fn: m => `${parseFloat(m[1])} MG` },
-    { re: /(\d+(?:\.\d+)?)\s*(?:lbs?|pounds?)\b/i,                                  fn: m => `${(parseFloat(m[1]) * 0.45359237).toFixed(3)} KG` },
-    { re: /(\d+(?:\.\d+)?)\s*(?:oz|ounces?)\b/i,                                    fn: m => `${(parseFloat(m[1]) * 0.02834952).toFixed(3)} KG` },
-    { re: /(\d+(?:\.\d+)?)\s*(?:l\b|ltr?s?|liters?|litres?)/i,                      fn: m => `${parseFloat(m[1])} L`  },
-    { re: /(\d+(?:\.\d+)?)\s*(?:ml|milliliters?)\b/i,                               fn: m => `${parseFloat(m[1])} ML` },
-    { re: /(\d+(?:\.\d+)?)\s*(?:pcs?|pieces?|units?|nos?)\b/i,                      fn: m => `${parseInt(m[1])} PCS`  },
-    { re: /(\d+(?:\.\d+)?)\s*(?:pk|packs?|pouch(?:es)?|packet)\b/i,                 fn: m => `${parseInt(m[1])} PACK` },
-    { re: /(\d+(?:\.\d+)?)\s*(?:tabs?|tablets?)\b/i,                                fn: m => `${parseInt(m[1])} TABS` },
-    { re: /(\d+(?:\.\d+)?)\s*(?:m|meters?)\b/i,                                      fn: m => `${parseFloat(m[1])} M`  },
-    { re: /(\d+(?:\.\d+)?)\s*(?:w|watts?)\b/i,                                       fn: m => `${parseFloat(m[1])} W`  },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilogram|kilograms)$/i,  unit: 'KG' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)$/i,        unit: 'G' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:l|ltr|ltrs|liter|litres|litre)$/i, unit: 'L' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:ml|milliliter|millilitres)$/i, unit: 'ML' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:pc|pcs|piece|pieces)$/i,        unit: 'PCS' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:pk|pack|packs|pkt|packet)$/i,  unit: 'PACK' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:unit|units)$/i,                unit: 'UNIT' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:box|boxes)$/i,                 unit: 'BOX' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:btl|bottle|bottles)$/i,        unit: 'BOTTLE' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:can|cans)$/i,                  unit: 'CAN' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:tin|tins)$/i,                  unit: 'TIN' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:jar|jars)$/i,                  unit: 'JAR' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:pouch|pouches)$/i,             unit: 'POUCH' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:bag|bags|sack|sacks)$/i,       unit: 'BAG' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:roll|rolls)$/i,                unit: 'ROLL' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:strip|strips)$/i,              unit: 'STRIP' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:sachet|sachets)$/i,            unit: 'SACHET' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:set|sets)$/i,                  unit: 'SET' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:pair|pairs)$/i,                unit: 'PAIR' },
   ];
 
-  function normalizeUOM(raw, productName) {
-    const text = `${raw || ''} ${productName || ''}`.trim();
-    for (const { re, fn } of UOM_PATTERNS) {
-      const m = text.match(re);
-      if (m) return { raw_uom: raw || m[0], normalized_uom: fn(m) };
+  function normalizeUOM(rawUOM, productName) {
+    const raw = norm(rawUOM);
+    for (const { pattern, unit } of UOM_PATTERNS) {
+      const match = raw.match(pattern);
+      if (match) {
+        return {
+          normalized_uom: `${match[1]} ${unit}`,
+          uom_size: parseFloat(match[1]),
+          uom_type: unit
+        };
+      }
     }
-    if (!raw) return { raw_uom: null, normalized_uom: null };
-    const s = String(raw).trim();
-    return { raw_uom: s, normalized_uom: s.toUpperCase() };
+
+    if (productName) {
+      const nameMatch = productName.match(/(\d+(?:\.\d+)?)\s*(kg|kgs|g|gm|gms|l|ltr|ml|pcs|pack|pk|units?)\b/i);
+      if (nameMatch) {
+        const val = nameMatch[1];
+        const rawUnit = nameMatch[2].toUpperCase();
+        let mappedUnit = rawUnit;
+        if (['KG', 'KGS'].includes(rawUnit)) mappedUnit = 'KG';
+        else if (['G', 'GM', 'GMS'].includes(rawUnit)) mappedUnit = 'G';
+        else if (['L', 'LTR'].includes(rawUnit)) mappedUnit = 'L';
+        else if (rawUnit === 'ML') mappedUnit = 'ML';
+        else if (['PCS', 'PACK', 'PK', 'UNIT', 'UNITS'].includes(rawUnit)) mappedUnit = 'PCS';
+
+        return {
+          normalized_uom: `${val} ${mappedUnit}`,
+          uom_size: parseFloat(val),
+          uom_type: mappedUnit
+        };
+      }
+    }
+
+    return {
+      normalized_uom: raw || '1 Unit',
+      uom_size: 1,
+      uom_type: 'UNIT'
+    };
   }
 
-  /* ── Weight parsing & normalizers ── */
-  function parseWeightToKG(v, requireUnit = false) {
-    if (v == null || v === '') return null;
-    if (typeof v === 'number') return requireUnit ? null : (isNaN(v) ? null : v);
-    let str = String(v).trim();
-    if (!str || str === '-' || str === 'N/A' || str === 'na') return null;
+  function parseWeightToKG(val) {
+    if (val == null || val === '') return null;
+    if (typeof val === 'number') return isNaN(val) ? null : val;
+    const str = String(val).trim().toLowerCase();
+    if (!str || str === '-') return null;
 
-    // Suffix unit conversion
-    const tonMatch = str.match(/^([\d.,]+)\s*(?:metric\s*tonnes?|metric\s*tons?|tonnes?|tons?|mt)\b/i);
-    if (tonMatch) return parseFloat(tonMatch[1].replace(/,/g, '')) * 1000.0;
-
-    const kgMatch = str.match(/^([\d.,]+)\s*(?:(?:kg|kgs|kilograms?)\b|कि\.?ग्रा\.?|किलो)/i);
-    if (kgMatch) return parseFloat(kgMatch[1].replace(/,/g, ''));
-
-    const gmMatch = str.match(/^([\d.,]+)\s*(?:(?:gm?s?|grams?)\b|ग्राम|ग्रा\.?)/i);
-    if (gmMatch) return parseFloat(gmMatch[1].replace(/,/g, '')) / 1000.0;
-
-    const mgMatch = str.match(/^([\d.,]+)\s*(?:(?:mg|milligrams?)\b|मि\.?ग्रा\.?)/i);
-    if (mgMatch) return parseFloat(mgMatch[1].replace(/,/g, '')) / 1000000.0;
-
-    const lbMatch = str.match(/^([\d.,]+)\s*(?:lbs?|pounds?)\b/i);
-    if (lbMatch) return parseFloat(lbMatch[1].replace(/,/g, '')) * 0.45359237;
-
-    const ozMatch = str.match(/^([\d.,]+)\s*(?:oz|ounces?)\b/i);
-    if (ozMatch) return parseFloat(ozMatch[1].replace(/,/g, '')) * 0.028349523125;
-
-    if (requireUnit) return null;
-    return toNumber(str);
-  }
-
-  /* Extract weight in KG from UOM or product name */
-  function extractWeightKG(uomText, productName) {
-    const text = `${uomText || ''} ${productName || ''}`.trim();
-    if (!text) return null;
-
-    // Metric Ton / Tonne
-    const tonMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:metric\s*tonnes?|metric\s*tons?|tonnes?|tons?|mt)\b/i);
-    if (tonMatch) return parseFloat(tonMatch[1]) * 1000.0;
-
-    // KG / Kilogram
-    const kgMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i);
+    const kgMatch = str.match(/^([\d.]+)\s*(?:kg|kgs|kilogram|kilograms)$/);
     if (kgMatch) return parseFloat(kgMatch[1]);
 
-    // Grams (g, gm, gms, grams)
-    const gmMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:gm?s?|grams?)\b/i);
-    if (gmMatch) return parseFloat(gmMatch[1]) / 1000.0;
+    const gMatch = str.match(/^([\d.]+)\s*(?:g|gm|gms|gram|grams)$/);
+    if (gMatch) return parseFloat(gMatch[1]) / 1000;
 
-    // Liters (approx 1L = 1KG for liquids)
-    const lMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:l\b|ltr?s?|liters?|litres?)/i);
-    if (lMatch) return parseFloat(lMatch[1]);
-
-    // ML
-    const mlMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:ml|milliliters?)\b/i);
-    if (mlMatch) return parseFloat(mlMatch[1]) / 1000.0;
-
-    // Pounds (lb / lbs)
-    const lbMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:lbs?|pounds?)\b/i);
-    if (lbMatch) return parseFloat(lbMatch[1]) * 0.45359237;
-
-    // Explicit UOM weight fallback
-    if (uomText) {
-      const uomWeight = parseWeightToKG(uomText, true);
-      if (uomWeight != null) return uomWeight;
-    }
+    const pureNum = Number(str.replace(/,/g, ''));
+    if (!isNaN(pureNum)) return pureNum;
 
     return null;
   }
 
-  /* ── Number helpers ── */
-  function toNumber(v) {
-    if (v == null || v === '') return null;
-    if (typeof v === 'number') return isNaN(v) ? null : v;
-    
-    let str = String(v).trim();
-    if (!str || str === '-' || str === 'N/A' || str === 'na' || str === 'null' || str === 'undefined') return null;
+  function extractWeightKG(uomStr, nameStr) {
+    const combined = `${uomStr || ''} ${nameStr || ''}`.toLowerCase();
+    const kgMatch = combined.match(/(\d+(?:\.\d+)?)\s*(?:kg|kgs)\b/);
+    if (kgMatch) return parseFloat(kgMatch[1]);
 
-    // Handle parentheses for negative numbers e.g. (1,250.00) -> -1250.00
-    if (/^\(.*\)$/.test(str)) {
-      str = '-' + str.slice(1, -1).trim();
-    }
+    const gMatch = combined.match(/(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/);
+    if (gMatch) return parseFloat(gMatch[1]) / 1000;
 
-    // Strip currency symbols and commas
-    str = str.replace(/[₹$€£]/g, '')
-             .replace(/\b(?:rs\.?|inr|usd|eur|gbp)\b/gi, '')
+    const lMatch = combined.match(/(\d+(?:\.\d+)?)\s*(?:l|ltr|liter|litres)\b/);
+    if (lMatch) return parseFloat(lMatch[1]);
+
+    const mlMatch = combined.match(/(\d+(?:\.\d+)?)\s*(?:ml)\b/);
+    if (mlMatch) return parseFloat(mlMatch[1]) / 1000;
+
+    return null;
+  }
+
+  function toNumber(val) {
+    if (val == null) return null;
+    if (typeof val === 'number') return isNaN(val) ? null : val;
+    const str = String(val)
+             .replace(/[^0-9.-]/g, '')
              .replace(/,/g, '')
              .replace(/\s+/g, '')
              .trim();
@@ -140,7 +139,7 @@ App.Cleaner = (() => {
     return isNaN(n) ? null : n;
   }
 
-  /* ── Brand cleaning ── */
+  /* ── Brand cleaning ─────────────────────────────────────── */
   function cleanBrand(raw, productName) {
     let b = norm(raw);
     if (!b && productName) {
@@ -155,7 +154,7 @@ App.Cleaner = (() => {
     );
   }
 
-  /* ── Product name cleaning ── */
+  /* ── Product name cleaning ──────────────────────────────── */
   function cleanProductName(raw) {
     if (!raw) return 'Unnamed Product';
     return normTitle(String(raw)
@@ -164,7 +163,7 @@ App.Cleaner = (() => {
     );
   }
 
-  /* ── Core cleaner ── */
+  /* ── Core cleaner ───────────────────────────────────────── */
   function cleanRecord(rec) {
     const raw = rec._raw || {};
     const raw_name  = rec.name  || rec.product_name || rec.Product_Name || raw['Product Name'] || raw.name || '';
@@ -177,9 +176,22 @@ App.Cleaner = (() => {
     const raw_item_type = norm(rec.item_type || rec.Type || rec.type || raw.item_type || raw.Type || raw.type || raw['Item Type'] || '');
     const raw_inv_status = norm(rec.inventory_status || rec.status || rec.Status || raw.inventory_status || raw.Status || raw.status || raw['Inventory Status'] || '');
     const raw_bad_type_explicit = norm(rec.bad_inventory_type || raw.bad_inventory_type || raw['Bad Inventory Type'] || raw['Damage Type'] || '');
-    const raw_remarks = norm(rec.remarks || rec.Remarks || rec.Remark || rec.remark || raw.Remarks || raw.remarks || raw.Remark || raw.remark || raw.Notes || raw.notes || '');
+    
+    const raw_remarks_plural = norm(rec.remarks || rec.Remarks || raw.Remarks || raw.remarks || raw.Notes || raw.notes || '');
+    const raw_remark_singular = norm(rec.Remark || rec.remark || raw.Remark || raw.remark || '');
+    const raw_remarks = raw_remarks_plural || raw_remark_singular;
+
     const raw_condition = norm(rec.condition || rec.Condition || raw.Condition || raw.condition || raw['Stock Condition'] || '');
     const raw_disposition = norm(rec.disposition || rec.Disposition || raw.Disposition || raw.disposition || raw.Action || raw.action || '');
+
+    // If singular Remark contains an explicit status token (saleable/non_saleable/etc), promote to inventory_status if empty
+    let effective_inv_status = raw_inv_status;
+    if (!effective_inv_status && raw_remark_singular) {
+      const normSingular = normLower(raw_remark_singular);
+      if (['saleable', 'salable', 'sellable', 'non saleable', 'nonsaleable', 'non sellable', 'damaged', 'expired', 'quarantine', 'active', 'in stock'].includes(normSingular)) {
+        effective_inv_status = raw_remark_singular;
+      }
+    }
 
     // Status fallback for bad_inventory_type: check explicit property first, then sheet name
     let raw_bad_type = raw_bad_type_explicit;
@@ -264,7 +276,7 @@ App.Cleaner = (() => {
       raw_weight:             rec.Weight ?? rec.weight ?? raw.Weight,
       raw_total_weight:       rec['Total Weight'] ?? rec.total_weight ?? rec.gross_weight ?? raw['Total Weight'],
       raw_item_type:          raw_item_type,
-      raw_inventory_status:   raw_inv_status,
+      raw_inventory_status:   effective_inv_status,
       raw_bad_inventory_type: raw_bad_type || 'unknown',
       raw_remarks:            raw_remarks,
       raw_condition:          raw_condition,
@@ -272,7 +284,7 @@ App.Cleaner = (() => {
 
       // CANONICAL FIELDS
       item_type:              raw_item_type,
-      inventory_status:       raw_inv_status,
+      inventory_status:       effective_inv_status,
       bad_inventory_type:     raw_bad_type_explicit || raw_bad_type || 'unknown',
       remarks:                raw_remarks,
       condition:              raw_condition,

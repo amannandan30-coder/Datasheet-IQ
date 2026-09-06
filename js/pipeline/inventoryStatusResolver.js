@@ -1,7 +1,7 @@
 ﻿window.App = window.App || {};
 
 /* ============================================================
-   INVENTORY STATUS RESOLVER — Evidence-Aware Sellability Engine
+   INVENTORY STATUS RESOLVER - Evidence-Aware Sellability Engine
    ============================================================ */
 App.InventoryStatusResolver = (() => {
 
@@ -19,7 +19,7 @@ App.InventoryStatusResolver = (() => {
     'bad rtv', 'bad_rtv', 'badrtv', 'rtv', 'return to vendor', 'returntovendor',
     'unserviceable', 'rejected', 'reject', 'defect', 'defective', 'hold', 'scrap',
     'salvage', 'dead stock', 'deadstock', 'write off', 'writeoff', 'loss', 'broken',
-    'quarantined', 'bad', 'non-saleable/dump', 'non saleable/dump', 'nonsaleable/dump'
+    'quarantined', 'non-saleable/dump', 'non saleable/dump', 'nonsaleable/dump'
   ]);
 
   const GENERIC_NEUTRAL_SHEETS = new Set([
@@ -100,8 +100,8 @@ App.InventoryStatusResolver = (() => {
     const hasPositiveType = hasSellableSignal(norm_item_type);
     const hasNegativeType = hasNonSellableSignal(norm_item_type);
 
-    const hasPositiveStatus = hasSellableSignal(norm_inv_status) || hasSellableSignal(norm_remarks) || hasSellableSignal(norm_disposition);
-    const hasNegativeStatus = hasNonSellableSignal(norm_inv_status) || hasNonSellableSignal(norm_remarks) || hasNonSellableSignal(norm_disposition);
+    const hasPositiveStatus = hasSellableSignal(norm_inv_status) || hasSellableSignal(norm_disposition);
+    const hasNegativeStatus = hasNonSellableSignal(norm_inv_status) || hasNonSellableSignal(norm_disposition);
 
     const hasNegativeBadType = hasNonSellableSignal(norm_bad_type) && norm_bad_type !== 'unknown';
     const hasNegativeCondition = hasNonSellableSignal(norm_condition);
@@ -111,7 +111,7 @@ App.InventoryStatusResolver = (() => {
 
     if ((hasPositiveType || hasPositiveStatus) && (hasNegativeBadType || hasNegativeCondition || hasNegativeStatus)) {
       is_conflict = true;
-      conflict_reason = `Positive sellability signal (${hasPositiveType ? `Type="${raw_item_type}"` : `Status="${raw_inv_status || raw_remarks}"`}) conflicts with negative condition signal (${hasNegativeBadType ? `BadInventoryType="${raw_bad_type_explicit}"` : `Condition="${raw_condition || raw_inv_status}"`}).`;
+      conflict_reason = `Positive sellability signal (${hasPositiveType ? `Type="${raw_item_type}"` : `Status="${raw_inv_status}"`}) conflicts with negative condition signal (${hasNegativeBadType ? `BadInventoryType="${raw_bad_type_explicit}"` : `Condition="${raw_condition || raw_inv_status}"`}).`;
     }
 
     // ── Precedence Rule Hierarchy ──
@@ -173,7 +173,7 @@ App.InventoryStatusResolver = (() => {
             evidence
           };
         }
-        if (hasSellableSignal(normVal) && !hasNegativeBadType) {
+        if (hasSellableSignal(normVal) && !hasNegativeBadType && !hasNegativeCondition) {
           return {
             status: 'sellable',
             confidence: 'HIGH',
@@ -187,7 +187,7 @@ App.InventoryStatusResolver = (() => {
       }
     }
 
-    // Priority 4: Explicit Negative Bad Inventory Type (C)
+    // Priority 4: Strong Negative Inventory-Condition Field (C)
     if (hasNegativeBadType) {
       if (hasPositiveType) {
         return {
@@ -296,7 +296,7 @@ App.InventoryStatusResolver = (() => {
           evidence
         };
       }
-      // Named categorical inventory sheets (e.g. 'atta', 'flour', 'catalog', 'general')
+      // Named categorical inventory sheets (e.g. 'atta', 'flour', 'catalog', 'general', 'no variant')
       if (!GENERIC_NEUTRAL_SHEETS.has(sheetVal)) {
         return {
           status: 'sellable',
