@@ -32,7 +32,7 @@ App.Parser = (() => {
           const allHeadersSet = new Set();
           const sheetStats    = [];
 
-          const SUMMARY_MARKER_RE = /^\s*(?:total|grand\s*total|sub\s*total|subtotal|total\s*summary|summary|grandtotal|sub-total|grand-total)(?:\s*:|\s*$)/i;
+          const SUMMARY_MARKER_RE = /^\s*(?:total|grand\s*total|sub\s*total|subtotal|total\s*summary|summary|grandtotal|sub-total|grand-total)(?:\s*:|\s*\/|\s*row|\s*count|\s*$|\b)/i;
 
           for (const wsName of wb.SheetNames) {
             const ws = wb.Sheets[wsName];
