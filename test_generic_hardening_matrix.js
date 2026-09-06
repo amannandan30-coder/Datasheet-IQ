@@ -408,7 +408,7 @@ async function runHardeningMatrix() {
   // 2. Lot-15
   const lot15Buf = fs.readFileSync('Grofers_India_Pvt_Ltd_1787979148_Liq_sheet_lot-15_27th_Aug.xlsx_revised__2_.xlsx2nd.xlsx');
   const lot15Parsed = await App.Parser.parse({ name: 'Lot-15.xlsx', size: lot15Buf.length, buffer: lot15Buf });
-  const lot15Cleaned = App.Cleaner.cleanAll(lot15Parsed.rows.filter(r => r.name && String(r.name).trim() !== ''));
+  const lot15Cleaned = App.Cleaner.cleanAll(lot15Parsed.rows);
   const lot15Res = App.InventoryStatusResolver.resolveDataset(lot15Cleaned);
 
   check(lot15Res.total.records === 7980, `Lot-15 Total records: 7,980 (got ${lot15Res.total.records})`);

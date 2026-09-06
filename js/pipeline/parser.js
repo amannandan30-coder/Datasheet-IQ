@@ -143,11 +143,8 @@ App.Parser = (() => {
               }
 
               // Check for completely empty product name
-              if (!excludeReason) {
-                const hasAnyValidCell = row.some(c => c != null && String(c).trim() !== '');
-                if (!nameVal && (upcColIdx < 0 || !row[upcColIdx]) && hasAnyValidCell) {
-                  excludeReason = 'missing_product_name';
-                }
+              if (!excludeReason && !nameVal) {
+                excludeReason = 'missing_product_name';
               }
 
               if (excludeReason) {
