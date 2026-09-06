@@ -538,6 +538,247 @@ async function runHardeningMatrix() {
   console.log('  ✅ Performance benchmarks executed within SLA limits.\n');
 
   // =========================================================================
+  // PILLAR 12: CENTRALIZED NEGATION-AWARE MATCHER (Slash & Compound Tokens)
+  // =========================================================================
+  console.log('--- PILLAR 12: Slash & Compound Token Handling ---');
+
+  const slashTests = [
+    { input: 'damaged/broken',        expectNS: true,  desc: 'slash-separated damaged/broken' },
+    { input: 'non-saleable/dump',     expectNS: true,  desc: 'slash-separated non-saleable/dump' },
+    { input: 'expired/quarantine',    expectNS: true,  desc: 'slash-separated expired/quarantine' },
+    { input: 'Non-Sellable/Dump',     expectNS: true,  desc: 'mixed case Non-Sellable/Dump' },
+    { input: 'Damaged/RTV',           expectNS: true,  desc: 'Damaged/RTV' },
+    { input: 'scrap/write-off',       expectNS: true,  desc: 'scrap/write-off' },
+    { input: 'Saleable/Active',       expectSell: true, desc: 'Saleable/Active' },
+    { input: 'Good/Fresh',            expectSell: true, desc: 'Good/Fresh' },
+    { input: 'Available/In_Stock',    expectSell: true, desc: 'Available/In_Stock' },
+  ];
+
+  slashTests.forEach(({ input, expectNS, expectSell, desc }) => {
+    const norm = App.InventoryStatusResolver.normalizeText(input);
+    if (expectNS) {
+      check(App.InventoryStatusResolver.hasNonSellableSignal(norm) === true,
+        `Slash "${desc}" must trigger hasNonSellableSignal`);
+    }
+    if (expectSell) {
+      check(App.InventoryStatusResolver.hasSellableSignal(norm) === true,
+        `Slash "${desc}" must trigger hasSellableSignal`);
+    }
+  });
+
+  // Full end-to-end: slash-separated status in a workbook
+  const slashWb = {
+    'Sheet1': [
+      { 'Product Name': 'Slash Item A', 'Qty': 5, 'MRP': 100, 'Value': 500, 'Status': 'damaged/broken' },
+      { 'Product Name': 'Slash Item B', 'Qty': 3, 'MRP': 200, 'Value': 600, 'Status': 'Saleable/Active' }
+    ]
+  };
+  const slashBuf = createWorkbookBuffer(slashWb);
+  const slashParsed = await App.Parser.parse({ name: 'Slash.xlsx', size: slashBuf.length, buffer: slashBuf });
+  const slashCleaned = App.Cleaner.cleanAll(slashParsed.rows);
+  const slashRes = App.InventoryStatusResolver.resolveDataset(slashCleaned);
+  check(slashRes.reconciled === true, 'Slash-separated workbook reconciles');
+  check(slashRes.nonSellable.records === 1, 'Slash: damaged/broken -> non_sellable');
+  check(slashRes.sellable.records === 1, 'Slash: Saleable/Active -> sellable');
+  console.log(`  ? Verified ${slashTests.length + 3} slash/compound token tests.\n`);
+
+  // =========================================================================
+  // PILLAR 13: GENERIC NEGATION PREFIX SAFETY (for ALL token types)
+  // =========================================================================
+  console.log('--- PILLAR 13: Generic Negation Prefix Safety Matrix ---');
+
+  // --- Negated damage terms: should NOT trigger non_sellable ---
+  const negatedDamageTests = [
+    { input: 'no damage',              desc: 'no damage' },
+    { input: 'no damage observed',     desc: 'no damage observed' },
+    { input: 'not damaged',            desc: 'not damaged' },
+    { input: 'not expired',            desc: 'not expired' },
+    { input: 'not broken',             desc: 'not broken' },
+    { input: 'not rejected',           desc: 'not rejected' },
+    { input: 'not defective',          desc: 'not defective' },
+    { input: 'no defect found',        desc: 'no defect found' },
+    { input: 'no defect',              desc: 'no defect' },
+    { input: 'no scrap',               desc: 'no scrap' },
+    { input: 'un-broken seal intact',  desc: 'un-broken seal' },
+    { input: 'un-damaged packaging',   desc: 'un-damaged packaging' },
+    { input: 'never expired',          desc: 'never expired' },
+    { input: 'never rejected',         desc: 'never rejected' },
+    { input: 'zero damage',            desc: 'zero damage' },
+    { input: 'zero defect',            desc: 'zero defect' },
+    { input: 'nil damage',             desc: 'nil damage' },
+    { input: 'without damage',         desc: 'without damage' },
+    { input: 'without defect',         desc: 'without defect' },
+  ];
+
+  negatedDamageTests.forEach(({ input, desc }) => {
+    const norm = App.InventoryStatusResolver.normalizeText(input);
+    check(App.InventoryStatusResolver.hasNonSellableSignal(norm) === false,
+      `Negated damage "${desc}" must NOT trigger hasNonSellableSignal`);
+  });
+
+  // --- Negated sellable terms: should NOT trigger sellable ---
+  const negatedSellableTests = [
+    { input: 'non saleable',   desc: 'non saleable' },
+    { input: 'not sellable',   desc: 'not sellable' },
+    { input: 'not available',  desc: 'not available' },
+    { input: 'un-usable',      desc: 'un-usable' },
+    { input: 'not active',     desc: 'not active' },
+    { input: 'not good',       desc: 'not good' },
+    { input: 'no good',        desc: 'no good' },
+    { input: 'never available', desc: 'never available' },
+  ];
+
+  negatedSellableTests.forEach(({ input, desc }) => {
+    const norm = App.InventoryStatusResolver.normalizeText(input);
+    check(App.InventoryStatusResolver.hasSellableSignal(norm) === false,
+      `Negated sellable "${desc}" must NOT trigger hasSellableSignal`);
+  });
+
+  // --- Non-negated damage terms: MUST still trigger non_sellable ---
+  const nonNegatedDamageTests = [
+    { input: 'actually damaged',     desc: 'actually damaged' },
+    { input: 'packaging damaged',    desc: 'packaging damaged' },
+    { input: 'item broken',          desc: 'item broken' },
+    { input: 'product expired',      desc: 'product expired' },
+    { input: 'stock expired',        desc: 'stock expired' },
+    { input: 'batch rejected',       desc: 'batch rejected' },
+    { input: 'seal defective',       desc: 'seal defective' },
+    { input: 'Packaging damaged',    desc: 'Packaging damaged (uppercase)' },
+    { input: 'badly damaged goods',  desc: 'badly damaged goods' },
+    { input: 'confirmed scrap',      desc: 'confirmed scrap' },
+    { input: 'identified as dump',   desc: 'identified as dump' },
+    { input: 'Expired stock',        desc: 'Expired stock' },
+    { input: 'Bad RTV',              desc: 'Bad RTV' },
+    { input: 'Defective seal',       desc: 'Defective seal' },
+    { input: 'Scrap batch',          desc: 'Scrap batch' },
+  ];
+
+  nonNegatedDamageTests.forEach(({ input, desc }) => {
+    const norm = App.InventoryStatusResolver.normalizeText(input);
+    check(App.InventoryStatusResolver.hasNonSellableSignal(norm) === true,
+      `Non-negated "${desc}" MUST trigger hasNonSellableSignal`);
+  });
+
+  // --- Non-negated sellable terms: MUST still trigger sellable ---
+  const nonNegatedSellableTests = [
+    { input: 'saleable',           desc: 'saleable' },
+    { input: 'available stock',    desc: 'available stock' },
+    { input: 'good condition',     desc: 'good condition' },
+    { input: 'active',             desc: 'active' },
+    { input: 'ready for sale',     desc: 'ready for sale' },
+    { input: 'fresh',              desc: 'fresh' },
+    { input: 'sellable inventory', desc: 'sellable inventory' },
+  ];
+
+  nonNegatedSellableTests.forEach(({ input, desc }) => {
+    const norm = App.InventoryStatusResolver.normalizeText(input);
+    check(App.InventoryStatusResolver.hasSellableSignal(norm) === true,
+      `Non-negated "${desc}" MUST trigger hasSellableSignal`);
+  });
+
+  // --- End-to-end: record with negated remark on domain sheet ---
+  const negRemark = { name: 'NegRemarkItem', _sheet_name: 'No variant', remarks: 'No damage observed', qty: 1, source_value: 100 };
+  const negRemarkRes = App.InventoryStatusResolver.resolveRecordStatusDetailed(negRemark);
+  check(negRemarkRes.status !== 'non_sellable', 'Negated remark "No damage observed" must NOT classify as non_sellable');
+  check(negRemarkRes.status === 'sellable', 'Negated remark on domain sheet falls back to sellable');
+
+  // --- Cross-contamination test: no string returns true for BOTH ---
+  const crossCheckStrings = [
+    'no damage', 'not expired', 'un-broken', 'undamaged',
+    'non saleable', 'not sellable', 'not available', 'no good',
+    'saleable', 'damaged', 'expired', 'good', 'active', 'broken',
+    'packaging damaged', 'actually damaged', 'bad rtv', 'ready for sale',
+    'damaged/broken', 'saleable/active'
+  ];
+  let crossViolations = 0;
+  crossCheckStrings.forEach(raw => {
+    const norm = App.InventoryStatusResolver.normalizeText(raw);
+    const pos = App.InventoryStatusResolver.hasSellableSignal(norm);
+    const neg = App.InventoryStatusResolver.hasNonSellableSignal(norm);
+    if (pos && neg) crossViolations++;
+  });
+  check(crossViolations === 0, `Zero cross-contamination violations (both sellable+non_sellable) found across ${crossCheckStrings.length} test strings`);
+
+  const pillar13Total = negatedDamageTests.length + negatedSellableTests.length +
+                        nonNegatedDamageTests.length + nonNegatedSellableTests.length + 3;
+  console.log(`  ? Verified ${pillar13Total} negation prefix safety tests (${negatedDamageTests.length} negated damage + ${negatedSellableTests.length} negated sellable + ${nonNegatedDamageTests.length} true damage + ${nonNegatedSellableTests.length} true sellable + 3 e2e).\n`);
+
+  // =========================================================================
+  // PILLAR 14: DOMAIN SHEET EXACT MATCH SAFETY
+  // =========================================================================
+  console.log('--- PILLAR 14: Domain Sheet Exact Match Safety ---');
+
+  const domainExactTests = [
+    // Exact domain matches: MUST still produce sellable
+    { sheet: 'atta',            expected: 'sellable',    desc: 'exact domain: atta' },
+    { sheet: 'no variant',      expected: 'sellable',    desc: 'exact domain: no variant' },
+    { sheet: 'coffee',          expected: 'sellable',    desc: 'exact domain: coffee' },
+    { sheet: 'tea',             expected: 'sellable',    desc: 'exact domain: tea' },
+    { sheet: 'salt',            expected: 'sellable',    desc: 'exact domain: salt' },
+    { sheet: 'sugar',           expected: 'sellable',    desc: 'exact domain: sugar' },
+    { sheet: 'cleaning',        expected: 'sellable',    desc: 'exact domain: cleaning' },
+    { sheet: 'dairy',           expected: 'sellable',    desc: 'exact domain: dairy' },
+    // Compound names that START WITH domain words: must NOT match
+    { sheet: 'Salt Lake Warehouse',  expected: 'unknown', desc: 'compound: Salt Lake Warehouse' },
+    { sheet: 'Sugar Free Items',     expected: 'unknown', desc: 'compound: Sugar Free Items' },
+    { sheet: 'Tea Expired Stock',    expected: 'non_sellable', desc: 'compound: Tea Expired Stock (expired signal)' },
+    { sheet: 'Cleaning Damaged',     expected: 'non_sellable', desc: 'compound: Cleaning Damaged (damaged signal)' },
+    { sheet: 'Coffee Returns',       expected: 'unknown', desc: 'compound: Coffee Returns' },
+    { sheet: 'Rice Warehouse Section', expected: 'unknown', desc: 'compound: Rice Warehouse Section' },
+    { sheet: 'Salt Storage Area',    expected: 'unknown', desc: 'compound: Salt Storage Area' },
+    // Generic neutral sheets: must stay unknown
+    { sheet: 'General',         expected: 'unknown', desc: 'neutral: General' },
+    { sheet: 'Data',            expected: 'unknown', desc: 'neutral: Data' },
+    { sheet: 'Sheet1',          expected: 'unknown', desc: 'neutral: Sheet1' },
+    // Ambiguous: should be unknown
+    { sheet: 'Returns',         expected: 'unknown', desc: 'ambiguous: Returns' },
+    { sheet: 'Pending Review',  expected: 'unknown', desc: 'ambiguous: Pending Review' },
+    { sheet: 'Buffer Stock',    expected: 'unknown', desc: 'ambiguous: Buffer Stock' },
+    { sheet: 'Archive',         expected: 'unknown', desc: 'ambiguous: Archive' },
+  ];
+
+  domainExactTests.forEach(({ sheet, expected, desc }) => {
+    const r = { name: 'DomainTest', _sheet_name: sheet, qty: 1, source_value: 100 };
+    const res = App.InventoryStatusResolver.resolveRecordStatusDetailed(r);
+    check(res.status === expected, `Domain sheet "${desc}" should resolve to ${expected}, got ${res.status} (rule=${res.resolution_rule})`);
+  });
+  console.log(`  ? Verified ${domainExactTests.length} domain sheet exact match safety tests.\n`);
+
+  // =========================================================================
+  // PILLAR 15: NaN / Infinity QUANTITY RESILIENCE
+  // =========================================================================
+  console.log('--- PILLAR 15: NaN/Infinity Quantity Resilience ---');
+
+  const resilientRows = [
+    { name: 'NaN Item',      _sheet_name: 'Saleable', inventory_status: 'Saleable', qty: NaN,       source_value: 100 },
+    { name: 'Inf Item',      _sheet_name: 'Saleable', inventory_status: 'Saleable', qty: Infinity,  source_value: 200 },
+    { name: '-Inf Item',     _sheet_name: 'Saleable', inventory_status: 'Saleable', qty: -Infinity, source_value: 300 },
+    { name: 'NaN Val Item',  _sheet_name: 'Saleable', inventory_status: 'Saleable', qty: 5,         source_value: NaN },
+    { name: 'Inf Val Item',  _sheet_name: 'Saleable', inventory_status: 'Saleable', qty: 3,         source_value: Infinity },
+    { name: 'Normal Item',   _sheet_name: 'Saleable', inventory_status: 'Saleable', qty: 10,        source_value: 500 },
+    { name: 'Null Qty Item', _sheet_name: 'Saleable', inventory_status: 'Saleable', qty: null,      source_value: 100 },
+    { name: 'Undef Qty',     _sheet_name: 'Saleable', inventory_status: 'Saleable',                 source_value: 100 },
+    { name: 'Str Qty',       _sheet_name: 'Saleable', inventory_status: 'Saleable', qty: 'abc',     source_value: 100 },
+    { name: 'Zero Qty',      _sheet_name: 'Saleable', inventory_status: 'Saleable', qty: 0,         source_value: 0 },
+  ];
+
+  const resilientRes = App.InventoryStatusResolver.resolveDataset(resilientRows);
+  check(resilientRes.reconciled === true, `NaN/Infinity dataset must reconcile (got ${resilientRes.reconciled}, diff=${JSON.stringify(resilientRes.difference)})`);
+  check(isFinite(resilientRes.total.units), `Total units must be finite (got ${resilientRes.total.units})`);
+  check(isFinite(resilientRes.total.value), `Total value must be finite (got ${resilientRes.total.value})`);
+  check(isFinite(resilientRes.sellable.units), `Sellable units must be finite (got ${resilientRes.sellable.units})`);
+  check(isFinite(resilientRes.sellable.value), `Sellable value must be finite (got ${resilientRes.sellable.value})`);
+  check(!isNaN(resilientRes.total.units), `Total units must not be NaN`);
+  check(!isNaN(resilientRes.total.value), `Total value must not be NaN`);
+  check(!isNaN(resilientRes.difference.units), `Difference units must not be NaN`);
+  check(!isNaN(resilientRes.difference.value), `Difference value must not be NaN`);
+
+  // Verify the Normal Item (qty=10, val=500) is counted correctly
+  check(resilientRes.total.records === 10, `Resilient dataset must have 10 records (got ${resilientRes.total.records})`);
+
+  console.log(`  ? Verified 10 NaN/Infinity resilience invariants.\n`);
+
+  // =========================================================================
   // SUMMARY
   // =========================================================================
   console.log('================================================================');

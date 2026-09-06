@@ -5,7 +5,29 @@ window.App = window.App || {};
    ============================================================ */
 App.InventoryStatusResolver = (() => {
 
-  const SELLABLE_TOKENS = new Set([
+  /* ------------------------------------------------------------
+     SECTION 0  NORMALIZE - single source of truth for text canonicalization
+     ------------------------------------------------------------ */
+  function normalizeText(val) {
+    if (val == null) return '';
+    return String(val).toLowerCase().trim().replace(/[\-_\/]/g, ' ').replace(/\s+/g, ' ');
+  }
+
+  /** Pre-normalize every entry in a raw token array so lookups and
+   *  regex matching always operate on the same canonical form. */
+  function normalizeTokenSet(rawTokens) {
+    const s = new Set();
+    for (const t of rawTokens) {
+      const n = normalizeText(t);
+      if (n) s.add(n);
+    }
+    return s;
+  }
+
+  /* ------------------------------------------------------------
+     SECTION 1  TOKEN SETS  (stored in normalized form)
+     ------------------------------------------------------------ */
+  const SELLABLE_TOKENS = normalizeTokenSet([
     'saleable', 'salable', 'sellable', 'active', 'active stock', 'activestock',
     'good', 'good condition', 'goodcondition', 'available', 'available stock', 'availablestock',
     'usable', 'usable stock', 'in stock', 'instock', 'ok', 'fresh', 'standard', 'prime',
@@ -13,66 +35,117 @@ App.InventoryStatusResolver = (() => {
     'sellable inventory', 'saleable inventory'
   ]);
 
-  const NON_SELLABLE_TOKENS = new Set([
-    'non-saleable', 'non saleable', 'nonsaleable', 'non-saleable stock', 'non saleable stock', 'nonsaleable stock', 'non-saleable inventory', 'non saleable inventory',
-    'non-sellable', 'non sellable', 'nonsaleable', 'non-sellable stock', 'non sellable stock', 'nonsaleable stock', 'non-sellable inventory', 'non sellable inventory',
-    'unsellable', 'unsaleable', 'damaged', 'damage', 'dn prn', 'dump', 'quarantine',
+  const NON_SELLABLE_TOKENS = normalizeTokenSet([
+    'non-saleable', 'non saleable', 'nonsaleable',
+    'non-saleable stock', 'non saleable stock', 'nonsaleable stock',
+    'non-saleable inventory', 'non saleable inventory',
+    'non-sellable', 'non sellable',
+    'non-sellable stock', 'non sellable stock',
+    'non-sellable inventory', 'non sellable inventory',
+    'unsellable', 'unsaleable',
+    'damaged', 'damage', 'dn prn', 'dump', 'quarantine',
     'blocked', 'expired', 'expiry', 'near expiry', 'nearexpiry', 'near_expiry',
     'bad rtv', 'bad_rtv', 'badrtv', 'rtv', 'return to vendor', 'returntovendor',
     'unserviceable', 'rejected', 'reject', 'defect', 'defective', 'hold', 'scrap',
     'salvage', 'dead stock', 'deadstock', 'write off', 'writeoff', 'loss', 'broken',
-    'quarantined', 'non-saleable/dump', 'non saleable/dump', 'nonsaleable/dump',
-    'non-sellable/dump', 'non sellable/dump', 'nonsaleable/dump'
+    'quarantined',
+    'non-saleable/dump', 'non saleable/dump', 'nonsaleable/dump',
+    'non-sellable/dump', 'non sellable/dump'
   ]);
 
-  const GENERIC_NEUTRAL_SHEETS = new Set([
+  const GENERIC_NEUTRAL_SHEETS = normalizeTokenSet([
     'sheet1', 'sheet 1', 'sheet2', 'sheet 2', 'sheet3', 'sheet 3', 'sheet', 'sheets',
     'data', 'dataset', 'table', 'table1', 'export', 'page', 'page1', 'workbook',
     'general', 'unknown', 'custom', 'default'
   ]);
 
-  const DOMAIN_CATEGORY_SHEETS = new Set([
+  const DOMAIN_CATEGORY_SHEETS = normalizeTokenSet([
     'atta', 'flour', 'rice', 'oil', 'dal', 'pulses', 'spices', 'staples',
     'grocery', 'fmcg', 'dairy', 'beverages', 'personal care', 'home care',
     'snacks', 'packaged foods', 'food', 'no variant', 'catalog', 'active catalog',
     'tea', 'coffee', 'sugar', 'salt', 'biscuits', 'cleaning', 'household'
   ]);
 
+  /* ------------------------------------------------------------
+     SECTION 2  DOMAIN CATEGORY SHEET - exact match only (cautious)
+     ------------------------------------------------------------ */
   function isDomainCategorySheet(sheetVal) {
     if (!sheetVal) return false;
-    if (DOMAIN_CATEGORY_SHEETS.has(sheetVal)) return true;
-    for (const cat of DOMAIN_CATEGORY_SHEETS) {
-      if (sheetVal === cat || sheetVal.startsWith(cat + ' ') || sheetVal.endsWith(' ' + cat)) return true;
+    return DOMAIN_CATEGORY_SHEETS.has(sheetVal);
+  }
+
+  /* ------------------------------------------------------------
+     SECTION 3  CENTRALIZED NEGATION-AWARE TOKEN MATCHER
+     ------------------------------------------------------------ 
+     One reusable function handles negation for ALL signal types.
+     
+     Rules:
+       1. Exact full-string match against curated set = true immediately.
+          (Curated entries like "non saleable" are trusted as-is.)
+       2. Substring match with word boundaries:
+          - Locate each token occurrence in the normalized string.
+          - Check if the word immediately before is a negation prefix.
+          - If negated: skip that match.
+          - If not negated: signal found, return true.
+       3. All tokens and inputs go through normalizeText(),
+          so -, _, / are already converted to spaces.
+     ------------------------------------------------------------ */
+  const NEGATION_WORDS = new Set([
+    'no', 'not', 'non', 'un', 'never', 'without', 'nil', 'zero'
+  ]);
+
+  /**
+   * Check whether the token that starts at position `matchStart`
+   * in `normStr` is immediately preceded by a negation word.
+   * Generic � works for any token in any field.
+   */
+  function isTokenNegated(normStr, matchStart) {
+    if (matchStart <= 0) return false;
+    var textBefore = normStr.substring(0, matchStart).trimEnd();
+    var lastSpaceIdx = textBefore.lastIndexOf(' ');
+    var lastWord = lastSpaceIdx >= 0
+      ? textBefore.substring(lastSpaceIdx + 1)
+      : textBefore;
+    return NEGATION_WORDS.has(lastWord);
+  }
+
+  /**
+   * Generic, reusable, negation-aware signal detector.
+   * Returns true if `normStr` contains a non-negated occurrence
+   * of any token in `tokenSet`.
+   *
+   * Used identically by hasSellableSignal and hasNonSellableSignal.
+   */
+  function hasTokenSignal(normStr, tokenSet) {
+    if (!normStr) return false;
+
+    // Path A: exact full-string match (curated sets, trusted)
+    if (tokenSet.has(normStr)) return true;
+
+    // Path B: substring match with word boundaries + negation guard
+    for (const token of tokenSet) {
+      var escaped = token.replace(/ /g, '\\s+');
+      var re = new RegExp('(?:^|\\s)(' + escaped + ')(?=$|\\s)', 'gi');
+      var m;
+      while ((m = re.exec(normStr)) !== null) {
+        var actualStart = m.index + (m[0].length - m[1].length);
+        if (!isTokenNegated(normStr, actualStart)) {
+          return true;
+        }
+      }
     }
     return false;
   }
 
-  function normalizeText(val) {
-    if (val == null) return '';
-    return String(val).toLowerCase().trim().replace(/[\-_]/g, ' ').replace(/\s+/g, ' ');
+  /* ------------------------------------------------------------
+     SECTION 4  PUBLIC SIGNAL APIs - thin wrappers over hasTokenSignal
+     ------------------------------------------------------------ */
+  function hasSellableSignal(normStr) {
+    return hasTokenSignal(normStr, SELLABLE_TOKENS);
   }
 
   function hasNonSellableSignal(normStr) {
-    if (!normStr) return false;
-    if (NON_SELLABLE_TOKENS.has(normStr)) return true;
-    for (const token of NON_SELLABLE_TOKENS) {
-      const regex = new RegExp('(^|\\s)' + token.replace(/ /g, '\\s+') + '($|\\s)', 'i');
-      if (regex.test(normStr)) return true;
-    }
-    return false;
-  }
-
-  function hasSellableSignal(normStr) {
-    if (!normStr) return false;
-    if (/(^|\s)(non|not|un)[\s\-_]*(saleable|sellable|salable|usable|serviceable)/i.test(normStr)) {
-      return false;
-    }
-    if (SELLABLE_TOKENS.has(normStr)) return true;
-    for (const token of SELLABLE_TOKENS) {
-      const regex = new RegExp('(^|\\s)' + token.replace(/ /g, '\\s+') + '($|\\s)', 'i');
-      if (regex.test(normStr)) return true;
-    }
-    return false;
+    return hasTokenSignal(normStr, NON_SELLABLE_TOKENS);
   }
 
   /**
@@ -401,8 +474,10 @@ App.InventoryStatusResolver = (() => {
     const conflicted = { records: 0, units: 0, value: 0 };
 
     for (const rec of validRecords) {
-      const qty = Number(rec.qty ?? 0) || 0;
-      const val = Number(rec.source_value ?? rec.Value ?? rec.value ?? ((rec.variant_mrp || 0) * qty)) || 0;
+      const rawQty = Number(rec.qty ?? 0);
+      const qty = Number.isFinite(rawQty) ? rawQty : 0;
+      const rawVal = Number(rec.source_value ?? rec.Value ?? rec.value ?? ((Number.isFinite(Number(rec.variant_mrp)) ? Number(rec.variant_mrp) : 0) * qty));
+      const val = Number.isFinite(rawVal) ? rawVal : 0;
 
       totalUnits += qty;
       totalValue += val;
