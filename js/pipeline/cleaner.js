@@ -1,11 +1,11 @@
-window.App = window.App || {};
+﻿window.App = window.App || {};
 
 /* ============================================================
    CLEANER — Text normalization without losing raw data
    ============================================================ */
 App.Cleaner = (() => {
 
-  /* ── String helpers ──────────────────────────────────────── */
+  /* ── String helpers ── */
   function norm(s) {
     if (s == null) return '';
     return String(s).trim().replace(/\s+/g, ' ');
@@ -19,7 +19,7 @@ App.Cleaner = (() => {
     return n.replace(/\b\w/g, c => c.toUpperCase());
   }
 
-  /* ── UOM Normalization ───────────────────────────────────── */
+  /* ── UOM Normalization ── */
   const UOM_PATTERNS = [
     { re: /(\d+(?:\.\d+)?)\s*(?:metric\s*tonnes?|metric\s*tons?|tonnes?|tons?|mt)\b/i, fn: m => `${parseFloat(m[1]) * 1000} KG` },
     { re: /(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i,                              fn: m => `${parseFloat(m[1])} KG` },
@@ -47,7 +47,7 @@ App.Cleaner = (() => {
     return { raw_uom: s, normalized_uom: s.toUpperCase() };
   }
 
-  /* ── Weight parsing & normalizers ───────────────────────── */
+  /* ── Weight parsing & normalizers ── */
   function parseWeightToKG(v, requireUnit = false) {
     if (v == null || v === '') return null;
     if (typeof v === 'number') return requireUnit ? null : (isNaN(v) ? null : v);
@@ -58,13 +58,13 @@ App.Cleaner = (() => {
     const tonMatch = str.match(/^([\d.,]+)\s*(?:metric\s*tonnes?|metric\s*tons?|tonnes?|tons?|mt)\b/i);
     if (tonMatch) return parseFloat(tonMatch[1].replace(/,/g, '')) * 1000.0;
 
-    const kgMatch = str.match(/^([\d.,]+)\s*(?:(?:kg|kgs|kilograms?)\b|किलो|किग्रा)/i);
+    const kgMatch = str.match(/^([\d.,]+)\s*(?:(?:kg|kgs|kilograms?)\b|कि\.?ग्रा\.?|किलो)/i);
     if (kgMatch) return parseFloat(kgMatch[1].replace(/,/g, ''));
 
-    const gmMatch = str.match(/^([\d.,]+)\s*(?:(?:gm?s?|grams?)\b|ग्राम|ग्रा)/i);
+    const gmMatch = str.match(/^([\d.,]+)\s*(?:(?:gm?s?|grams?)\b|ग्राम|ग्रा\.?)/i);
     if (gmMatch) return parseFloat(gmMatch[1].replace(/,/g, '')) / 1000.0;
 
-    const mgMatch = str.match(/^([\d.,]+)\s*(?:(?:mg|milligrams?)\b|मिग्रा)/i);
+    const mgMatch = str.match(/^([\d.,]+)\s*(?:(?:mg|milligrams?)\b|मि\.?ग्रा\.?)/i);
     if (mgMatch) return parseFloat(mgMatch[1].replace(/,/g, '')) / 1000000.0;
 
     const lbMatch = str.match(/^([\d.,]+)\s*(?:lbs?|pounds?)\b/i);
@@ -82,31 +82,31 @@ App.Cleaner = (() => {
     const text = `${uomText || ''} ${productName || ''}`.trim();
     if (!text) return null;
 
-    // Ton / MT / Tonne
+    // Metric Ton / Tonne
     const tonMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:metric\s*tonnes?|metric\s*tons?|tonnes?|tons?|mt)\b/i);
     if (tonMatch) return parseFloat(tonMatch[1]) * 1000.0;
 
-    // KG / Devanagari किलो / किग्रा
-    const kgMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:(?:kg|kgs|kilograms?)\b|किलो|किग्रा)/i);
+    // KG / Kilogram
+    const kgMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilograms?)\b/i);
     if (kgMatch) return parseFloat(kgMatch[1]);
 
-    // Grams / Devanagari ग्राम / ग्रा
-    const gmMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:(?:gm?s?|grams?)\b|ग्राम|ग्रा)/i);
+    // Grams (g, gm, gms, grams)
+    const gmMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:gm?s?|grams?)\b/i);
     if (gmMatch) return parseFloat(gmMatch[1]) / 1000.0;
 
-    // Liters / Devanagari लीटर / ली
-    const lMatch  = text.match(/(\d+(?:\.\d+)?)\s*(?:(?:ltr?s?|liters?)\b|लीटर|लीटर\b)/i);
+    // Liters (approx 1L = 1KG for liquids)
+    const lMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:l\b|ltr?s?|liters?|litres?)/i);
     if (lMatch) return parseFloat(lMatch[1]);
 
-    // ML / Devanagari मिलीलीटर / मिली
-    const mlMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:(?:ml|milliliters?)\b|मिलीलीटर|मिली)/i);
+    // ML
+    const mlMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:ml|milliliters?)\b/i);
     if (mlMatch) return parseFloat(mlMatch[1]) / 1000.0;
 
     // Pounds (lb / lbs)
     const lbMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:lbs?|pounds?)\b/i);
     if (lbMatch) return parseFloat(lbMatch[1]) * 0.45359237;
 
-    // Milligrams & Ounces from explicit UOM if present
+    // Explicit UOM weight fallback
     if (uomText) {
       const uomWeight = parseWeightToKG(uomText, true);
       if (uomWeight != null) return uomWeight;
@@ -115,7 +115,7 @@ App.Cleaner = (() => {
     return null;
   }
 
-  /* ── Number helpers ──────────────────────────────────────── */
+  /* ── Number helpers ── */
   function toNumber(v) {
     if (v == null || v === '') return null;
     if (typeof v === 'number') return isNaN(v) ? null : v;
@@ -128,8 +128,8 @@ App.Cleaner = (() => {
       str = '-' + str.slice(1, -1).trim();
     }
 
-    // Strip currency symbols (₹, $, €, £, ¥, Rs, Rs., INR, USD, EUR, GBP) and commas
-    str = str.replace(/[₹$€£¥]/g, '')
+    // Strip currency symbols and commas
+    str = str.replace(/[₹$€£]/g, '')
              .replace(/\b(?:rs\.?|inr|usd|eur|gbp)\b/gi, '')
              .replace(/,/g, '')
              .replace(/\s+/g, '')
@@ -140,11 +140,10 @@ App.Cleaner = (() => {
     return isNaN(n) ? null : n;
   }
 
-  /* ── Brand cleaning ──────────────────────────────────────── */
+  /* ── Brand cleaning ── */
   function cleanBrand(raw, productName) {
     let b = norm(raw);
     if (!b && productName) {
-      // Infer brand from first word of product name if missing
       const firstWord = norm(productName).split(' ')[0];
       if (firstWord && firstWord.length > 2) b = firstWord;
     }
@@ -156,7 +155,7 @@ App.Cleaner = (() => {
     );
   }
 
-  /* ── Product name cleaning ───────────────────────────────── */
+  /* ── Product name cleaning ── */
   function cleanProductName(raw) {
     if (!raw) return 'Unnamed Product';
     return normTitle(String(raw)
@@ -165,46 +164,61 @@ App.Cleaner = (() => {
     );
   }
 
-  /* ── Core cleaner ────────────────────────────────────────── */
+  /* ── Core cleaner ── */
   function cleanRecord(rec) {
-    const raw_name  = rec.name  || rec.product_name || rec.Product_Name || '';
-    const raw_brand = rec.brand || '';
-    const raw_cat   = rec.l0    || rec.category || rec.Category || '';
-    const raw_wh    = rec.entity_name || rec.warehouse || rec.Warehouse || '';
-    const raw_uom   = rec.variant_uom_text || rec.uom || rec.UOM || '';
+    const raw = rec._raw || {};
+    const raw_name  = rec.name  || rec.product_name || rec.Product_Name || raw['Product Name'] || raw.name || '';
+    const raw_brand = rec.brand || raw.brand || raw.Brand || '';
+    const raw_cat   = rec.l0    || rec.category || rec.Category || raw.Category || raw.l0 || '';
+    const raw_wh    = rec.entity_name || rec.warehouse || rec.Warehouse || raw.Warehouse || raw.entity_name || '';
+    const raw_uom   = rec.variant_uom_text || rec.uom || rec.UOM || raw.uom || raw.UOM || '';
     
-    // Status fallback: check row property first, then sheet name
-    let raw_type = norm(rec.bad_inventory_type || rec.Type || rec.type || '');
-    if (!raw_type || raw_type.toLowerCase() === 'unknown') {
-      const sheetLower = normLower(rec._sheet_name || rec._raw_sheet_name || '');
-      if (sheetLower.includes('damage') || sheetLower.includes('dn prn')) {
-        raw_type = 'damaged';
+    // Separate individual source fields cleanly
+    const raw_item_type = norm(rec.item_type || rec.Type || rec.type || raw.item_type || raw.Type || raw.type || raw['Item Type'] || '');
+    const raw_inv_status = norm(rec.inventory_status || rec.status || rec.Status || raw.inventory_status || raw.Status || raw.status || raw['Inventory Status'] || '');
+    const raw_bad_type_explicit = norm(rec.bad_inventory_type || raw.bad_inventory_type || raw['Bad Inventory Type'] || raw['Damage Type'] || '');
+    const raw_remarks = norm(rec.remarks || rec.Remarks || rec.Remark || rec.remark || raw.Remarks || raw.remarks || raw.Remark || raw.remark || raw.Notes || raw.notes || '');
+    const raw_condition = norm(rec.condition || rec.Condition || raw.Condition || raw.condition || raw['Stock Condition'] || '');
+    const raw_disposition = norm(rec.disposition || rec.Disposition || raw.Disposition || raw.disposition || raw.Action || raw.action || '');
+
+    // Status fallback for bad_inventory_type: check explicit property first, then sheet name
+    let raw_bad_type = raw_bad_type_explicit;
+    if (!raw_bad_type || raw_bad_type.toLowerCase() === 'unknown') {
+      const sheetLower = normLower(rec._sheet_name || rec._raw_sheet_name || raw._sheet_name || '');
+      if (sheetLower.includes('( saleable )') || sheetLower.includes('( sellable )')) {
+        raw_bad_type = 'saleable';
+      } else if (sheetLower.includes('( dump )') || sheetLower.includes('non saleable') || sheetLower.includes('nonsaleable')) {
+        raw_bad_type = 'dump';
+      } else if (sheetLower.includes('damage') || sheetLower.includes('dn prn')) {
+        raw_bad_type = 'damaged';
       } else if (sheetLower.includes('expired')) {
-        raw_type = 'expired';
+        raw_bad_type = 'expired';
       } else if (sheetLower.includes('near expiry') || sheetLower.includes('nearexpiry')) {
-        raw_type = 'near_expiry';
-      } else if (sheetLower.includes('bad rtv') || sheetLower.includes('rtv') || sheetLower.includes('dump') || sheetLower.includes('quarantine') || sheetLower.includes('blocked') || sheetLower.includes('scrap')) {
-        raw_type = sheetLower.includes('dump') ? 'dump' : (sheetLower.includes('rtv') ? 'bad_rtv' : 'quarantine');
+        raw_bad_type = 'near_expiry';
+      } else if (sheetLower.includes('dump') || sheetLower.includes('quarantine') || sheetLower.includes('scrap')) {
+        raw_bad_type = sheetLower.includes('dump') ? 'dump' : (sheetLower.includes('scrap') ? 'scrap' : 'quarantine');
+      } else if (sheetLower.includes('bad rtv') || sheetLower.includes('rtv')) {
+        raw_bad_type = 'bad_rtv';
       } else if (sheetLower.includes('saleable') || sheetLower.includes('salable') || sheetLower.includes('good') || sheetLower.includes('active') || sheetLower.includes('available')) {
-        raw_type = 'saleable';
+        raw_bad_type = 'saleable';
       } else {
-        raw_type = raw_type || 'unknown';
+        raw_bad_type = raw_bad_type || 'unknown';
       }
     }
 
-    const qty = toNumber(rec.qty || rec.quantity || rec.Sum_of_QTY) ?? 0;
-    const variant_mrp = toNumber(rec.variant_mrp || rec.mrp || rec.price || rec.selling_price || rec.rate || rec.cost);
+    const qty = toNumber(rec.qty || rec.quantity || rec.Sum_of_QTY || raw.qty || raw['Sum of QTY'] || raw.quantity) ?? 0;
+    const variant_mrp = toNumber(rec.variant_mrp || rec.mrp || rec.price || rec.selling_price || rec.rate || rec.cost || raw.mrp || raw.variant_mrp);
     
     // Value fallback: rec.Value || (mrp * qty)
-    let source_value = toNumber(rec.Value || rec.value || rec.amount || rec.total_value || rec.inventory_value);
+    let source_value = toNumber(rec.Value || rec.value || rec.amount || rec.total_value || rec.inventory_value || raw.Value || raw.value || raw.amount);
     if (source_value == null && variant_mrp != null && qty > 0) {
       source_value = variant_mrp * qty;
     }
     source_value = source_value ?? 0;
 
     // Weight disambiguation: unit weight vs total weight
-    const raw_total_wt = parseWeightToKG(rec['Total Weight'] || rec.total_weight || rec.gross_weight || rec.batch_weight);
-    const raw_unit_wt  = parseWeightToKG(rec.Weight || rec.weight || rec.unit_weight || rec.net_weight);
+    const raw_total_wt = parseWeightToKG(rec['Total Weight'] || rec.total_weight || rec.gross_weight || rec.batch_weight || raw['Total Weight']);
+    const raw_unit_wt  = parseWeightToKG(rec.Weight || rec.weight || rec.unit_weight || rec.net_weight || raw.Weight || raw.weight);
     const extractedPackWeight = extractWeightKG(raw_uom, raw_name);
 
     let unit_weight = raw_unit_wt;
@@ -215,7 +229,6 @@ App.Cleaner = (() => {
     let total_weight = raw_total_wt;
     if (total_weight == null || total_weight === 0) {
       if (raw_unit_wt != null) {
-        // If single weight column exists, check if it represents total weight
         if (extractedPackWeight != null && extractedPackWeight > 0 && qty > 1 &&
             Math.abs(raw_unit_wt - (extractedPackWeight * qty)) < 0.05 * (extractedPackWeight * qty) &&
             Math.abs(raw_unit_wt - extractedPackWeight) >= 0.05 * extractedPackWeight) {
@@ -239,18 +252,31 @@ App.Cleaner = (() => {
     return {
       ...rec,
 
-      // RAW fields (kept exactly as-is)
-      raw_entity_name:      norm(raw_wh),
-      raw_product_name:     norm(raw_name),
-      raw_brand:            norm(raw_brand),
-      raw_category:         norm(raw_cat),
-      raw_uom:              norm(raw_uom),
-      raw_mrp:              rec.variant_mrp ?? rec.mrp ?? rec.price,
-      raw_qty:              rec.qty ?? rec.quantity,
-      raw_value:            rec.Value ?? rec.value ?? rec.amount,
-      raw_weight:           rec.Weight ?? rec.weight,
-      raw_total_weight:     rec['Total Weight'] ?? rec.total_weight ?? rec.gross_weight,
-      raw_bad_inventory_type: norm(raw_type) || 'unknown',
+      // RAW fields (kept exactly as-is for traceability)
+      raw_entity_name:        norm(raw_wh),
+      raw_product_name:       norm(raw_name),
+      raw_brand:              norm(raw_brand),
+      raw_category:           norm(raw_cat),
+      raw_uom:                norm(raw_uom),
+      raw_mrp:                rec.variant_mrp ?? rec.mrp ?? rec.price ?? raw.mrp,
+      raw_qty:                rec.qty ?? rec.quantity ?? raw.qty ?? raw['Sum of QTY'],
+      raw_value:              rec.Value ?? rec.value ?? rec.amount ?? raw.Value,
+      raw_weight:             rec.Weight ?? rec.weight ?? raw.Weight,
+      raw_total_weight:       rec['Total Weight'] ?? rec.total_weight ?? rec.gross_weight ?? raw['Total Weight'],
+      raw_item_type:          raw_item_type,
+      raw_inventory_status:   raw_inv_status,
+      raw_bad_inventory_type: raw_bad_type || 'unknown',
+      raw_remarks:            raw_remarks,
+      raw_condition:          raw_condition,
+      raw_disposition:        raw_disposition,
+
+      // CANONICAL FIELDS
+      item_type:              raw_item_type,
+      inventory_status:       raw_inv_status,
+      bad_inventory_type:     raw_bad_type_explicit || raw_bad_type || 'unknown',
+      remarks:                raw_remarks,
+      condition:              raw_condition,
+      disposition:            raw_disposition,
 
       // NORMALIZED
       normalized_warehouse:     normTitle(raw_wh) || 'Unknown Warehouse',
@@ -265,7 +291,6 @@ App.Cleaner = (() => {
       total_weight,
 
       // UOM
-      raw_uom: uomNorm.raw_uom,
       normalized_uom: uomNorm.normalized_uom,
 
       // Source category preserved

@@ -1,25 +1,13 @@
-window.App = window.App || {};
+﻿window.App = window.App || {};
 
 /* ============================================================
-   INVENTORY STATUS RESOLVER — Generic 3-Way Status Resolution
-   Resolves records into:
-     - Total Inventory
-     - Sellable Items
-     - Non-Sellable Items
-     - Unknown / Undetermined Status
-   Based on strict status evidence hierarchy:
-     1. Pure Dump / Written-off Sheet Partition
-     2. Explicit Row-Level Status / Remarks / Condition
-     3. Explicit Source Status Metadata
-     4. Worksheet-Level Status & Partition Semantics
-     5. Default / Unknown Fallback
+   INVENTORY STATUS RESOLVER — Evidence-Aware Sellability Engine
    ============================================================ */
 App.InventoryStatusResolver = (() => {
 
-  // Normalized token sets for evidence ranking
   const SELLABLE_TOKENS = new Set([
     'saleable', 'salable', 'sellable', 'active', 'active stock', 'activestock',
-    'available', 'available stock', 'availablestock', 'good', 'good stock', 'goodstock',
+    'good', 'good condition', 'goodcondition', 'available', 'available stock', 'availablestock',
     'usable', 'usable stock', 'in stock', 'instock', 'ok', 'fresh', 'standard', 'prime',
     'sound', 'sound stock', 'ready for sale', 'ready to sell', 'serviceable', 'normal'
   ]);
@@ -44,9 +32,6 @@ App.InventoryStatusResolver = (() => {
     return String(val).toLowerCase().trim().replace(/[\-_]/g, ' ').replace(/\s+/g, ' ');
   }
 
-  /**
-   * Determine whether a normalized string contains non-sellable signals.
-   */
   function hasNonSellableSignal(normStr) {
     if (!normStr) return false;
     if (NON_SELLABLE_TOKENS.has(normStr)) return true;
@@ -57,9 +42,6 @@ App.InventoryStatusResolver = (() => {
     return false;
   }
 
-  /**
-   * Determine whether a normalized string contains sellable signals.
-   */
   function hasSellableSignal(normStr) {
     if (!normStr) return false;
     if (SELLABLE_TOKENS.has(normStr)) return true;
@@ -71,75 +53,282 @@ App.InventoryStatusResolver = (() => {
   }
 
   /**
-   * Resolve a single inventory record's sellability status.
-   * Returns: 'sellable' | 'non_sellable' | 'unknown'
+   * Detailed sellability resolution with evidence tracking and semantic conflict detection.
    */
-  function resolveRecordStatus(record) {
-    if (!record) return 'unknown';
+  function resolveRecordStatusDetailed(record) {
+    if (!record) {
+      return {
+        status: 'unknown',
+        confidence: 'LOW',
+        resolution_source: 'none',
+        resolution_rule: 'empty_record',
+        is_status_conflict: false,
+        status_conflict_reason: null,
+        evidence: {}
+      };
+    }
+
     const raw = record._raw || {};
     const sheetVal = normalizeText(record._sheet_name || record._raw_sheet_name || raw._sheet_name || '');
 
-    // 1. Priority 1: Pure Dump / Written-off / Scrap Sheet Partition
-    // In warehouse liquidation files, dedicated Dump/Scrap sheets represent non-sellable stock
-    if (sheetVal === 'dump' || sheetVal === 'scrap' || sheetVal === 'write off' || sheetVal === 'writeoff') {
-      return 'non_sellable';
+    // Extract individual candidate signals
+    const raw_item_type = record.item_type || record.Type || raw.item_type || raw.Type || raw.type || '';
+    const raw_inv_status = record.inventory_status || record.status || raw.inventory_status || raw.Status || raw.status || '';
+    const raw_bad_type_explicit = record.bad_inventory_type || raw.bad_inventory_type || raw['Bad Inventory Type'] || '';
+    const raw_remarks = record.remarks || record.Remarks || raw.Remarks || raw.remarks || raw.Remark || raw.remark || '';
+    const raw_condition = record.condition || record.Condition || raw.Condition || raw.condition || '';
+    const raw_disposition = record.disposition || record.Disposition || raw.Disposition || raw.disposition || '';
+
+    const norm_item_type = normalizeText(raw_item_type);
+    const norm_inv_status = normalizeText(raw_inv_status);
+    const norm_bad_type = normalizeText(raw_bad_type_explicit);
+    const norm_remarks = normalizeText(raw_remarks);
+    const norm_condition = normalizeText(raw_condition);
+    const norm_disposition = normalizeText(raw_disposition);
+
+    const evidence = {
+      sheet_name: sheetVal,
+      item_type: raw_item_type,
+      inventory_status: raw_inv_status,
+      bad_inventory_type: raw_bad_type_explicit,
+      remarks: raw_remarks,
+      condition: raw_condition,
+      disposition: raw_disposition
+    };
+
+    // ── Check for Semantic Conflicts ──
+    const hasPositiveType = hasSellableSignal(norm_item_type);
+    const hasNegativeType = hasNonSellableSignal(norm_item_type);
+
+    const hasPositiveStatus = hasSellableSignal(norm_inv_status) || hasSellableSignal(norm_remarks) || hasSellableSignal(norm_disposition);
+    const hasNegativeStatus = hasNonSellableSignal(norm_inv_status) || hasNonSellableSignal(norm_remarks) || hasNonSellableSignal(norm_disposition);
+
+    const hasNegativeBadType = hasNonSellableSignal(norm_bad_type) && norm_bad_type !== 'unknown';
+    const hasNegativeCondition = hasNonSellableSignal(norm_condition);
+
+    let is_conflict = false;
+    let conflict_reason = null;
+
+    if ((hasPositiveType || hasPositiveStatus) && (hasNegativeBadType || hasNegativeCondition || hasNegativeStatus)) {
+      is_conflict = true;
+      conflict_reason = `Positive sellability signal (${hasPositiveType ? `Type="${raw_item_type}"` : `Status="${raw_inv_status || raw_remarks}"`}) conflicts with negative condition signal (${hasNegativeBadType ? `BadInventoryType="${raw_bad_type_explicit}"` : `Condition="${raw_condition || raw_inv_status}"`}).`;
     }
 
-    // 2. Priority 2: Explicit Row-Level Status / Remarks / Condition / Disposition
-    const rowStatusCandidates = [
-      record.remarks, record.Remarks, raw.Remarks, raw.remarks, raw.Remark, raw.remark,
-      record.status, record.Status, raw.Status, raw.status,
-      record.condition, record.Condition, raw.Condition, raw.condition,
-      record.disposition, record.Disposition, raw.Disposition, raw.disposition,
-      record.stock_condition, raw.stock_condition,
-      record.item_status, raw.item_status,
-      record.inventory_status, raw.inventory_status,
-      record.quality_status, raw.quality_status,
-      record.bad_inventory_type, raw.bad_inventory_type
-    ];
+    // ── Precedence Rule Hierarchy ──
 
-    for (const cand of rowStatusCandidates) {
-      const normVal = normalizeText(cand);
-      if (normVal && normVal !== 'unknown' && normVal !== 'null' && normVal !== 'undefined' && normVal !== 'na' && normVal !== 'n/a') {
+    // Priority 1: Pure Dump / Scrap Sheet Partition
+    if (sheetVal === 'dump' || sheetVal === 'scrap' || sheetVal === 'write off' || sheetVal === 'writeoff') {
+      return {
+        status: 'non_sellable',
+        confidence: 'HIGH',
+        resolution_source: 'sheet_partition',
+        resolution_rule: 'pure_dump_scrap_sheet',
+        is_status_conflict: is_conflict,
+        status_conflict_reason: conflict_reason,
+        evidence
+      };
+    }
+
+    // Priority 2: Explicit Dedicated Sellability / Status Field (A)
+    if (norm_inv_status && norm_inv_status !== 'unknown' && norm_inv_status !== 'null') {
+      if (hasSellableSignal(norm_inv_status) && !hasNegativeBadType) {
+        return {
+          status: 'sellable',
+          confidence: 'HIGH',
+          resolution_source: 'inventory_status',
+          resolution_rule: 'explicit_positive_status',
+          is_status_conflict: is_conflict,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
+      }
+      if (hasNonSellableSignal(norm_inv_status)) {
+        return {
+          status: 'non_sellable',
+          confidence: 'HIGH',
+          resolution_source: 'inventory_status',
+          resolution_rule: 'explicit_negative_status',
+          is_status_conflict: is_conflict,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
+      }
+    }
+
+    // Priority 3: Explicit Row-Level Remarks / Disposition / Condition (B)
+    for (const [field, normVal, rawVal] of [
+      ['disposition', norm_disposition, raw_disposition],
+      ['remarks', norm_remarks, raw_remarks],
+      ['condition', norm_condition, raw_condition]
+    ]) {
+      if (normVal && normVal !== 'unknown' && normVal !== 'null' && normVal !== 'na') {
         if (hasNonSellableSignal(normVal)) {
-          return 'non_sellable';
+          return {
+            status: 'non_sellable',
+            confidence: 'HIGH',
+            resolution_source: field,
+            resolution_rule: `explicit_negative_${field}`,
+            is_status_conflict: is_conflict,
+            status_conflict_reason: conflict_reason,
+            evidence
+          };
         }
-        if (hasSellableSignal(normVal)) {
-          return 'sellable';
+        if (hasSellableSignal(normVal) && !hasNegativeBadType) {
+          return {
+            status: 'sellable',
+            confidence: 'HIGH',
+            resolution_source: field,
+            resolution_rule: `explicit_positive_${field}`,
+            is_status_conflict: is_conflict,
+            status_conflict_reason: conflict_reason,
+            evidence
+          };
         }
       }
     }
 
-    // 3. Priority 3: Worksheet-Level Status Semantics & Qualified Partitions
+    // Priority 4: Explicit Negative Bad Inventory Type (C)
+    if (hasNegativeBadType) {
+      if (hasPositiveType) {
+        return {
+          status: 'unknown',
+          confidence: 'LOW',
+          resolution_source: 'conflict_unresolved',
+          resolution_rule: 'conflicting_type_and_bad_inventory_type',
+          is_status_conflict: true,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
+      }
+      return {
+        status: 'non_sellable',
+        confidence: 'HIGH',
+        resolution_source: 'bad_inventory_type',
+        resolution_rule: 'explicit_negative_bad_inventory_type',
+        is_status_conflict: is_conflict,
+        status_conflict_reason: conflict_reason,
+        evidence
+      };
+    }
+
+    // Priority 5: Qualified Worksheet Partition (D)
     if (sheetVal) {
-      // Qualified sheet names e.g. 'Bad RTV ( Saleable )' vs 'Bad RTV ( Dump )'
-      if (sheetVal.includes('( saleable )') || sheetVal.includes('( sellable )') || sheetVal === 'saleable' || sheetVal === 'sellable') {
-        if (!sheetVal.includes('( dump )') && !sheetVal.includes('non saleable')) {
-          return 'sellable';
-        }
+      if (sheetVal.includes('( saleable )') || sheetVal.includes('( sellable )')) {
+        return {
+          status: 'sellable',
+          confidence: 'HIGH',
+          resolution_source: 'worksheet_partition',
+          resolution_rule: 'positive_qualified_sheet_partition',
+          is_status_conflict: is_conflict,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
       }
       if (sheetVal.includes('( dump )') || sheetVal.includes('non saleable') || sheetVal.includes('nonsaleable')) {
-        return 'non_sellable';
-      }
-      if (hasNonSellableSignal(sheetVal)) {
-        return 'non_sellable';
-      }
-      if (hasSellableSignal(sheetVal)) {
-        return 'sellable';
-      }
-      // Standard categorical inventory sheets (e.g. 'atta', 'active_stock', 'inventory', 'catalog', 'general')
-      // Valid worksheets with meaningful domain names and no negative indicators represent valid inventory
-      if (!GENERIC_NEUTRAL_SHEETS.has(sheetVal)) {
-        return 'sellable';
+        return {
+          status: 'non_sellable',
+          confidence: 'HIGH',
+          resolution_source: 'worksheet_partition',
+          resolution_rule: 'negative_qualified_sheet_partition',
+          is_status_conflict: is_conflict,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
       }
     }
 
-    // 4. Default Fallback - Unknown / Undetermined
-    return 'unknown';
+    // Priority 6: Explicit Positive Item Type (when no negative condition exists)
+    if (hasPositiveType && !hasNegativeBadType && !hasNegativeCondition) {
+      return {
+        status: 'sellable',
+        confidence: 'MEDIUM',
+        resolution_source: 'item_type',
+        resolution_rule: 'explicit_positive_item_type',
+        is_status_conflict: is_conflict,
+        status_conflict_reason: conflict_reason,
+        evidence
+      };
+    }
+
+    // Priority 7: Worksheet-Level Status Semantics (E)
+    if (sheetVal) {
+      if (sheetVal === 'saleable' || sheetVal === 'sellable' || sheetVal === 'active stock' || sheetVal === 'available stock' || sheetVal === 'active_stock') {
+        return {
+          status: 'sellable',
+          confidence: 'HIGH',
+          resolution_source: 'worksheet_name',
+          resolution_rule: 'positive_sheet_signal',
+          is_status_conflict: is_conflict,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
+      }
+      if (sheetVal === 'damaged' || sheetVal === 'expired' || sheetVal === 'quarantine' || sheetVal === 'quarantined') {
+        return {
+          status: 'non_sellable',
+          confidence: 'HIGH',
+          resolution_source: 'worksheet_name',
+          resolution_rule: 'negative_sheet_signal',
+          is_status_conflict: is_conflict,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
+      }
+      if (hasNonSellableSignal(sheetVal)) {
+        return {
+          status: 'non_sellable',
+          confidence: 'HIGH',
+          resolution_source: 'worksheet_name',
+          resolution_rule: 'negative_sheet_signal',
+          is_status_conflict: is_conflict,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
+      }
+      if (hasSellableSignal(sheetVal)) {
+        return {
+          status: 'sellable',
+          confidence: 'HIGH',
+          resolution_source: 'worksheet_name',
+          resolution_rule: 'positive_sheet_signal',
+          is_status_conflict: is_conflict,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
+      }
+      // Named categorical inventory sheets (e.g. 'atta', 'flour', 'catalog', 'general')
+      if (!GENERIC_NEUTRAL_SHEETS.has(sheetVal)) {
+        return {
+          status: 'sellable',
+          confidence: 'MEDIUM',
+          resolution_source: 'domain_sheet',
+          resolution_rule: 'domain_sheet_fallback',
+          is_status_conflict: is_conflict,
+          status_conflict_reason: conflict_reason,
+          evidence
+        };
+      }
+    }
+
+    // Priority 8: Fallback Unknown (F)
+    return {
+      status: 'unknown',
+      confidence: 'LOW',
+      resolution_source: 'fallback',
+      resolution_rule: 'no_explicit_signals',
+      is_status_conflict: is_conflict,
+      status_conflict_reason: conflict_reason,
+      evidence
+    };
+  }
+
+  function resolveRecordStatus(record) {
+    const detailed = resolveRecordStatusDetailed(record);
+    return detailed.status;
   }
 
   /**
-   * Resolve and aggregate an entire dataset into Total, Sellable, Non-Sellable, and Unknown.
+   * Aggregate entire dataset with strict mathematical reconciliation.
    */
   function resolveDataset(records) {
     if (!records || !records.length) {
@@ -148,6 +337,7 @@ App.InventoryStatusResolver = (() => {
         sellable: { records: 0, units: 0, value: 0, status: 'Sellable' },
         nonSellable: { records: 0, units: 0, value: 0, status: 'Non-Sellable' },
         unknown: { records: 0, units: 0, value: 0, status: 'Unknown' },
+        conflicted: { records: 0, units: 0, value: 0 },
         reconciled: true,
         difference: { records: 0, units: 0, value: 0 }
       };
@@ -161,6 +351,7 @@ App.InventoryStatusResolver = (() => {
     const sellable = { records: 0, units: 0, value: 0, status: 'Sellable' };
     const nonSellable = { records: 0, units: 0, value: 0, status: 'Non-Sellable' };
     const unknown = { records: 0, units: 0, value: 0, status: 'Unknown' };
+    const conflicted = { records: 0, units: 0, value: 0 };
 
     for (const rec of validRecords) {
       const qty = Number(rec.qty ?? 0) || 0;
@@ -169,7 +360,14 @@ App.InventoryStatusResolver = (() => {
       totalUnits += qty;
       totalValue += val;
 
-      const status = resolveRecordStatus(rec);
+      const detailed = resolveRecordStatusDetailed(rec);
+      const status = detailed.status;
+
+      if (detailed.is_status_conflict) {
+        conflicted.records++;
+        conflicted.units += qty;
+        conflicted.value += val;
+      }
 
       if (status === 'sellable') {
         sellable.records++;
@@ -186,13 +384,12 @@ App.InventoryStatusResolver = (() => {
       }
     }
 
-    // Round values to 2 decimal places to avoid floating point precision issues
     totalValue = Math.round(totalValue * 100) / 100;
     sellable.value = Math.round(sellable.value * 100) / 100;
     nonSellable.value = Math.round(nonSellable.value * 100) / 100;
     unknown.value = Math.round(unknown.value * 100) / 100;
+    conflicted.value = Math.round(conflicted.value * 100) / 100;
 
-    // Mathematical reconciliation check
     const sumRecords = sellable.records + nonSellable.records + unknown.records;
     const sumUnits = sellable.units + nonSellable.units + unknown.units;
     const sumValue = Math.round((sellable.value + nonSellable.value + unknown.value) * 100) / 100;
@@ -212,6 +409,7 @@ App.InventoryStatusResolver = (() => {
       sellable,
       nonSellable,
       unknown,
+      conflicted,
       reconciled,
       difference: {
         records: diffRecords,
@@ -223,6 +421,7 @@ App.InventoryStatusResolver = (() => {
 
   return {
     resolveRecordStatus,
+    resolveRecordStatusDetailed,
     resolveDataset,
     hasSellableSignal,
     hasNonSellableSignal,

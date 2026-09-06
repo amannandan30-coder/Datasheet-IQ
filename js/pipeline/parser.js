@@ -1,9 +1,18 @@
-window.App = window.App || {};
+﻿window.App = window.App || {};
 
 /* ============================================================
-   PARSER — Excel → Raw records with multi-sheet support
+   PARSER — Excel -> Raw records with robust multi-sheet support
    ============================================================ */
 App.Parser = (() => {
+
+  function getColIdx(rawHeaders, colName) {
+    if (!colName || !rawHeaders) return -1;
+    const directIdx = rawHeaders.indexOf(colName);
+    if (directIdx !== -1) return directIdx;
+    const normTarget = App.Validator.normalizeHeader(colName);
+    if (!normTarget) return -1;
+    return rawHeaders.findIndex(h => App.Validator.normalizeHeader(h) === normTarget);
+  }
 
   async function parse(file) {
     return new Promise((resolve, reject) => {
@@ -64,11 +73,12 @@ App.Parser = (() => {
 
               // Calculate score: mapped canonical count + strong weights for key inventory columns
               let score = mappedCount * 3;
-              if (candidateMapping.name) score += 6;
+              if (candidateMapping.name) score += 8;
               if (candidateMapping.qty) score += 4;
               if (candidateMapping.Value || candidateMapping.variant_mrp) score += 3;
               if (candidateMapping.brand) score += 2;
               if (candidateMapping.entity_name) score += 2;
+              if (candidateMapping.upc || candidateMapping.item_id) score += 3;
 
               if (score > bestScore) {
                 bestScore = score;
@@ -87,11 +97,11 @@ App.Parser = (() => {
             const dataRows = aoa.slice(headerRowIdx + 1).filter(r => r.some(c => c != null && c !== ''));
 
             // ── 2. Detect and skip summary/total rows & missing product names ──
-            const nameColIdx = mapping.name ? headers.indexOf(mapping.name) : -1;
-            const upcColIdx = mapping.upc ? headers.indexOf(mapping.upc) : -1;
-            const qtyColIdx = mapping.qty ? headers.indexOf(mapping.qty) : -1;
-            const mrpColIdx = mapping.mrp || mapping.variant_mrp ? headers.indexOf(mapping.mrp || mapping.variant_mrp) : -1;
-            const valColIdx = mapping.value || mapping.Value ? headers.indexOf(mapping.value || mapping.Value) : -1;
+            const nameColIdx = getColIdx(headers, mapping.name);
+            const upcColIdx  = getColIdx(headers, mapping.upc);
+            const qtyColIdx  = getColIdx(headers, mapping.qty);
+            const mrpColIdx  = getColIdx(headers, mapping.variant_mrp || mapping.mrp);
+            const valColIdx  = getColIdx(headers, mapping.Value || mapping.value);
 
             const filteredDataRows = [];
             const excludedRows = [];
@@ -100,14 +110,25 @@ App.Parser = (() => {
               const row = dataRows[ri];
               let excludeReason = null;
 
-              const nameVal = nameColIdx >= 0 && row[nameColIdx] != null ? String(row[nameColIdx]).trim() : '';
+              let nameVal = nameColIdx >= 0 && row[nameColIdx] != null ? String(row[nameColIdx]).trim() : '';
+
+              // If nameColIdx is not mapped, check if there is an unmapped description or title
+              if (!nameVal && nameColIdx < 0) {
+                for (let ci = 0; ci < row.length; ci++) {
+                  const cell = row[ci];
+                  if (cell != null && typeof cell === 'string' && cell.trim().length > 2 && ci !== upcColIdx && ci !== qtyColIdx && ci !== mrpColIdx && ci !== valColIdx) {
+                    nameVal = cell.trim();
+                    break;
+                  }
+                }
+              }
 
               // Check if name column explicitly contains a summary marker
               if (nameVal && SUMMARY_MARKER_RE.test(nameVal)) {
                 excludeReason = 'summary_row';
               }
 
-              // Check if any other cell contains a summary marker while product name is empty or matches
+              // Check if any cell contains a summary marker while product name is empty or matches
               if (!excludeReason) {
                 for (let ci = 0; ci < row.length; ci++) {
                   const cell = row[ci];
@@ -121,9 +142,10 @@ App.Parser = (() => {
                 }
               }
 
-              // Check for empty product name
-              if (!excludeReason && nameColIdx >= 0) {
-                if (!nameVal) {
+              // Check for completely empty product name
+              if (!excludeReason) {
+                const hasAnyValidCell = row.some(c => c != null && String(c).trim() !== '');
+                if (!nameVal && (upcColIdx < 0 || !row[upcColIdx]) && hasAnyValidCell) {
                   excludeReason = 'missing_product_name';
                 }
               }
@@ -134,6 +156,7 @@ App.Parser = (() => {
                   _source_row: ri + headerRowIdx + 2, // Excel row (1-indexed + header)
                   _exclude_reason: excludeReason,
                   upc: upcColIdx >= 0 ? row[upcColIdx] : null,
+                  name: nameVal || null,
                   qty: qtyColIdx >= 0 ? (Number(row[qtyColIdx]) || 0) : 0,
                   mrp: mrpColIdx >= 0 ? (Number(row[mrpColIdx]) || 0) : 0,
                   value: valColIdx >= 0 ? (Number(row[valColIdx]) || 0) : 0,
@@ -146,21 +169,25 @@ App.Parser = (() => {
 
             const sheetMappedRows = filteredDataRows.map((row, idx) => {
               const rawObj = { _sheet_name: wsName };
-              headers.forEach((h, i) => { rawObj[h] = row[i] ?? null; });
+              headers.forEach((h, i) => { if (h) rawObj[h] = row[i] ?? null; });
 
               const mapped = {
                 _raw_row_index: idx,
                 _raw_sheet_name: wsName,
+                _sheet_name: wsName,
                 _raw: rawObj
               };
 
               // Map canonical columns using sheet-specific mapping
               for (const [canonical, originalHeader] of Object.entries(mapping)) {
-                mapped[canonical] = rawObj[originalHeader] ?? null;
+                const ci = getColIdx(headers, originalHeader);
+                mapped[canonical] = ci >= 0 ? (row[ci] ?? null) : (rawObj[originalHeader] ?? null);
               }
 
-              // Sheet name fallback for category/type if missing
-              mapped._sheet_name = wsName;
+              // If canonical name is not directly mapped, check alternative text
+              if (!mapped.name && nameColIdx >= 0 && row[nameColIdx] != null) {
+                mapped.name = row[nameColIdx];
+              }
 
               return mapped;
             });
@@ -202,16 +229,28 @@ App.Parser = (() => {
 
   /* Compatibility helper if mapping is applied separately */
   function applyMapping(rows, globalMapping) {
-    // Parser already maps columns per sheet, so return rows directly if already mapped
     return rows.map(r => {
-      if (r._raw && !r.name && globalMapping.name) {
+      if (r._raw) {
         for (const [canonical, originalHeader] of Object.entries(globalMapping)) {
-          if (!r[canonical]) r[canonical] = r._raw[originalHeader] ?? null;
+          if (r[canonical] == null) {
+            const val = r._raw[originalHeader];
+            if (val != null) {
+              r[canonical] = val;
+            } else {
+              const normOrig = App.Validator.normalizeHeader(originalHeader);
+              for (const [rk, rv] of Object.entries(r._raw)) {
+                if (App.Validator.normalizeHeader(rk) === normOrig && rv != null) {
+                  r[canonical] = rv;
+                  break;
+                }
+              }
+            }
+          }
         }
       }
       return r;
     });
   }
 
-  return { parse, applyMapping };
+  return { parse, applyMapping, getColIdx };
 })();

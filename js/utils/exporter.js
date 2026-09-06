@@ -1,36 +1,35 @@
-window.App = window.App || {};
+﻿window.App = window.App || {};
 
+/* ============================================================
+   EXPORTER — High-Fidelity CSV & Multi-Tab XLSX Export Utility
+   ============================================================ */
 App.Exporter = (() => {
 
-  // Formula injection dangerous trigger characters: =, +, -, @, tab, return
-  const DANGEROUS_FORMULA_REGEX = /^[\s]*[=+\-@\t\r]/;
-
-  /**
-   * Neutralizes formula injection attack payloads (=, +, -, @, \t, \r)
-   * while preserving genuine numbers as numbers.
-   */
   function sanitizeCellValue(val) {
     if (val == null) return '';
     if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    
-    const str = String(val);
-    // Check if dangerous formula trigger
-    if (DANGEROUS_FORMULA_REGEX.test(str)) {
-      // Prepend single quote to neutralize formula execution in Excel/Calc
-      return "'" + str;
+    let str = String(val).trim();
+    if (/^[=+@\t\r\-]/.test(str)) {
+      return `'${str}`;
     }
     return str;
   }
 
   function sanitizeCSVField(val) {
-    const sanitized = sanitizeCellValue(val);
-    if (typeof sanitized === 'number') return sanitized;
-    return `"${String(sanitized).replace(/"/g, '""')}"`;
+    if (val == null) return '""';
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    let str = String(val).trim();
+    if (/^[=+@\t\r\-]/.test(str)) {
+      str = `'${str}`;
+    }
+    if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+      str = str.replace(/"/g, '""');
+      return `"${str}"`;
+    }
+    return `"${str}"`;
   }
 
   function sanitizeSheetName(name) {
-    if (!name) return 'Sheet1';
-    // Excel sheet name restrictions: max 31 chars, no \ / ? * [ ] :
     let clean = String(name).replace(/[\\/?*[\]:]/g, '_').trim();
     if (clean.length > 31) clean = clean.substring(0, 31);
     return clean || 'Sheet1';
@@ -42,25 +41,33 @@ App.Exporter = (() => {
     const headers = [
       'Source Sheet', 'Item ID', 'UPC', 'Product Name', 'Brand', 
       'Category', 'Subcategory', 'Quantity', 'MRP', 'Source Value', 
-      'Weight (KG)', 'Warehouse', 'Status', 'Confidence'
+      'Weight (KG)', 'Warehouse', 'Item Type', 'Inventory Status',
+      'Bad Inventory Type', 'Remarks', 'Resolved Sellability', 'Confidence'
     ];
 
-    const rows = records.map(r => [
-      sanitizeCSVField(r._raw_sheet_name || r._sheet_name || ''),
-      sanitizeCSVField(r.item_id || ''),
-      sanitizeCSVField(r.upc || ''),
-      sanitizeCSVField(r.normalized_product_name || r.name || ''),
-      sanitizeCSVField(r.normalized_brand || ''),
-      sanitizeCSVField(r.normalized_category || ''),
-      sanitizeCSVField(r.subcategory || ''),
-      typeof r.qty === 'number' ? r.qty : sanitizeCSVField(r.qty || 0),
-      typeof r.variant_mrp === 'number' ? r.variant_mrp : (typeof r.mrp === 'number' ? r.mrp : sanitizeCSVField(r.variant_mrp || r.mrp || 0)),
-      typeof r.source_value === 'number' ? r.source_value : sanitizeCSVField(r.source_value || 0),
-      typeof r.total_weight === 'number' ? Number(r.total_weight.toFixed(3)) : (r.weight != null ? Number(Number(r.weight).toFixed(3)) : 0),
-      sanitizeCSVField(r.normalized_warehouse || r.warehouse_id || ''),
-      sanitizeCSVField(r.raw_bad_inventory_type || r.bad_inventory_type || r.status || ''),
-      sanitizeCSVField(r.subcategory_confidence || r.normalization_confidence || 'HIGH')
-    ]);
+    const rows = records.map(r => {
+      const detailedStatus = App.InventoryStatusResolver ? App.InventoryStatusResolver.resolveRecordStatusDetailed(r) : { status: r.raw_bad_inventory_type || 'unknown', confidence: 'HIGH' };
+      return [
+        sanitizeCSVField(r._raw_sheet_name || r._sheet_name || ''),
+        sanitizeCSVField(r.item_id || ''),
+        sanitizeCSVField(r.upc || ''),
+        sanitizeCSVField(r.normalized_product_name || r.name || ''),
+        sanitizeCSVField(r.normalized_brand || ''),
+        sanitizeCSVField(r.normalized_category || ''),
+        sanitizeCSVField(r.subcategory || ''),
+        typeof r.qty === 'number' ? r.qty : sanitizeCSVField(r.qty || 0),
+        typeof r.variant_mrp === 'number' ? r.variant_mrp : (typeof r.mrp === 'number' ? r.mrp : sanitizeCSVField(r.variant_mrp || r.mrp || 0)),
+        typeof r.source_value === 'number' ? r.source_value : sanitizeCSVField(r.source_value || 0),
+        typeof r.total_weight === 'number' ? Number(r.total_weight.toFixed(3)) : (r.weight != null ? Number(Number(r.weight).toFixed(3)) : 0),
+        sanitizeCSVField(r.normalized_warehouse || r.warehouse_id || ''),
+        sanitizeCSVField(r.raw_item_type || r.item_type || r.Type || ''),
+        sanitizeCSVField(r.raw_inventory_status || r.inventory_status || r.status || ''),
+        sanitizeCSVField(r.raw_bad_inventory_type || r.bad_inventory_type || ''),
+        sanitizeCSVField(r.raw_remarks || r.remarks || ''),
+        sanitizeCSVField(detailedStatus.status || 'unknown'),
+        sanitizeCSVField(detailedStatus.confidence || r.subcategory_confidence || 'HIGH')
+      ];
+    });
 
     const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     
@@ -84,7 +91,7 @@ App.Exporter = (() => {
 
     const wb = XLSX.utils.book_new();
 
-    // ── 1. Create Executive Summary Sheet ───────────────────
+    // ── 1. Create Executive Summary Sheet ──
     const totalRecords = records.length;
     const totalUnits = records.reduce((s, r) => s + (r.qty || 0), 0);
     const totalValue = records.reduce((s, r) => s + (r.source_value || 0), 0);
@@ -105,7 +112,6 @@ App.Exporter = (() => {
       { 'Metric': 'Category Breakdown', 'Value': 'Valuation (INR)' }
     ];
 
-    // Compute category breakdown
     const catMap = {};
     for (const r of records) {
       const c = r.normalized_category || 'Other';
@@ -121,7 +127,7 @@ App.Exporter = (() => {
     const summaryWs = XLSX.utils.json_to_sheet(summaryData);
     XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
 
-    // ── 2. Partition records by source sheet ────────────────
+    // ── 2. Partition records by source sheet ──
     const sheetGroups = new Map();
     for (const r of records) {
       const sName = r._raw_sheet_name || r._sheet_name || 'Inventory';
@@ -140,22 +146,29 @@ App.Exporter = (() => {
       }
       usedSheetNames.add(sheetTitle);
 
-      const sheetData = sheetRecords.map(r => ({
-        'Source Sheet': sanitizeCellValue(r._raw_sheet_name || r._sheet_name || ''),
-        'Item ID': sanitizeCellValue(r.item_id || ''),
-        'UPC': sanitizeCellValue(r.upc || ''),
-        'Product Name': sanitizeCellValue(r.normalized_product_name || r.name || ''),
-        'Brand': sanitizeCellValue(r.normalized_brand || ''),
-        'Category': sanitizeCellValue(r.normalized_category || ''),
-        'Subcategory': sanitizeCellValue(r.subcategory || ''),
-        'Quantity': typeof r.qty === 'number' ? r.qty : Number(r.qty || 0),
-        'MRP': typeof r.variant_mrp === 'number' ? r.variant_mrp : Number(r.variant_mrp || r.mrp || 0),
-        'Source Value': typeof r.source_value === 'number' ? r.source_value : Number(r.source_value || 0),
-        'Weight (KG)': typeof r.total_weight === 'number' ? Number(r.total_weight.toFixed(3)) : (r.weight != null ? Number(Number(r.weight).toFixed(3)) : 0),
-        'Warehouse': sanitizeCellValue(r.normalized_warehouse || r.warehouse_id || ''),
-        'Status': sanitizeCellValue(r.raw_bad_inventory_type || r.bad_inventory_type || r.status || ''),
-        'Confidence': sanitizeCellValue(r.subcategory_confidence || r.normalization_confidence || 'HIGH')
-      }));
+      const sheetData = sheetRecords.map(r => {
+        const detailedStatus = App.InventoryStatusResolver ? App.InventoryStatusResolver.resolveRecordStatusDetailed(r) : { status: r.raw_bad_inventory_type || 'unknown', confidence: 'HIGH' };
+        return {
+          'Source Sheet': sanitizeCellValue(r._raw_sheet_name || r._sheet_name || ''),
+          'Item ID': sanitizeCellValue(r.item_id || ''),
+          'UPC': sanitizeCellValue(r.upc || ''),
+          'Product Name': sanitizeCellValue(r.normalized_product_name || r.name || ''),
+          'Brand': sanitizeCellValue(r.normalized_brand || ''),
+          'Category': sanitizeCellValue(r.normalized_category || ''),
+          'Subcategory': sanitizeCellValue(r.subcategory || ''),
+          'Quantity': typeof r.qty === 'number' ? r.qty : Number(r.qty || 0),
+          'MRP': typeof r.variant_mrp === 'number' ? r.variant_mrp : Number(r.variant_mrp || r.mrp || 0),
+          'Source Value': typeof r.source_value === 'number' ? r.source_value : Number(r.source_value || 0),
+          'Weight (KG)': typeof r.total_weight === 'number' ? Number(r.total_weight.toFixed(3)) : (r.weight != null ? Number(Number(r.weight).toFixed(3)) : 0),
+          'Warehouse': sanitizeCellValue(r.normalized_warehouse || r.warehouse_id || ''),
+          'Item Type': sanitizeCellValue(r.raw_item_type || r.item_type || r.Type || ''),
+          'Inventory Status': sanitizeCellValue(r.raw_inventory_status || r.inventory_status || r.status || ''),
+          'Bad Inventory Type': sanitizeCellValue(r.raw_bad_inventory_type || r.bad_inventory_type || ''),
+          'Remarks': sanitizeCellValue(r.raw_remarks || r.remarks || ''),
+          'Resolved Sellability': sanitizeCellValue(detailedStatus.status || 'unknown'),
+          'Confidence': sanitizeCellValue(detailedStatus.confidence || r.subcategory_confidence || 'HIGH')
+        };
+      });
 
       const ws = XLSX.utils.json_to_sheet(sheetData);
       XLSX.utils.book_append_sheet(wb, ws, sheetTitle);
@@ -201,6 +214,7 @@ App.Exporter = (() => {
     exportToXLSX, 
     exportExcludedRecordsToCSV, 
     sanitizeCellValue, 
+    sanitizeCSVField,
     sanitizeSheetName 
   };
 })();
