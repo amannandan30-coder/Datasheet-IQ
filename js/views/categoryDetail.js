@@ -138,9 +138,6 @@ App.Views.CategoryDetail = (() => {
         <div class="subcat-summary-grid" id="subcat-summary-grid"></div>
       </div>
 
-      <!-- Scope Row Filter Bar -->
-      <div id="scope-filter-bar" class="flex items-center justify-between mb-16" style="display:none;"></div>
-
       <!-- Brand Breakdown Table -->
       <div class="card p-20">
         <div class="flex items-center justify-between mb-16">
@@ -178,17 +175,88 @@ App.Views.CategoryDetail = (() => {
         return;
       }
 
+      // If viewing category-level (scName is empty)
+      if (!scName) {
+        // Check if any subcategory in this category has a configured business scope
+        const configuredBuckets = [];
+        for (const sc of subcats) {
+          const b = App.ReportingMapper.getFMBucketForSubcat(sc.name, catName);
+          if (b && !configuredBuckets.some(x => x.bucketName === b)) {
+            const r = App.ReportingMapper.getCategoryReconciliation(catName, sc.name, allDatasetRecords);
+            if (r && r.hasBusinessScope) {
+              configuredBuckets.push(r);
+            }
+          }
+        }
+
+        if (configuredBuckets.length > 0) {
+          reconWrap.innerHTML = `
+            <div class="card p-20" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(16, 185, 129, 0.06) 100%); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px;">
+              <div class="flex items-center justify-between mb-12 flex-wrap gap-8">
+                <div class="flex items-center gap-10">
+                  <span style="font-size: 20px;">🎯</span>
+                  <div>
+                    <div class="font-bold text-base flex items-center gap-8">
+                      <span>Business Reporting Scopes in ${escHtml(catName)}</span>
+                      <span class="badge badge-primary">${configuredBuckets.length} Configured Buckets</span>
+                    </div>
+                    <div class="text-xs text-muted">Select any bucket or subcategory below to inspect exact source-row set reconciliation and delta metrics.</div>
+                  </div>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
+                ${configuredBuckets.map(b => `
+                  <div class="p-10 rounded cursor-pointer" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.15s ease;" onclick="App.Views.CategoryDetail.showSubcat('${escHtml(b.bucketName)}')">
+                    <div class="flex items-center justify-between mb-4">
+                      <span class="font-semibold text-sm" style="color: #6366f1;">${escHtml(b.bucketName)}</span>
+                      <span class="badge badge-neutral" style="font-size: 10px;">${escHtml(b.scopeLabel)}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="text-muted">Target: <strong style="color: #10b981;">${App.Fmt.currency(b.targetValue)}</strong></span>
+                      <span class="text-muted">Scoped: <strong>${b.expectedRows} rows</strong></span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          reconWrap.innerHTML = `
+            <div class="card p-16" style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 12px;">
+              <div class="flex items-center gap-12">
+                <span style="font-size: 20px;">ℹ️</span>
+                <div>
+                  <div class="font-semibold text-sm">No business reporting scope configured</div>
+                  <div class="text-xs text-muted">Category "${escHtml(catName)}" operates under the Standard Canonical Taxonomy with full inventory visibility across all sheets.</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        _currentRecon = null;
+        return;
+      }
+
       const recon = App.ReportingMapper.getCategoryReconciliation(catName, scName, allDatasetRecords);
       _currentRecon = recon;
 
       if (!recon || !recon.hasBusinessScope) {
-        reconWrap.innerHTML = '';
+        reconWrap.innerHTML = `
+          <div class="card p-16" style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 12px;">
+            <div class="flex items-center gap-12">
+              <span style="font-size: 20px;">ℹ️</span>
+              <div>
+                <div class="font-semibold text-sm">No business reporting scope configured</div>
+                <div class="text-xs text-muted">This subcategory ("${escHtml(scName)}") operates under the Standard Canonical Taxonomy with full inventory visibility across all sheets.</div>
+              </div>
+            </div>
+          </div>
+        `;
         return;
       }
 
-      const deltaVal = recon.canonical.value - recon.business.value;
-      const deltaRows = recon.canonical.records - recon.business.records;
-      const isExactMatch = deltaVal === 0 && deltaRows === 0;
+      const deltaVal = recon.valueDelta;
+      const deltaRows = recon.actualRows - recon.expectedRows;
 
       reconWrap.innerHTML = `
         <div class="card p-20" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px;">
@@ -206,41 +274,52 @@ App.Views.CategoryDetail = (() => {
             </div>
             <div class="flex items-center gap-8">
               <span class="text-xs font-semibold px-8 py-4 rounded" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
-                Target: ${App.Fmt.currency(recon.targetValue)}
+                Target Value: ${App.Fmt.currency(recon.targetValue)}
               </span>
             </div>
           </div>
 
           <!-- Comparative Scope Grid -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;" class="mb-16">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;" class="mb-16">
             <!-- Canonical Scope Card -->
             <div class="p-12 rounded" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);">
-              <div class="text-xs text-muted mb-4 font-semibold uppercase">Canonical All-Inventory</div>
+              <div class="text-xs text-muted mb-4 font-semibold uppercase">Actual Canonical Inventory</div>
               <div class="text-xl font-bold" style="color: #6366f1;">${App.Fmt.currency(recon.canonical.value)}</div>
-              <div class="text-xs text-muted mt-2">${App.Fmt.number(recon.canonical.records)} source rows | ${App.Fmt.number(recon.canonical.units)} units</div>
+              <div class="text-xs text-muted mt-2"><strong>${App.Fmt.number(recon.actualRows)}</strong> source rows | <strong>${App.Fmt.number(recon.canonical.units)}</strong> units</div>
             </div>
 
             <!-- Business Reference Scope Card -->
             <div class="p-12 rounded" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25);">
-              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #10b981;">Business Reference Scope</div>
+              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #10b981;">Expected Business Scope</div>
               <div class="text-xl font-bold" style="color: #10b981;">${App.Fmt.currency(recon.business.value)}</div>
-              <div class="text-xs text-muted mt-2">${App.Fmt.number(recon.business.records)} scoped rows | ${App.Fmt.number(recon.business.units)} units</div>
+              <div class="text-xs text-muted mt-2"><strong>${App.Fmt.number(recon.expectedRows)}</strong> scoped rows | <strong>${App.Fmt.number(recon.business.units)}</strong> units</div>
             </div>
 
-            <!-- Scope Delta Card -->
+            <!-- Value & Units Delta Card -->
             <div class="p-12 rounded" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25);">
-              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #f59e0b;">Scope Reconciliation Delta</div>
+              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #f59e0b;">Scope Delta</div>
               <div class="text-xl font-bold" style="color: ${deltaVal === 0 ? '#10b981' : '#f59e0b'};">
                 ${deltaVal > 0 ? '+' : ''}${App.Fmt.currency(deltaVal)}
               </div>
-              <div class="text-xs text-muted mt-2">${deltaRows > 0 ? '+' : ''}${deltaRows} rows difference</div>
+              <div class="text-xs text-muted mt-2">Units Δ: <strong>${recon.unitsDelta > 0 ? '+' : ''}${recon.unitsDelta}</strong> | Rows Δ: <strong>${deltaRows > 0 ? '+' : ''}${deltaRows}</strong></div>
             </div>
 
-            <!-- Overlap / Intersection Card -->
+            <!-- Exact Overlap / Intersection Card -->
             <div class="p-12 rounded" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25);">
               <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #38bdf8;">Exact Row Overlap</div>
               <div class="text-xl font-bold" style="color: #38bdf8;">${App.Fmt.currency(recon.reconciliation.intersectionValue)}</div>
-              <div class="text-xs text-muted mt-2">${recon.reconciliation.intersectionCount} rows in both scopes</div>
+              <div class="text-xs text-muted mt-2"><strong>${recon.reconciliation.intersectionCount}</strong> rows in both scopes</div>
+            </div>
+
+            <!-- Missing & Extra Rows Breakdown Card -->
+            <div class="p-12 rounded" style="background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.25);">
+              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #a78bfa;">Set Differences</div>
+              <div class="text-sm font-semibold mt-4">
+                <span style="color: #f59e0b;">Extra Rows: <strong>${recon.extraRows}</strong></span> (${App.Fmt.currency(recon.reconciliation.canonicalOnlyValue)})
+              </div>
+              <div class="text-sm font-semibold mt-4">
+                <span style="color: #ec4899;">Missing Rows: <strong>${recon.missingRows}</strong></span> (${App.Fmt.currency(recon.reconciliation.businessOnlyValue)})
+              </div>
             </div>
           </div>
 
@@ -249,26 +328,26 @@ App.Views.CategoryDetail = (() => {
             <div class="flex items-center gap-6 flex-wrap">
               <span class="text-xs font-semibold text-muted mr-4">View Scope:</span>
               <button class="btn btn-xs ${_activeScopeMode === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('all')">
-                📊 All Canonical (${recon.canonical.records})
+                📊 All Canonical (${recon.actualRows})
               </button>
               <button class="btn btn-xs ${_activeScopeMode === 'business' ? 'btn-success' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('business')">
-                🎯 Business Scope (${recon.business.records})
+                🎯 Business Scope (${recon.expectedRows})
               </button>
-              ${recon.reconciliation.canonicalOnlyCount > 0 ? `
+              ${recon.extraRows > 0 ? `
                 <button class="btn btn-xs ${_activeScopeMode === 'delta_canonical' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_canonical')">
-                  🔵 Canonical-Only (${recon.reconciliation.canonicalOnlyCount})
+                  🔵 Extra Canonical Rows (${recon.extraRows})
                 </button>
               ` : ''}
-              ${recon.reconciliation.businessOnlyCount > 0 ? `
+              ${recon.missingRows > 0 ? `
                 <button class="btn btn-xs ${_activeScopeMode === 'delta_biz' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_biz')">
-                  🟠 Business-Only (${recon.reconciliation.businessOnlyCount})
+                  🟠 Missing / Business-Only (${recon.missingRows})
                 </button>
               ` : ''}
             </div>
             <div class="text-xs text-muted">
-              ${_activeScopeMode === 'business' ? `Displaying exact ${recon.business.records} ${recon.scopeLabel} rows (${App.Fmt.currency(recon.business.value)})` : 
-                _activeScopeMode === 'delta_canonical' ? `Displaying ${recon.reconciliation.canonicalOnlyCount} rows present in Canonical but outside ${recon.scopeLabel}` :
-                _activeScopeMode === 'delta_biz' ? `Displaying ${recon.reconciliation.businessOnlyCount} rows mapped to ${recon.bucketName} in Business Profile` :
+              ${_activeScopeMode === 'business' ? `Displaying exact ${recon.expectedRows} ${recon.scopeLabel} rows (${App.Fmt.currency(recon.business.value)})` : 
+                _activeScopeMode === 'delta_canonical' ? `Displaying ${recon.extraRows} extra rows present in Canonical but outside ${recon.scopeLabel}` :
+                _activeScopeMode === 'delta_biz' ? `Displaying ${recon.missingRows} missing rows mapped to ${recon.bucketName} in Business Profile` :
                 `Displaying independent Canonical Category inventory (${App.Fmt.currency(recon.canonical.value)})`}
             </div>
           </div>
@@ -426,7 +505,7 @@ App.Views.CategoryDetail = (() => {
         </div>
       </div>
       <div class="subcat-stat-card" style="--stat-color: #fb923c">
-        <div class="subcat-stat-icon">💵</div>
+        <div class="subcat-stat-info">💵</div>
         <div class="subcat-stat-info">
           <div class="subcat-stat-value">${scData.qty ? App.Fmt.currency(scData.value / scData.qty) : '—'}</div>
           <div class="subcat-stat-label">Avg Value / Unit</div>

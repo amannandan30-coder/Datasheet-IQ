@@ -32,7 +32,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Dry Fruits & Nuts', 'Dry Fruits', 'Nuts']
+      canonicalAliases: ['Dry Fruits & Nuts', 'Dry Fruits', 'Nuts', 'Dry Fruits & Seeds']
     },
     'Rice': {
       target: 43859,
@@ -48,7 +48,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Detergent Powder & Bars', 'Detergents & Laundry', 'Detergent Powder', 'Laundry']
+      canonicalAliases: ['Detergent Powder & Bars', 'Detergents & Laundry', 'Detergent Powder', 'Laundry', 'Detergents']
     },
     'Chips & Crisps': {
       target: 43517,
@@ -56,7 +56,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Chips & Crisps', 'Snacks & Namkeen', 'Biscuits & Cookies', 'Chips']
+      canonicalAliases: ['Chips & Crisps', 'Snacks & Namkeen', 'Biscuits & Cookies', 'Chips', 'Snacks']
     },
     'Oil': {
       target: 40257,
@@ -80,7 +80,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Protein and Workout Supplements', 'Supplements', 'Health Drinks']
+      canonicalAliases: ['Protein and Workout Supplements', 'Protein & Workout Supplements', 'Supplements', 'Health Drinks']
     },
     'Diapers & More': {
       target: 19550,
@@ -104,7 +104,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Soft Drinks', 'Beverages', 'Juices & Drinks']
+      canonicalAliases: ['Soft Drinks', 'Beverages', 'Juices & Drinks', 'Cold Drinks']
     },
     'Fresheners': {
       target: 16661,
@@ -120,7 +120,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Besan, Sooji & Maida', 'Flours & Grains', 'Besan']
+      canonicalAliases: ['Besan, Sooji & Maida', 'Flours & Grains', 'Besan', 'Flours']
     },
     'Toor, Urad & Chana': {
       target: 14911,
@@ -128,7 +128,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Toor, Urad & Chana', 'Pulses', 'Dals & Pulses']
+      canonicalAliases: ['Toor, Urad & Chana', 'Pulses', 'Dals & Pulses', 'Pulses & Lentils']
     },
     'Tea': {
       target: 14261,
@@ -152,7 +152,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Moong & Masoor', 'Pulses', 'Dals & Pulses']
+      canonicalAliases: ['Moong & Masoor', 'Pulses', 'Dals & Pulses', 'Pulses & Lentils']
     },
     'Coffee': {
       target: 12188,
@@ -168,7 +168,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Liquid Detergents', 'Detergents & Laundry', 'Fabric Care']
+      canonicalAliases: ['Liquid Detergents', 'Detergents & Laundry', 'Fabric Care', 'Liquid Detergent']
     },
     'Dates & Seeds': {
       target: 8801,
@@ -176,7 +176,7 @@ App.ReportingMapper = (() => {
       allowedSheets: ['Saleable'],
       scopeLabel: 'Saleable Sheet Scope',
       description: 'Saleable sheet inventory rows',
-      canonicalAliases: ['Dates & Seeds', 'Dry Fruits & Seeds', 'Seeds']
+      canonicalAliases: ['Dates & Seeds', 'Dry Fruits & Seeds', 'Seeds', 'Dates']
     }
   };
 
@@ -2476,28 +2476,36 @@ App.ReportingMapper = (() => {
   function getCategoryReconciliation(catName, subcatName, allDatasetRecords, profileName) {
     profileName = profileName || PROFILES.GROFERS_FM_20;
     if (!allDatasetRecords || !allDatasetRecords.length) {
-      return { hasBusinessScope: false };
+      return { hasBusinessScope: false, isConfigured: false };
     }
 
     const isApplicable = isProfileApplicable(profileName, allDatasetRecords);
     if (!isApplicable) {
-      return { hasBusinessScope: false, isProfileApplicable: false };
+      return { hasBusinessScope: false, isProfileApplicable: false, isConfigured: false };
     }
 
     const matchedBucketName = getFMBucketForSubcat(subcatName, catName);
     if (!matchedBucketName || !GROFERS_FM_BUCKET_CONFIG[matchedBucketName]) {
-      return { hasBusinessScope: false, isProfileApplicable: true };
+      return {
+        hasBusinessScope: false,
+        isProfileApplicable: true,
+        isConfigured: false,
+        subcatName: subcatName || catName,
+        profileName: profileName
+      };
     }
 
     const bucketCfg = GROFERS_FM_BUCKET_CONFIG[matchedBucketName];
 
     // 1. Canonical records (filtered by semantic taxonomy)
     const canonicalRecords = allDatasetRecords.filter(r => {
-      const cName = r.normalized_category || r.source_category || '';
       const sName = r.subcategory || '';
-      if (catName && cName !== catName) return false;
-      if (subcatName && sName !== subcatName) return false;
-      return true;
+      if (subcatName && sName === subcatName) return true;
+      if (sName === matchedBucketName) return true;
+      if (bucketCfg.canonicalAliases && bucketCfg.canonicalAliases.some(a => a.toLowerCase() === sName.toLowerCase())) {
+        return true;
+      }
+      return false;
     });
 
     // 2. Business scope records (filtered by bucket-specific scope rule & mapping)
@@ -2533,8 +2541,16 @@ App.ReportingMapper = (() => {
     const sumVal = (arr) => Number(arr.reduce((s, r) => s + (Number(r.source_value) || 0), 0).toFixed(2));
     const sumQty = (arr) => arr.reduce((s, r) => s + (Number(r.qty) || 0), 0);
 
+    const unitsDelta = sumQty(canonicalRecords) - sumQty(businessRecords);
+    const valueDelta = Number((sumVal(canonicalRecords) - sumVal(businessRecords)).toFixed(2));
+    const expectedRows = businessRecords.length;
+    const actualRows = canonicalRecords.length;
+    const missingRows = businessOnly.length;
+    const extraRows = canonicalOnly.length;
+
     return {
       hasBusinessScope: true,
+      isConfigured: true,
       profileName: profileName,
       bucketName: matchedBucketName,
       targetValue: bucketCfg.target,
@@ -2542,6 +2558,12 @@ App.ReportingMapper = (() => {
       scopeLabel: bucketCfg.scopeLabel,
       scopeDescription: bucketCfg.description,
       allowedSheets: bucketCfg.allowedSheets,
+      expectedRows: expectedRows,
+      actualRows: actualRows,
+      missingRows: missingRows,
+      extraRows: extraRows,
+      unitsDelta: unitsDelta,
+      valueDelta: valueDelta,
       canonical: {
         records: canonicalRecords.length,
         units: sumQty(canonicalRecords),
