@@ -169,7 +169,7 @@ App.Cleaner = (() => {
     const raw_name  = rec.name  || rec.product_name || rec.Product_Name || raw['Product Name'] || raw.name || '';
     const raw_brand = rec.brand || raw.brand || raw.Brand || '';
     const raw_cat   = rec.l0    || rec.category || rec.Category || raw.Category || raw.l0 || '';
-    const raw_wh    = rec.entity_name || rec.warehouse || rec.Warehouse || raw.Warehouse || raw.entity_name || '';
+    const raw_wh    = rec.entity_name || rec.entity_vendor_name || raw.entity_vendor_name || raw.vendor_name || raw.vendor || raw.location || rec.entity_name || rec.warehouse || rec.Warehouse || raw.Warehouse || raw.entity_name || '';
     const raw_uom   = rec.variant_uom_text || rec.uom || rec.UOM || raw.uom || raw.UOM || '';
     
     // Separate individual source fields cleanly

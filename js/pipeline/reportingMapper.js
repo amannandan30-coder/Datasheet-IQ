@@ -307,10 +307,11 @@ App.ReportingMapper = (() => {
   // Dynamic Bucket Resolver for a record
   function getBucketForRecord(rec, idx) {
     if (!rec) return null;
-    const sheet = rec._sheet_name || rec._raw_sheet_name || (rec._raw && rec._raw._sheet_name) || 'Saleable';
+    const rawSheet = rec._sheet_name || rec._raw_sheet_name || (rec._raw && rec._raw._sheet_name) || 'Saleable';
+    const sheet = String(rawSheet).trim().toLowerCase();
     
     // Dedicated Atta sheet rule
-    if (sheet === 'atta') {
+    if (sheet === 'atta' || sheet.startsWith('atta')) {
       return 'Atta';
     }
 
@@ -318,7 +319,10 @@ App.ReportingMapper = (() => {
     for (const [bucketName, pred] of Object.entries(BUCKET_PREDICATES)) {
       if (bucketName === 'Atta') continue;
       const cfg = GROFERS_FM_BUCKET_CONFIG[bucketName];
-      if (cfg && cfg.allowedSheets && !cfg.allowedSheets.includes(sheet)) continue;
+      if (cfg && cfg.allowedSheets) {
+        const allowedLower = cfg.allowedSheets.map(s => String(s).trim().toLowerCase());
+        if (!allowedLower.includes(sheet)) continue;
+      }
       if (pred(rec)) {
         return bucketName;
       }
@@ -452,8 +456,12 @@ App.ReportingMapper = (() => {
 
     // 2. Business scope records (filtered dynamically by bucket-specific scope rule & predicates)
     const businessRecords = allDatasetRecords.filter((rec, idx) => {
-      const sheet = rec._sheet_name || rec._raw_sheet_name || 'Saleable';
-      if (!bucketCfg.allowedSheets.includes(sheet)) return false;
+      const rawSheet = rec._sheet_name || rec._raw_sheet_name || 'Saleable';
+      const sheet = String(rawSheet).trim().toLowerCase();
+      if (bucketCfg.allowedSheets) {
+        const allowedLower = bucketCfg.allowedSheets.map(s => String(s).trim().toLowerCase());
+        if (!allowedLower.includes(sheet)) return false;
+      }
       const b = getBucketForRecord(rec, idx);
       return b === matchedBucketName;
     });
@@ -566,8 +574,14 @@ App.ReportingMapper = (() => {
       sheet.recordCount = sheet.records.length;
     }
 
-    const saleableRecords = allRecords.filter(r => (r._sheet_name || r._raw_sheet_name || 'Saleable') === 'Saleable');
-    const attaRecords = allRecords.filter(r => (r._sheet_name || r._raw_sheet_name) === 'atta');
+    const saleableRecords = allRecords.filter(r => {
+      const s = String(r._sheet_name || r._raw_sheet_name || 'Saleable').trim().toLowerCase();
+      return s === 'saleable' || s === 'sellable' || s.includes('saleable') || s.includes('sellable');
+    });
+    const attaRecords = allRecords.filter(r => {
+      const s = String(r._sheet_name || r._raw_sheet_name || '').trim().toLowerCase();
+      return s === 'atta' || s.startsWith('atta');
+    });
     const isGrofersApplicable = isProfileApplicable(PROFILES.GROFERS_FM_20, records);
 
     const result = {
@@ -614,13 +628,57 @@ App.ReportingMapper = (() => {
   }
 
   function isProfileApplicable(profileName, records) {
-    if (profileName === PROFILES.CANONICAL_STANDARD || profileName === 'Canonical Standard' || (profileName && profileName.toLowerCase().includes('canonical'))) return true;
-    if (profileName === PROFILES.GROFERS_FM_20 || profileName === 'Grofers FM-20' || (profileName && profileName.toLowerCase().includes('grofers'))) {
+    if (!profileName) return true;
+    const pNorm = String(profileName).toLowerCase().trim();
+    if (pNorm.includes('canonical') || pNorm.includes('standard')) return true;
+    
+    if (pNorm.includes('grofers') || pNorm.includes('fm') || pNorm.includes('20')) {
       if (!records || !records.length) return false;
-      const hasAttaSheet = records.some(r => (r._sheet_name || r._raw_sheet_name) === 'atta');
-      const hasSaleable = records.some(r => (r._sheet_name || r._raw_sheet_name) === 'Saleable');
-      const hasGrofersName = records.some(r => (r.raw_entity_name || r.warehouse_id || '').toLowerCase().includes('dasna') || (r.raw_entity_name || '').toLowerCase().includes('grofers'));
-      return hasAttaSheet || (hasSaleable && hasGrofersName);
+      
+      // 1. Check for dedicated Atta sheet (case-insensitive)
+      const hasAttaSheet = records.some(r => {
+        const s = String(r._sheet_name || r._raw_sheet_name || (r._raw && r._raw._sheet_name) || '').trim().toLowerCase();
+        return s === 'atta' || s.startsWith('atta');
+      });
+      if (hasAttaSheet) return true;
+
+      // 2. Check for Saleable sheet (case-insensitive)
+      const hasSaleable = records.some(r => {
+        const s = String(r._sheet_name || r._raw_sheet_name || (r._raw && r._raw._sheet_name) || '').trim().toLowerCase();
+        return s === 'saleable' || s === 'sellable' || s.includes('saleable') || s.includes('sellable');
+      });
+
+      // 3. Inspect available workbook metadata fields generically
+      const hasRetailVendorMeta = records.some(r => {
+        const rawObj = r._raw || {};
+        const metaText = [
+          r.raw_entity_name,
+          r.entity_name,
+          r.entity_vendor_name,
+          r.warehouse_id,
+          r.warehouse,
+          rawObj.entity_name,
+          rawObj.entity_vendor_name,
+          rawObj.vendor_name,
+          rawObj.Warehouse,
+          rawObj.warehouse_id,
+          rawObj.location
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return metaText.length > 0 && (
+          metaText.includes('grofers') ||
+          metaText.includes('dasna') ||
+          metaText.includes('feeder') ||
+          metaText.includes('sr feeder') ||
+          metaText.includes('bcpl') ||
+          metaText.includes('warehouse') ||
+          metaText.includes('hub') ||
+          metaText.includes('dc') ||
+          metaText.includes('fmcg')
+        );
+      });
+
+      return hasSaleable && hasRetailVendorMeta;
     }
     return false;
   }

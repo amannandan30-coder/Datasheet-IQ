@@ -29,6 +29,7 @@ App.Validator = (() => {
   // Enhanced Aliases for enterprise workbooks, distribution sheets & diverse ERPs
   const COLUMN_ALIASES = {
     entity_name: [
+      'entity_vendor_name', 'entity vendor name', 'vendor_entity_name', 'vendor entity name', 'vendor_name', 'vendor name',
       'entity_name','entity','warehouse','location','store','entity name','wh_name','warehouse_name','wh name',
       'dc','distribution center','distribution_center','facility','storage facility','storage location','storage_location','plant',
       'warehouse location','warehouse_location','depot','wh','warehouse name'
