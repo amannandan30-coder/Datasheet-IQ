@@ -160,16 +160,20 @@ App.Parser = (() => {
                   _raw_cells: row.reduce((o, c, i) => { if (c != null) o[headers[i] || `col_${i}`] = c; return o; }, {}),
                 });
               } else {
-                filteredDataRows.push(row);
+                filteredDataRows.push({ row: row, sourceRow: ri + headerRowIdx + 2 });
               }
             }
 
-            const sheetMappedRows = filteredDataRows.map((row, idx) => {
-              const rawObj = { _sheet_name: wsName };
+            const sheetMappedRows = filteredDataRows.map((item, idx) => {
+              const row = item.row || item;
+              const sourceRow = item.sourceRow || (idx + headerRowIdx + 2);
+              const rawObj = { _sheet_name: wsName, _source_row: sourceRow };
               headers.forEach((h, i) => { if (h) rawObj[h] = row[i] ?? null; });
 
               const mapped = {
                 _raw_row_index: idx,
+                _source_row: sourceRow,
+                source_row: sourceRow,
                 _raw_sheet_name: wsName,
                 _sheet_name: wsName,
                 _raw: rawObj
