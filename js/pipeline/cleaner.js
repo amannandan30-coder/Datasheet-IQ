@@ -193,7 +193,7 @@ App.Cleaner = (() => {
         }
       } else {
         const normRem = normLower(raw_remarks);
-        if (['saleable', 'salable', 'sellable', 'non saleable', 'nonsaleable', 'non sellable', 'damaged', 'expired', 'quarantine', 'active', 'in stock'].includes(normRem)) {
+        if (['saleable', 'salable', 'sellable', 'non saleable', 'nonsaleable', 'non sellable', 'unsellable', 'unsaleable', 'active', 'in stock'].includes(normRem)) {
           effective_inv_status = raw_remarks;
         }
       }

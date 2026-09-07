@@ -1,20 +1,29 @@
-window.App = window.App || {};
+﻿window.App = window.App || {};
 
 /* ============================================================
-   INVENTORY STATUS RESOLVER - Evidence-Aware Sellability Engine
+   INVENTORY STATUS RESOLVER - Pure 4-Level Status Engine
+   ============================================================
+   Strict Rules:
+   1. Row has explicit 'Saleable' token -> sellable
+   2. Row has explicit 'Non-Saleable' token -> non_sellable
+   3. Row has no explicit status written (Blank / Neutral) -> Check Sheet Context:
+      - Sheet context is 'Non-Saleable' -> non_sellable
+      - Sheet context is 'Saleable' -> sellable
+   4. Sheet context is unclear / neutral (e.g. 'Atta', 'Sheet1', 'No variant') -> sellable by default
+
+   * CRITICAL: Damage, Expired, Scrap, Quarantine, Defect tokens are NOT considered
+     in status resolution and no inference is made from them.
    ============================================================ */
 App.InventoryStatusResolver = (() => {
 
   /* ------------------------------------------------------------
-     SECTION 0  NORMALIZE - single source of truth for text canonicalization
+     SECTION 0: TEXT NORMALIZATION
      ------------------------------------------------------------ */
   function normalizeText(val) {
     if (val == null) return '';
     return String(val).toLowerCase().trim().replace(/[\-_\/]/g, ' ').replace(/\s+/g, ' ');
   }
 
-  /** Pre-normalize every entry in a raw token array so lookups and
-   *  regex matching always operate on the same canonical form. */
   function normalizeTokenSet(rawTokens) {
     const s = new Set();
     for (const t of rawTokens) {
@@ -25,13 +34,17 @@ App.InventoryStatusResolver = (() => {
   }
 
   /* ------------------------------------------------------------
-     SECTION 1  TOKEN SETS  (stored in normalized form)
+     SECTION 1: TOKEN SETS (Saleable vs Non-Saleable ONLY)
      ------------------------------------------------------------ */
   const SELLABLE_TOKENS = normalizeTokenSet([
-    'saleable', 'salable', 'sellable', 'active', 'active stock', 'activestock',
-    'good', 'good condition', 'goodcondition', 'available', 'available stock', 'availablestock',
-    'usable', 'usable stock', 'in stock', 'instock', 'ok', 'fresh', 'standard', 'prime',
-    'sound', 'sound stock', 'ready for sale', 'ready to sell', 'serviceable', 'normal',
+    'saleable', 'salable', 'sellable',
+    'active', 'active stock', 'activestock',
+    'good', 'good condition', 'goodcondition',
+    'available', 'available stock', 'availablestock',
+    'usable', 'usable stock',
+    'in stock', 'instock',
+    'prime', 'sound', 'fresh', 'standard', 'ok',
+    'ready for sale', 'ready to sell', 'serviceable', 'normal',
     'sellable inventory', 'saleable inventory'
   ]);
 
@@ -43,92 +56,39 @@ App.InventoryStatusResolver = (() => {
     'non-sellable stock', 'non sellable stock',
     'non-sellable inventory', 'non sellable inventory',
     'unsellable', 'unsaleable',
-    'damaged', 'damage', 'dn prn', 'dump', 'quarantine',
-    'blocked', 'expired', 'expiry', 'near expiry', 'nearexpiry', 'near_expiry',
-    'bad rtv', 'bad_rtv', 'badrtv', 'rtv', 'return to vendor', 'returntovendor',
-    'unserviceable', 'rejected', 'reject', 'defect', 'defective', 'hold', 'scrap',
-    'salvage', 'dead stock', 'deadstock', 'write off', 'writeoff', 'loss', 'broken',
-    'quarantined',
-    'non-saleable/dump', 'non saleable/dump', 'nonsaleable/dump',
-    'non-sellable/dump', 'non sellable/dump'
-  ]);
-
-  const GENERIC_NEUTRAL_SHEETS = normalizeTokenSet([
-    'sheet1', 'sheet 1', 'sheet2', 'sheet 2', 'sheet3', 'sheet 3', 'sheet', 'sheets',
-    'data', 'dataset', 'table', 'table1', 'export', 'page', 'page1', 'workbook',
-    'general', 'unknown', 'custom', 'default'
-  ]);
-
-  const DOMAIN_CATEGORY_SHEETS = normalizeTokenSet([
-    'atta', 'flour', 'rice', 'oil', 'dal', 'pulses', 'spices', 'staples',
-    'grocery', 'fmcg', 'dairy', 'beverages', 'personal care', 'home care',
-    'snacks', 'packaged foods', 'food', 'no variant', 'catalog', 'active catalog',
-    'tea', 'coffee', 'sugar', 'salt', 'biscuits', 'cleaning', 'household'
+    'non-active', 'non active', 'inactive', 'unserviceable'
   ]);
 
   /* ------------------------------------------------------------
-     SECTION 2  DOMAIN CATEGORY SHEET - exact match only (cautious)
-     ------------------------------------------------------------ */
-  function isDomainCategorySheet(sheetVal) {
-    if (!sheetVal) return false;
-    return DOMAIN_CATEGORY_SHEETS.has(sheetVal);
-  }
-
-  /* ------------------------------------------------------------
-     SECTION 3  CENTRALIZED NEGATION-AWARE TOKEN MATCHER
-     ------------------------------------------------------------ 
-     One reusable function handles negation for ALL signal types.
-     
-     Rules:
-       1. Exact full-string match against curated set = true immediately.
-          (Curated entries like "non saleable" are trusted as-is.)
-       2. Substring match with word boundaries:
-          - Locate each token occurrence in the normalized string.
-          - Check if the word immediately before is a negation prefix.
-          - If negated: skip that match.
-          - If not negated: signal found, return true.
-       3. All tokens and inputs go through normalizeText(),
-          so -, _, / are already converted to spaces.
+     SECTION 2: NEGATION-AWARE TOKEN MATCHING
      ------------------------------------------------------------ */
   const NEGATION_WORDS = new Set([
     'no', 'not', 'non', 'un', 'never', 'without', 'nil', 'zero'
   ]);
 
-  /**
-   * Check whether the token that starts at position `matchStart`
-   * in `normStr` is immediately preceded by a negation word.
-   * Generic � works for any token in any field.
-   */
   function isTokenNegated(normStr, matchStart) {
     if (matchStart <= 0) return false;
-    var textBefore = normStr.substring(0, matchStart).trimEnd();
-    var lastSpaceIdx = textBefore.lastIndexOf(' ');
-    var lastWord = lastSpaceIdx >= 0
+    const textBefore = normStr.substring(0, matchStart).trimEnd();
+    const lastSpaceIdx = textBefore.lastIndexOf(' ');
+    const lastWord = lastSpaceIdx >= 0
       ? textBefore.substring(lastSpaceIdx + 1)
       : textBefore;
     return NEGATION_WORDS.has(lastWord);
   }
 
-  /**
-   * Generic, reusable, negation-aware signal detector.
-   * Returns true if `normStr` contains a non-negated occurrence
-   * of any token in `tokenSet`.
-   *
-   * Used identically by hasSellableSignal and hasNonSellableSignal.
-   */
   function hasTokenSignal(normStr, tokenSet) {
     if (!normStr) return false;
 
-    // Path A: exact full-string match (curated sets, trusted)
+    // Direct match against curated set
     if (tokenSet.has(normStr)) return true;
 
-    // Path B: substring match with word boundaries + negation guard
+    // Substring match with word boundary & negation guard
     for (const token of tokenSet) {
-      var escaped = token.replace(/ /g, '\\s+');
-      var re = new RegExp('(?:^|\\s)(' + escaped + ')(?=$|\\s)', 'gi');
-      var m;
+      const escaped = token.replace(/ /g, '\\s+');
+      const re = new RegExp('(?:^|\\s)(' + escaped + ')(?=$|\\s)', 'gi');
+      let m;
       while ((m = re.exec(normStr)) !== null) {
-        var actualStart = m.index + (m[0].length - m[1].length);
+        const actualStart = m.index + (m[0].length - m[1].length);
         if (!isTokenNegated(normStr, actualStart)) {
           return true;
         }
@@ -137,9 +97,6 @@ App.InventoryStatusResolver = (() => {
     return false;
   }
 
-  /* ------------------------------------------------------------
-     SECTION 4  PUBLIC SIGNAL APIs - thin wrappers over hasTokenSignal
-     ------------------------------------------------------------ */
   function hasSellableSignal(normStr) {
     return hasTokenSignal(normStr, SELLABLE_TOKENS);
   }
@@ -148,16 +105,42 @@ App.InventoryStatusResolver = (() => {
     return hasTokenSignal(normStr, NON_SELLABLE_TOKENS);
   }
 
-  /**
-   * Detailed sellability resolution with evidence tracking and semantic conflict detection.
-   */
+  /* ------------------------------------------------------------
+     SECTION 3: SHEET CONTEXT HELPERS
+     ------------------------------------------------------------ */
+  function isSheetNonSellable(sheetVal) {
+    if (!sheetVal) return false;
+    return sheetVal.includes('non saleable') ||
+           sheetVal.includes('nonsaleable') ||
+           sheetVal.includes('non-saleable') ||
+           sheetVal.includes('non sellable') ||
+           sheetVal.includes('unsellable') ||
+           sheetVal.includes('unsaleable');
+  }
+
+  function isSheetSellable(sheetVal) {
+    if (!sheetVal) return false;
+    return sheetVal === 'saleable' ||
+           sheetVal === 'salable' ||
+           sheetVal === 'sellable' ||
+           sheetVal.includes('( saleable )') ||
+           sheetVal.includes('( sellable )') ||
+           sheetVal.includes('sellable inventory') ||
+           sheetVal.includes('saleable inventory') ||
+           sheetVal.includes('active stock') ||
+           sheetVal.includes('available stock');
+  }
+
+  /* ------------------------------------------------------------
+     SECTION 4: 4-LEVEL DETERMINISTIC RECORD STATUS RESOLUTION
+     ------------------------------------------------------------ */
   function resolveRecordStatusDetailed(record) {
     if (!record) {
       return {
-        status: 'unknown',
+        status: 'sellable',
         confidence: 'LOW',
-        resolution_source: 'none',
-        resolution_rule: 'empty_record',
+        resolution_source: 'fallback',
+        resolution_rule: 'empty_record_default_sellable',
         is_status_conflict: false,
         status_conflict_reason: null,
         evidence: {}
@@ -167,275 +150,123 @@ App.InventoryStatusResolver = (() => {
     const raw = record._raw || {};
     const sheetVal = normalizeText(record._sheet_name || record._raw_sheet_name || raw._sheet_name || '');
 
-    // Extract individual candidate signals
-    const raw_item_type = record.item_type || record.Type || raw.item_type || raw.Type || raw.type || '';
+    // Extract row-level fields
     const raw_inv_status = record.inventory_status || record.status || raw.inventory_status || raw.Status || raw.status || '';
-    const raw_bad_type_explicit = record.bad_inventory_type || raw.bad_inventory_type || raw['Bad Inventory Type'] || '';
+    const raw_item_type = record.item_type || record.Type || raw.item_type || raw.Type || raw.type || '';
     const raw_remarks = record.remarks || record.Remarks || raw.Remarks || raw.remarks || raw.Remark || raw.remark || '';
     const raw_condition = record.condition || record.Condition || raw.Condition || raw.condition || '';
     const raw_disposition = record.disposition || record.Disposition || raw.Disposition || raw.disposition || '';
 
-    const norm_item_type = normalizeText(raw_item_type);
     const norm_inv_status = normalizeText(raw_inv_status);
-    const norm_bad_type = normalizeText(raw_bad_type_explicit);
+    const norm_item_type = normalizeText(raw_item_type);
     const norm_remarks = normalizeText(raw_remarks);
     const norm_condition = normalizeText(raw_condition);
     const norm_disposition = normalizeText(raw_disposition);
 
     const evidence = {
       sheet_name: sheetVal,
-      item_type: raw_item_type,
       inventory_status: raw_inv_status,
-      bad_inventory_type: raw_bad_type_explicit,
+      item_type: raw_item_type,
       remarks: raw_remarks,
       condition: raw_condition,
       disposition: raw_disposition
     };
 
-    // ══ Row-Level Signal Extraction ══
-    const posRowSignals = [];
-    const negRowSignals = [];
+    // Candidates in hierarchy: status -> item_type -> remarks -> condition -> disposition
+    const rowCandidates = [
+      { name: 'inventory_status', raw: raw_inv_status, norm: norm_inv_status },
+      { name: 'item_type', raw: raw_item_type, norm: norm_item_type },
+      { name: 'remarks', raw: raw_remarks, norm: norm_remarks },
+      { name: 'condition', raw: raw_condition, norm: norm_condition },
+      { name: 'disposition', raw: raw_disposition, norm: norm_disposition }
+    ];
 
-    if (hasSellableSignal(norm_item_type)) posRowSignals.push('Type="' + raw_item_type + '"');
-    if (hasNonSellableSignal(norm_item_type)) negRowSignals.push('Type="' + raw_item_type + '"');
+    let hasRowNonSellable = false;
+    let nonSellableSource = null;
+    let hasRowSellable = false;
+    let sellableSource = null;
 
-    if (hasSellableSignal(norm_inv_status)) posRowSignals.push('Status="' + raw_inv_status + '"');
-    if (hasNonSellableSignal(norm_inv_status)) negRowSignals.push('Status="' + raw_inv_status + '"');
-
-    if (hasSellableSignal(norm_bad_type)) posRowSignals.push('BadInventoryType="' + raw_bad_type_explicit + '"');
-    if (hasNonSellableSignal(norm_bad_type) && norm_bad_type !== 'unknown') negRowSignals.push('BadInventoryType="' + raw_bad_type_explicit + '"');
-
-    if (hasSellableSignal(norm_remarks)) posRowSignals.push('Remarks="' + raw_remarks + '"');
-    if (hasNonSellableSignal(norm_remarks)) negRowSignals.push('Remarks="' + raw_remarks + '"');
-
-    if (hasSellableSignal(norm_condition)) posRowSignals.push('Condition="' + raw_condition + '"');
-    if (hasNonSellableSignal(norm_condition)) negRowSignals.push('Condition="' + raw_condition + '"');
-
-    if (hasSellableSignal(norm_disposition)) posRowSignals.push('Disposition="' + raw_disposition + '"');
-    if (hasNonSellableSignal(norm_disposition)) negRowSignals.push('Disposition="' + raw_disposition + '"');
-
-    const isExplicitPosSheet = sheetVal === 'saleable' || sheetVal === 'sellable' || sheetVal === 'active stock' || sheetVal === 'available stock' || sheetVal === 'active_stock' || sheetVal.includes('( saleable )') || sheetVal.includes('( sellable )') || sheetVal.includes('sellable inventory') || sheetVal.includes('saleable inventory');
-    const isExplicitNegSheet = sheetVal === 'dump' || sheetVal === 'scrap' || sheetVal === 'damaged' || sheetVal === 'expired' || sheetVal === 'quarantine' || sheetVal === 'quarantined' || sheetVal === 'write off' || sheetVal === 'writeoff' || sheetVal.includes('( dump )') || sheetVal.includes('non saleable') || sheetVal.includes('nonsaleable') || sheetVal.includes('non-saleable stock') || sheetVal.includes('non saleable stock');
-
-    // ══ Direct Conflict Evaluation ══
-    let is_conflict = posRowSignals.length > 0 && negRowSignals.length > 0;
-    let conflict_reason = is_conflict ? ('Positive row signal (' + posRowSignals.join(', ') + ') conflicts with negative row signal (' + negRowSignals.join(', ') + ').') : null;
-
-    // Explicit Sheet vs Explicit Row Status Conflict
-    if (!is_conflict) {
-      if (isExplicitPosSheet && (hasNonSellableSignal(norm_inv_status) || hasNonSellableSignal(norm_item_type))) {
-        is_conflict = true;
-        conflict_reason = 'Positive sheet partition ("' + sheetVal + '") conflicts with explicit negative row status (' + (hasNonSellableSignal(norm_inv_status) ? 'Status="' + raw_inv_status + '"' : 'Type="' + raw_item_type + '"') + ').';
-      } else if (isExplicitNegSheet && (hasSellableSignal(norm_inv_status) || hasSellableSignal(norm_item_type))) {
-        is_conflict = true;
-        conflict_reason = 'Negative sheet partition ("' + sheetVal + '") conflicts with explicit positive row status (' + (hasSellableSignal(norm_inv_status) ? 'Status="' + raw_inv_status + '"' : 'Type="' + raw_item_type + '"') + ').';
+    for (const cand of rowCandidates) {
+      if (!cand.norm || cand.norm === 'unknown' || cand.norm === 'null' || cand.norm === 'na') continue;
+      if (hasNonSellableSignal(cand.norm)) {
+        hasRowNonSellable = true;
+        if (!nonSellableSource) nonSellableSource = cand.name;
+      }
+      if (hasSellableSignal(cand.norm)) {
+        hasRowSellable = true;
+        if (!sellableSource) sellableSource = cand.name;
       }
     }
 
-    // ══ Conflict Resolution: Never Silently Pick a Side ══
-    if (is_conflict) {
+    // Direct semantic conflict check in row fields
+    if (hasRowNonSellable && hasRowSellable) {
       return {
         status: 'unknown',
         confidence: 'LOW',
         resolution_source: 'conflict_unresolved',
         resolution_rule: 'semantic_status_conflict',
         is_status_conflict: true,
-        status_conflict_reason: conflict_reason,
+        status_conflict_reason: 'Row contains both Saleable (' + sellableSource + ') and Non-Saleable (' + nonSellableSource + ') signals.',
         evidence
       };
     }
 
-    // ══ Precedence Rule Hierarchy (When No Conflict Exists) ══
-
-    // Priority 1: Pure Dump / Scrap Sheet Partition
-    if (sheetVal === 'dump' || sheetVal === 'scrap' || sheetVal === 'write off' || sheetVal === 'writeoff') {
+    // ══ STEP 1 & 2: Row has explicit status ══
+    if (hasRowNonSellable) {
       return {
         status: 'non_sellable',
         confidence: 'HIGH',
-        resolution_source: 'sheet_partition',
-        resolution_rule: 'pure_dump_scrap_sheet',
+        resolution_source: nonSellableSource,
+        resolution_rule: 'explicit_row_non_sellable',
         is_status_conflict: false,
         status_conflict_reason: null,
         evidence
       };
     }
 
-    // Priority 2: Explicit Dedicated Sellability / Status Field (A)
-    if (norm_inv_status && norm_inv_status !== 'unknown' && norm_inv_status !== 'null') {
-      if (hasSellableSignal(norm_inv_status)) {
-        return {
-          status: 'sellable',
-          confidence: 'HIGH',
-          resolution_source: 'inventory_status',
-          resolution_rule: 'explicit_positive_status',
-          is_status_conflict: false,
-          status_conflict_reason: null,
-          evidence
-        };
-      }
-      if (hasNonSellableSignal(norm_inv_status)) {
-        return {
-          status: 'non_sellable',
-          confidence: 'HIGH',
-          resolution_source: 'inventory_status',
-          resolution_rule: 'explicit_negative_status',
-          is_status_conflict: false,
-          status_conflict_reason: null,
-          evidence
-        };
-      }
-    }
-
-    // Priority 3: Explicit Row-Level Remarks / Disposition / Condition (B)
-    for (const [field, normVal] of [
-      ['disposition', norm_disposition],
-      ['remarks', norm_remarks],
-      ['condition', norm_condition]
-    ]) {
-      if (normVal && normVal !== 'unknown' && normVal !== 'null' && normVal !== 'na') {
-        if (hasNonSellableSignal(normVal)) {
-          return {
-            status: 'non_sellable',
-            confidence: 'HIGH',
-            resolution_source: field,
-            resolution_rule: 'explicit_negative_' + field,
-            is_status_conflict: false,
-            status_conflict_reason: null,
-            evidence
-          };
-        }
-        if (hasSellableSignal(normVal)) {
-          return {
-            status: 'sellable',
-            confidence: 'HIGH',
-            resolution_source: field,
-            resolution_rule: 'explicit_positive_' + field,
-            is_status_conflict: false,
-            status_conflict_reason: null,
-            evidence
-          };
-        }
-      }
-    }
-
-    // Priority 4: Strong Negative / Positive Inventory-Condition Field (C)
-    if (hasNonSellableSignal(norm_bad_type) && norm_bad_type !== 'unknown') {
-      return {
-        status: 'non_sellable',
-        confidence: 'HIGH',
-        resolution_source: 'bad_inventory_type',
-        resolution_rule: 'explicit_negative_bad_inventory_type',
-        is_status_conflict: false,
-        status_conflict_reason: null,
-        evidence
-      };
-    }
-    if (hasSellableSignal(norm_bad_type)) {
+    if (hasRowSellable) {
       return {
         status: 'sellable',
         confidence: 'HIGH',
-        resolution_source: 'bad_inventory_type',
-        resolution_rule: 'explicit_positive_bad_inventory_type',
+        resolution_source: sellableSource,
+        resolution_rule: 'explicit_row_sellable',
         is_status_conflict: false,
         status_conflict_reason: null,
         evidence
       };
     }
 
-    // Priority 5: Qualified Worksheet Partition (D)
-    if (sheetVal) {
-      if (sheetVal.includes('( saleable )') || sheetVal.includes('( sellable )') || sheetVal.includes('sellable inventory') || sheetVal.includes('saleable inventory')) {
-        return {
-          status: 'sellable',
-          confidence: 'HIGH',
-          resolution_source: 'worksheet_partition',
-          resolution_rule: 'positive_qualified_sheet_partition',
-          is_status_conflict: false,
-          status_conflict_reason: null,
-          evidence
-        };
-      }
-      if (sheetVal.includes('( dump )') || sheetVal.includes('non saleable') || sheetVal.includes('nonsaleable') || sheetVal.includes('non-saleable stock') || sheetVal.includes('non saleable stock')) {
-        return {
-          status: 'non_sellable',
-          confidence: 'HIGH',
-          resolution_source: 'worksheet_partition',
-          resolution_rule: 'negative_qualified_sheet_partition',
-          is_status_conflict: false,
-          status_conflict_reason: null,
-          evidence
-        };
-      }
-    }
-
-    // Priority 6: Explicit Positive / Negative Item Type
-    if (hasSellableSignal(norm_item_type)) {
-      return {
-        status: 'sellable',
-        confidence: 'MEDIUM',
-        resolution_source: 'item_type',
-        resolution_rule: 'explicit_positive_item_type',
-        is_status_conflict: false,
-        status_conflict_reason: null,
-        evidence
-      };
-    }
-    if (hasNonSellableSignal(norm_item_type)) {
+    // ══ STEP 3: Row is blank -> Check Sheet / File context ══
+    if (isSheetNonSellable(sheetVal)) {
       return {
         status: 'non_sellable',
-        confidence: 'MEDIUM',
-        resolution_source: 'item_type',
-        resolution_rule: 'explicit_negative_item_type',
+        confidence: 'HIGH',
+        resolution_source: 'sheet_context',
+        resolution_rule: 'sheet_context_non_sellable',
         is_status_conflict: false,
         status_conflict_reason: null,
         evidence
       };
     }
 
-    // Priority 7: Worksheet-Level Status Semantics (E)
-    if (sheetVal) {
-      if (isExplicitPosSheet || hasSellableSignal(sheetVal)) {
-        return {
-          status: 'sellable',
-          confidence: 'HIGH',
-          resolution_source: 'worksheet_name',
-          resolution_rule: 'positive_sheet_signal',
-          is_status_conflict: false,
-          status_conflict_reason: null,
-          evidence
-        };
-      }
-      if (isExplicitNegSheet || hasNonSellableSignal(sheetVal)) {
-        return {
-          status: 'non_sellable',
-          confidence: 'HIGH',
-          resolution_source: 'worksheet_name',
-          resolution_rule: 'negative_sheet_signal',
-          is_status_conflict: false,
-          status_conflict_reason: null,
-          evidence
-        };
-      }
-      // Cautious Domain Category Fallback: only recognized active inventory categories fallback to sellable
-      if (isDomainCategorySheet(sheetVal)) {
-        return {
-          status: 'sellable',
-          confidence: 'MEDIUM',
-          resolution_source: 'domain_sheet',
-          resolution_rule: 'domain_sheet_fallback',
-          is_status_conflict: false,
-          status_conflict_reason: null,
-          evidence
-        };
-      }
+    if (isSheetSellable(sheetVal)) {
+      return {
+        status: 'sellable',
+        confidence: 'HIGH',
+        resolution_source: 'sheet_context',
+        resolution_rule: 'sheet_context_sellable',
+        is_status_conflict: false,
+        status_conflict_reason: null,
+        evidence
+      };
     }
 
-    // Priority 8: Fallback Unknown (F)
+    // ══ STEP 4: Sheet context is unclear / neutral -> Default to Saleable ══
     return {
-      status: 'unknown',
-      confidence: 'LOW',
-      resolution_source: 'fallback',
-      resolution_rule: 'no_explicit_signals',
+      status: 'sellable',
+      confidence: 'MEDIUM',
+      resolution_source: 'default_fallback',
+      resolution_rule: 'default_sellable',
       is_status_conflict: false,
       status_conflict_reason: null,
       evidence
@@ -447,9 +278,9 @@ App.InventoryStatusResolver = (() => {
     return detailed.status;
   }
 
-  /**
-   * Aggregate entire dataset with strict mathematical reconciliation.
-   */
+  /* ------------------------------------------------------------
+     SECTION 5: DATASET-LEVEL AGGREGATION & RECONCILIATION
+     ------------------------------------------------------------ */
   function resolveDataset(records) {
     if (!records || !records.length) {
       return {
