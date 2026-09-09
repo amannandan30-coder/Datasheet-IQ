@@ -11,7 +11,7 @@ App.Categorizer = (() => {
   /* ── Category → Subcategory → keyword rules ──────────────── */
   const CATEGORY_RULES = {
     'Grocery': {
-      icon: '🛒',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
       color: '#f59e0b',
       subcategories: {
         'General Staples': { kw: ['staple', 'grocery', 'food'] },
@@ -41,7 +41,7 @@ App.Categorizer = (() => {
       }
     },
     'Cleaning Essentials': {
-      icon: '🧹',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
       color: '#10b981',
       subcategories: {
         'Detergents & Laundry': { kw: ['detergent', 'washing powder', 'laundry', 'surf', 'tide', 'ariel', 'rin', 'fena', 'ghadi', 'vim bar', 'washing liquid', 'fabric'] },
@@ -54,7 +54,7 @@ App.Categorizer = (() => {
       }
     },
     'Electronics & Electricals': {
-      icon: '⚡',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
       color: '#6366f1',
       subcategories: {
         'Lighting': { kw: ['\\bbulb\\b', '\\bbulbs\\b', '\\bled\\b', '\\bbatten\\b', 'spotlight', 'lantern', 'torch', 'lamp', 'cfl', 'tubelight', 'rice light', 'string light', 'fairy light'] },
@@ -68,7 +68,7 @@ App.Categorizer = (() => {
       }
     },
     'Home Care': {
-      icon: '🏠',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
       color: '#38bdf8',
       subcategories: {
         'Plastic Containers': { kw: ['container', 'box', 'tub', 'jar', 'storage', 'tupperware', 'milton', 'cello'] },
@@ -79,7 +79,7 @@ App.Categorizer = (() => {
       }
     },
     'Toys & Games': {
-      icon: '🧸',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg>',
       color: '#a78bfa',
       subcategories: {
         'Board Games': { kw: ['board game', 'chess', 'ludo', 'carrom', 'monopoly', 'puzzle', 'jenga'] },
@@ -90,7 +90,7 @@ App.Categorizer = (() => {
       }
     },
     'Personal Care': {
-      icon: '💄',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
       color: '#fb923c',
       subcategories: {
         'Skin Care': { kw: ['moisturizer', 'cream', 'lotion', 'sunscreen', 'face wash', 'cleanser', 'toner', 'serum', 'lipstick', 'lip', 'gloss', 'kajal', 'eyeliner', 'mascara', 'compact', 'foundation', 'nail polish', 'cosmetics', 'sugar pop', 'tea tree', 'hair removal', 'wax'] },
@@ -102,7 +102,7 @@ App.Categorizer = (() => {
       }
     },
     'Stationery & Office': {
-      icon: '📝',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
       color: '#34d399',
       subcategories: {
         'Writing': { kw: ['pen', 'pencil', 'marker', 'highlighter', 'gel pen', 'ballpoint'] },
@@ -111,7 +111,7 @@ App.Categorizer = (() => {
       }
     },
     'Food & Beverages': {
-      icon: '🍽️',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>',
       color: '#f59e0b',
       subcategories: {
         'Packaged Foods': { kw: ['packaged', 'ready to eat', 'instant', 'frozen', 'canned'] },
@@ -119,7 +119,7 @@ App.Categorizer = (() => {
       }
     },
     'Automotive': {
-      icon: '🚗',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
       color: '#ef4444',
       subcategories: {
         'Engine & Oils': { kw: ['engine oil', 'motor oil', 'lubricant', '20w', 'coolant', 'oil', 'filter', 'spark plug', 'gear oil'] },
@@ -129,7 +129,7 @@ App.Categorizer = (() => {
       }
     },
     'Apparel': {
-      icon: '👕',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
       color: '#ec4899',
       subcategories: {
         'Topwear': { kw: ['t-shirt', 'shirt', 'top', 'tshirt', 'hoodie', 'jacket', 'sweater'] },
@@ -140,7 +140,7 @@ App.Categorizer = (() => {
       }
     },
     'Industrial': {
-      icon: '🏭',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
       color: '#64748b',
       subcategories: {
         'Machinery': { kw: ['machine', 'sifter', 'press', 'expeller', 'cleaner', 'generator'] },
@@ -149,7 +149,7 @@ App.Categorizer = (() => {
       }
     },
     'Tools': {
-      icon: '🔧',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
       color: '#eab308',
       subcategories: {
         'Power Tools': { kw: ['drill', 'saw', 'grinder', 'sander', 'rotary', 'cordless'] },
@@ -159,7 +159,7 @@ App.Categorizer = (() => {
       }
     },
     'Furniture': {
-      icon: '🪑',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
       color: '#8b5cf6',
       subcategories: {
         'Seating': { kw: ['chair', 'sofa', 'recliner', 'stool', 'bench', 'office chair'] },
@@ -169,7 +169,7 @@ App.Categorizer = (() => {
       }
     },
     'Books': {
-      icon: '📚',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
       color: '#06b6d4',
       subcategories: {
         'Fiction': { kw: ['novel', 'fiction', 'story', 'classic'] },
@@ -178,7 +178,7 @@ App.Categorizer = (() => {
       }
     },
     'Sports': {
-      icon: '⚽',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20M2 12a14.5 14.5 0 0 0 20 0"/></svg>',
       color: '#10b981',
       subcategories: {
         'Fitness & Gym': { kw: ['dumbbell', 'gym', 'yoga', 'protein', 'fitness'] },
@@ -187,7 +187,7 @@ App.Categorizer = (() => {
       }
     },
     'Sports Nutrition': {
-      icon: '🏋️',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
       color: '#06b6d4',
       subcategories: {
         'Protein & Workout Supplements': { kw: ['whey', 'protein powder', 'mass gainer', 'creatine', 'bcaa', 'pre-workout', 'workout supplement', 'glutamine', 'casein', 'isolate protein', 'plant protein', 'sports nutrition', 'muscleblaze', 'optimum nutrition', 'myprotein', 'isopure', 'as-it-is', 'asitis', 'gnc', 'creamp'] },
@@ -195,7 +195,7 @@ App.Categorizer = (() => {
       }
     },
     'Other / Uncategorized': {
-      icon: '📦',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
       color: '#64748b',
       subcategories: {
         'General': { kw: [] }
@@ -236,7 +236,7 @@ App.Categorizer = (() => {
   };
 
   const DEFAULT_CATEGORY = {
-    icon: '📦',
+    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
     color: '#64748b',
     subcategories: { 'General': { kw: [] } }
   };
@@ -283,7 +283,7 @@ App.Categorizer = (() => {
       }
       return {
         normalized_category: mCat,
-        category_icon: cfg.icon || '📦',
+        category_icon: cfg.icon || '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
         category_color: cfg.color || '#64748b',
         subcategory: sCat || 'General',
         subcategory_confidence: conf,
@@ -696,7 +696,7 @@ App.Categorizer = (() => {
 
     return {
       normalized_category: mainCat,
-      category_icon: catCfg.icon || '📦',
+      category_icon: catCfg.icon || '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
       category_color: catCfg.color || '#64748b',
       subcategory: subCat,
       subcategory_confidence: confidence,

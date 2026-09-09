@@ -10,5 +10,8 @@
   },
   "dependencies": {
     "puppeteer-core": "^25.9.0"
+  },
+  "devDependencies": {
+    "xlsx": "^0.18.5"
   }
 }

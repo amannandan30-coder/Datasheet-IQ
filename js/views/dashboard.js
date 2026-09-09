@@ -99,8 +99,8 @@ App.Views.Dashboard = (() => {
           <div class="page-sub">${dataset.filename} · ${App.Fmt.number(records.length)} records · ${App.Fmt.date(dataset.uploadedAt)}</div>
         </div>
         <div class="flex gap-8">
-          ${dqIssues.length ? `<button class="btn btn-secondary" onclick="App.Router.go('quality')"><span>⚠️</span> ${dqIssues.length} Issues</button>` : ''}
-          ${pendingSugg.length ? `<button class="btn btn-secondary" onclick="App.Router.go('suggestions')"><span>🔀</span> ${pendingSugg.length} Merge Suggestions</button>` : ''}
+          ${dqIssues.length ? `<button class="btn btn-secondary" onclick="App.Router.go('quality')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> ${dqIssues.length} Issues</button>` : ''}
+          ${pendingSugg.length ? `<button class="btn btn-secondary" onclick="App.Router.go('suggestions')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M6 21V9a9 9 0 0 0 9 9"></path></svg> ${pendingSugg.length} Merge Suggestions</button>` : ''}
         </div>
       </div>
     `);
@@ -114,12 +114,12 @@ App.Views.Dashboard = (() => {
     /* ── KPI Cards ───────────────────────────────────────── */
     const kpiHtml = `
       <div class="kpi-grid mb-24" id="kpi-grid">
-        ${kpiCard('TOTAL SKUS',    App.Fmt.number(kpis.total_skus),  'Unique product families', '📦', '#6366f1')}
-        ${kpiCard('TOTAL UNITS',   App.Fmt.number(kpis.total_units), 'Across all warehouses',   '📊', '#10b981')}
-        ${kpiCard('TOTAL VALUE',   App.Fmt.currency(kpis.total_value), 'MRP-based inventory value','💰','#f59e0b')}
-        ${kpiCard('TOTAL WEIGHT',  App.Fmt.weight(kpis.total_weight), 'Gross weight',            '⚖️', '#38bdf8')}
-        ${kpiCard('DAMAGED',       App.Fmt.currency(kpis.damaged_value), 'Damaged inventory value','❌','#ef4444')}
-        ${kpiCard('NEAR EXPIRY',   App.Fmt.currency(kpis.near_expiry_value),'Near expiry value','⏰','#f59e0b')}
+        ${kpiCard('TOTAL SKUS',    App.Fmt.number(kpis.total_skus),  'Unique product families', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', '#6366f1')}
+        ${kpiCard('TOTAL UNITS',   App.Fmt.number(kpis.total_units), 'Across all warehouses',   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>', '#10b981')}
+        ${kpiCard('TOTAL VALUE',   App.Fmt.currency(kpis.total_value), 'MRP-based inventory value','<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="18"></line></svg>', '#f59e0b')}
+        ${kpiCard('TOTAL WEIGHT',  App.Fmt.weight(kpis.total_weight), 'Gross weight',            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><path d="M6 7l6-4 6 4"></path><path d="M4 14h4l-2 5z"></path><path d="M16 14h4l-2 5z"></path></svg>', '#38bdf8')}
+        ${kpiCard('DAMAGED',       App.Fmt.currency(kpis.damaged_value), 'Damaged inventory value','<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>', '#ef4444')}
+        ${kpiCard('NEAR EXPIRY',   App.Fmt.currency(kpis.near_expiry_value),'Near expiry value','<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>', '#f59e0b')}
       </div>`;
     container.insertAdjacentHTML('beforeend', kpiHtml);
 
@@ -129,7 +129,7 @@ App.Views.Dashboard = (() => {
         <div class="card mb-24 source-reconciliation-card">
           <div class="flex items-center justify-between mb-14">
             <div class="font-bold text-sm flex items-center gap-8 text-primary">
-              <span style="font-size:16px">📋</span> Source File Reconciliation
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Source File Reconciliation
             </div>
             <button class="btn btn-xs btn-secondary" onclick="App.Router.go('quality')">Inspect Unresolved Records</button>
           </div>
@@ -163,7 +163,7 @@ App.Views.Dashboard = (() => {
         <div class="card mb-24 inventory-status-card">
           <div class="flex items-center justify-between mb-16">
             <div class="font-bold text-sm flex items-center gap-8 text-primary">
-              <span style="font-size:16px">📦</span> Inventory Status
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg> Inventory Status
             </div>
             <div class="text-xs text-muted font-medium">From active workbook</div>
           </div>
@@ -329,7 +329,7 @@ App.Views.Dashboard = (() => {
     container.insertAdjacentHTML('beforeend', `
       <div class="section-header">
         <div class="section-title">Top Brands by Value</div>
-        <button class="btn btn-sm btn-ghost" onclick="App.Router.go('brands')">View All →</button>
+        <button class="btn btn-sm btn-ghost" onclick="App.Router.go('brands')">View All &rarr;</button>
       </div>
       <div class="card mb-24" id="top-brands-list"></div>
     `);

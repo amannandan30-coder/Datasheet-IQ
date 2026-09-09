@@ -11,12 +11,26 @@ App.Views.CategoryDetail = (() => {
   let _activeScopeMode = 'all'; // 'all' | 'business' | 'delta_canonical' | 'delta_biz'
   let _currentRecon = null;
 
+  const targetIconSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>';
+  const allCanonicalSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;flex-shrink:0"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>';
+  const businessScopeSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>';
+  const extraRowsSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;flex-shrink:0"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
+  const missingRowsSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+  const docIconSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
+  const skuStatSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>';
+  const unitsStatSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>';
+  const valStatSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="18"></line></svg>';
+  const scopeStatSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>';
+  const weightStatSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"></path></svg>';
+  const brandStatSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path></svg>';
+  const avgStatSvg = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>';
+
   async function render(container, params, dataset_id) {
     const catName = decodeURIComponent(params.name || '');
     if (!dataset_id) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">📭</div>
+          <div class="empty-state-icon" style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" style="opacity:0.4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
           <div class="font-bold text-base mb-8">No Dataset Loaded</div>
           <div class="text-sm text-muted mb-16">Please upload or select an inventory spreadsheet to view category details.</div>
           <button class="btn btn-primary" onclick="App.UI.showUploadModal()"><span>📂</span> Upload Spreadsheet</button>
@@ -32,7 +46,7 @@ App.Views.CategoryDetail = (() => {
     if (!catRecords.length) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">📭</div>
+          <div class="empty-state-icon" style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" style="opacity:0.4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
           <div class="font-bold text-base mb-8">No Records Found</div>
           <div class="text-sm text-muted mb-16">No records found for category "${catName}" in the active dataset.</div>
           <button class="btn btn-secondary" onclick="App.Router.go('dashboard')">Back to Dashboard</button>
@@ -98,17 +112,17 @@ App.Views.CategoryDetail = (() => {
           <div class="text-sm text-muted">Complete breakdown of inventory, brand share, and scope-aware reconciliation.</div>
         </div>
         <button class="btn btn-secondary" onclick="App.Router.go('dashboard')">
-          <span>←</span> Back to Dashboard
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to Dashboard
         </button>
       </div>
 
       <!-- Category KPIs (Canonical Totals) -->
       <div class="kpi-grid mb-24">
-        ${kpi('Total Value (Canonical)', App.Fmt.currency(totalValue), '💰', '#10b981')}
-        ${kpi('Total Units',            App.Fmt.number(totalUnits),   '📊', '#6366f1')}
-        ${kpi('Total Weight',           App.Fmt.weight(totalWeight),  '⚖️', '#38bdf8')}
-        ${kpi('Total SKUs',             App.Fmt.number(totalSKUs),    '📦', '#f59e0b')}
-        ${kpi('Active Brands',          App.Fmt.number(brandSet.size),'🏷️', '#a78bfa')}
+        ${kpi('Total Value (Canonical)', App.Fmt.currency(totalValue), '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="18"/></svg>', '#10b981')}
+        ${kpi('Total Units',            App.Fmt.number(totalUnits),   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>', '#6366f1')}
+        ${kpi('Total Weight',           App.Fmt.weight(totalWeight),  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"/></svg>', '#38bdf8')}
+        ${kpi('Total SKUs',             App.Fmt.number(totalSKUs),    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>', '#f59e0b')}
+        ${kpi('Active Brands',          App.Fmt.number(brandSet.size),'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', '#a78bfa')}
       </div>
 
       <!-- Scope-Aware Business Reconciliation Section -->
@@ -133,7 +147,9 @@ App.Views.CategoryDetail = (() => {
       <div id="subcat-summary" class="subcat-summary-panel mb-24">
         <div class="subcat-summary-header">
           <div class="subcat-summary-title" id="subcat-summary-title"></div>
-          <button class="subcat-summary-close" onclick="App.Views.CategoryDetail.closeSummary()">✕</button>
+          <button class="subcat-summary-close" onclick="App.Views.CategoryDetail.closeSummary()" title="Close summary" aria-label="Close summary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
         <div class="subcat-summary-grid" id="subcat-summary-grid"></div>
       </div>
@@ -191,40 +207,105 @@ App.Views.CategoryDetail = (() => {
 
         if (configuredBuckets.length > 0) {
           reconWrap.innerHTML = `
-            <div class="card p-20" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(16, 185, 129, 0.06) 100%); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px;">
-              <div class="flex items-center justify-between mb-12 flex-wrap gap-8">
-                <div class="flex items-center gap-10">
-                  <span style="font-size: 20px;">🎯</span>
-                  <div>
-                    <div class="font-bold text-base flex items-center gap-8">
-                      <span>Business Reporting Scopes in ${escHtml(catName)}</span>
-                      <span class="badge badge-primary">${configuredBuckets.length} Configured Buckets</span>
-                    </div>
-                    <div class="text-xs text-muted">Select any bucket or subcategory below to inspect exact source-row set reconciliation and delta metrics.</div>
-                  </div>
+        <div class="card p-18 scope-recon-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%); border: 1px solid rgba(99, 102, 241, 0.18); border-radius: 12px; margin-bottom: 16px;">
+          <div class="flex items-center justify-between mb-14 flex-wrap gap-8">
+            <div class="flex items-center gap-10">
+              <span class="flex items-center text-primary" style="background: rgba(99, 102, 241, 0.12); padding: 6px; border-radius: 8px;">${targetIconSvg}</span>
+              <div>
+                <div class="font-bold text-sm flex items-center gap-8 text-primary">
+                  <span>Scope-Aware Business Reconciliation</span>
+                  <span class="badge badge-primary" style="font-size: 11px; padding: 2px 8px;">${escHtml(recon.bucketName)}</span>
+                  <span class="badge badge-neutral" style="font-size: 11px; padding: 2px 8px;">${escHtml(recon.scopeLabel)}</span>
                 </div>
-              </div>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
-                ${configuredBuckets.map(b => `
-                  <div class="p-10 rounded cursor-pointer" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.15s ease;" onclick="App.Views.CategoryDetail.showSubcat('${escHtml(b.bucketName)}')">
-                    <div class="flex items-center justify-between mb-4">
-                      <span class="font-semibold text-sm" style="color: #6366f1;">${escHtml(b.bucketName)}</span>
-                      <span class="badge badge-neutral" style="font-size: 10px;">${escHtml(b.scopeLabel)}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-xs">
-                      <span class="text-muted">Target: <strong style="color: #10b981;">${App.Fmt.currency(b.targetValue)}</strong></span>
-                      <span class="text-muted">Scoped: <strong>${b.expectedRows} rows</strong></span>
-                    </div>
-                  </div>
-                `).join('')}
+                <div class="text-xs text-muted" style="margin-top: 2px;">${escHtml(recon.scopeDescription)} &mdash; ${escHtml(recon.profileName)}</div>
               </div>
             </div>
-          `;
-        } else {
+            <div class="flex items-center gap-8">
+              <span class="text-xs font-semibold px-8 py-4 rounded" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25);">
+                Target Value: ${App.Fmt.currency(recon.targetValue)}
+              </span>
+            </div>
+          </div>
+
+          <!-- Comparative Scope Grid -->
+          <div class="recon-cards-grid mb-14" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+            <!-- Canonical Scope Card -->
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); display: flex; flex-direction: column; justify-content: space-between; min-height: 84px;">
+              <div class="text-xs text-muted font-semibold uppercase" style="font-size: 10.5px; letter-spacing: 0.03em;">Actual Canonical Inventory</div>
+              <div class="text-lg font-bold" style="color: #818cf8; margin: 3px 0;">${App.Fmt.currency(recon.canonical.value)}</div>
+              <div class="text-xs text-muted" style="font-size: 11px;"><strong>${App.Fmt.number(recon.actualRows)}</strong> source rows &middot; <strong>${App.Fmt.number(recon.canonical.units)}</strong> units</div>
+            </div>
+
+            <!-- Business Reference Scope Card -->
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); display: flex; flex-direction: column; justify-content: space-between; min-height: 84px;">
+              <div class="text-xs font-semibold uppercase" style="color: #10b981; font-size: 10.5px; letter-spacing: 0.03em;">Expected Business Scope</div>
+              <div class="text-lg font-bold" style="color: #10b981; margin: 3px 0;">${App.Fmt.currency(recon.business.value)}</div>
+              <div class="text-xs text-muted" style="font-size: 11px;"><strong>${App.Fmt.number(recon.expectedRows)}</strong> scoped rows &middot; <strong>${App.Fmt.number(recon.business.units)}</strong> units</div>
+            </div>
+
+            <!-- Value & Units Delta Card -->
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); display: flex; flex-direction: column; justify-content: space-between; min-height: 84px;">
+              <div class="text-xs font-semibold uppercase" style="color: #f59e0b; font-size: 10.5px; letter-spacing: 0.03em;">Scope Delta</div>
+              <div class="text-lg font-bold" style="color: ${deltaVal === 0 ? '#10b981' : '#f59e0b'}; margin: 3px 0;">
+                ${deltaVal > 0 ? '+' : ''}${App.Fmt.currency(deltaVal)}
+              </div>
+              <div class="text-xs text-muted" style="font-size: 11px;">Units &Delta;: <strong>${recon.unitsDelta > 0 ? '+' : ''}${recon.unitsDelta}</strong> &middot; Rows &Delta;: <strong>${deltaRows > 0 ? '+' : ''}${deltaRows}</strong></div>
+            </div>
+
+            <!-- Exact Overlap / Intersection Card -->
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); display: flex; flex-direction: column; justify-content: space-between; min-height: 84px;">
+              <div class="text-xs font-semibold uppercase" style="color: #38bdf8; font-size: 10.5px; letter-spacing: 0.03em;">Exact Row Overlap</div>
+              <div class="text-lg font-bold" style="color: #38bdf8; margin: 3px 0;">${App.Fmt.currency(recon.reconciliation.intersectionValue)}</div>
+              <div class="text-xs text-muted" style="font-size: 11px;"><strong>${recon.reconciliation.intersectionCount}</strong> rows in both scopes</div>
+            </div>
+
+            <!-- Missing & Extra Rows Breakdown Card -->
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(167, 139, 250, 0.05); border: 1px solid rgba(167, 139, 250, 0.2); display: flex; flex-direction: column; justify-content: space-between; min-height: 84px;">
+              <div class="text-xs font-semibold uppercase" style="color: #a78bfa; font-size: 10.5px; letter-spacing: 0.03em;">Set Differences</div>
+              <div class="text-xs font-semibold" style="margin-top: 3px;">
+                <span style="color: #f59e0b;">Extra Rows: <strong>${recon.extraRows}</strong></span> (${App.Fmt.currency(recon.reconciliation.canonicalOnlyValue)})
+              </div>
+              <div class="text-xs font-semibold" style="margin-top: 2px;">
+                <span style="color: #ec4899;">Missing Rows: <strong>${recon.missingRows}</strong></span> (${App.Fmt.currency(recon.reconciliation.businessOnlyValue)})
+              </div>
+            </div>
+          </div>
+
+          <!-- Scope Row Set Filter Tabs -->
+          <div class="flex items-center justify-between flex-wrap gap-8 pt-10" style="border-top: 1px solid rgba(255, 255, 255, 0.06);">
+            <div class="flex items-center gap-6 flex-wrap">
+              <span class="text-xs font-semibold text-muted mr-4">View Scope:</span>
+              <button class="btn btn-xs scope-filter-tab ${_activeScopeMode === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('all')">
+                ${allCanonicalSvg} All Canonical (${recon.actualRows})
+              </button>
+              <button class="btn btn-xs scope-filter-tab ${_activeScopeMode === 'business' ? 'btn-success' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('business')">
+                ${businessScopeSvg} Business Scope (${recon.expectedRows})
+              </button>
+              ${recon.extraRows > 0 ? `
+                <button class="btn btn-xs scope-filter-tab ${_activeScopeMode === 'delta_canonical' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_canonical')">
+                  ${extraRowsSvg} Extra Canonical Rows (${recon.extraRows})
+                </button>
+              ` : ''}
+              ${recon.missingRows > 0 ? `
+                <button class="btn btn-xs scope-filter-tab ${_activeScopeMode === 'delta_biz' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_biz')">
+                  ${missingRowsSvg} Missing / Business-Only (${recon.missingRows})
+                </button>
+              ` : ''}
+            </div>
+            <div class="text-xs text-muted">
+              ${_activeScopeMode === 'business' ? `Displaying exact ${recon.expectedRows} ${recon.scopeLabel} rows (${App.Fmt.currency(recon.business.value)})` : 
+                _activeScopeMode === 'delta_canonical' ? `Displaying ${recon.extraRows} extra rows present in Canonical but outside ${recon.scopeLabel}` :
+                _activeScopeMode === 'delta_biz' ? `Displaying ${recon.missingRows} missing rows mapped to ${recon.bucketName} in Business Profile` :
+                `Displaying independent Canonical Category inventory (${App.Fmt.currency(recon.canonical.value)})`}
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
           reconWrap.innerHTML = `
             <div class="card p-16" style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 12px;">
               <div class="flex items-center gap-12">
-                <span style="font-size: 20px;">ℹ️</span>
+                <span class="flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
                 <div>
                   <div class="font-semibold text-sm">No business reporting scope configured</div>
                   <div class="text-xs text-muted">Category "${escHtml(catName)}" operates under the Standard Canonical Taxonomy with full inventory visibility across all sheets.</div>
@@ -244,7 +325,7 @@ App.Views.CategoryDetail = (() => {
         reconWrap.innerHTML = `
           <div class="card p-16" style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 12px;">
             <div class="flex items-center gap-12">
-              <span style="font-size: 20px;">ℹ️</span>
+              <span class="flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
               <div>
                 <div class="font-semibold text-sm">No business reporting scope configured</div>
                 <div class="text-xs text-muted">This subcategory ("${escHtml(scName)}") operates under the Standard Canonical Taxonomy with full inventory visibility across all sheets.</div>
@@ -255,92 +336,92 @@ App.Views.CategoryDetail = (() => {
         return;
       }
 
-      const deltaVal = recon.valueDelta;
+            const deltaVal = recon.valueDelta;
       const deltaRows = recon.actualRows - recon.expectedRows;
 
       reconWrap.innerHTML = `
-        <div class="card p-20" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px;">
-          <div class="flex items-center justify-between mb-16 flex-wrap gap-8">
+        <div class="card p-18 scope-recon-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.04) 0%, rgba(16, 185, 129, 0.04) 100%); border: 1px solid rgba(99, 102, 241, 0.16); border-radius: 12px; margin-bottom: 16px;">
+          <div class="flex items-center justify-between mb-12 flex-wrap gap-8">
             <div class="flex items-center gap-10">
-              <span style="font-size: 20px;">🎯</span>
+              <span class="flex items-center text-primary" style="background: rgba(99, 102, 241, 0.12); padding: 6px; border-radius: 8px;">${targetIconSvg}</span>
               <div>
-                <div class="font-bold text-base flex items-center gap-8">
+                <div class="font-bold text-sm flex items-center gap-8 text-primary">
                   <span>Scope-Aware Business Reconciliation</span>
-                  <span class="badge badge-primary">${escHtml(recon.bucketName)}</span>
-                  <span class="badge badge-neutral">${escHtml(recon.scopeLabel)}</span>
+                  <span class="badge badge-primary" style="font-size: 11px; padding: 2px 8px;">${escHtml(recon.bucketName)}</span>
+                  <span class="badge badge-neutral" style="font-size: 11px; padding: 2px 8px;">${escHtml(recon.scopeLabel)}</span>
                 </div>
-                <div class="text-xs text-muted">${escHtml(recon.scopeDescription)} — ${escHtml(recon.profileName)}</div>
+                <div class="text-xs text-muted" style="margin-top: 2px;">${escHtml(recon.scopeDescription)} &mdash; ${escHtml(recon.profileName)}</div>
               </div>
             </div>
             <div class="flex items-center gap-8">
-              <span class="text-xs font-semibold px-8 py-4 rounded" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+              <span class="text-xs font-semibold px-8 py-4 rounded" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25);">
                 Target Value: ${App.Fmt.currency(recon.targetValue)}
               </span>
             </div>
           </div>
 
           <!-- Comparative Scope Grid -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;" class="mb-16">
+          <div class="recon-cards-grid mb-12" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
             <!-- Canonical Scope Card -->
-            <div class="p-12 rounded" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);">
-              <div class="text-xs text-muted mb-4 font-semibold uppercase">Actual Canonical Inventory</div>
-              <div class="text-xl font-bold" style="color: #6366f1;">${App.Fmt.currency(recon.canonical.value)}</div>
-              <div class="text-xs text-muted mt-2"><strong>${App.Fmt.number(recon.actualRows)}</strong> source rows | <strong>${App.Fmt.number(recon.canonical.units)}</strong> units</div>
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06); display: flex; flex-direction: column; justify-content: space-between; min-height: 82px;">
+              <div class="text-xs text-muted font-semibold uppercase" style="font-size: 10.5px; letter-spacing: 0.03em;">Actual Canonical Inventory</div>
+              <div class="text-lg font-bold" style="color: #818cf8; margin: 2px 0;">${App.Fmt.currency(recon.canonical.value)}</div>
+              <div class="text-xs text-muted" style="font-size: 11px;"><strong>${App.Fmt.number(recon.actualRows)}</strong> source rows &middot; <strong>${App.Fmt.number(recon.canonical.units)}</strong> units</div>
             </div>
 
             <!-- Business Reference Scope Card -->
-            <div class="p-12 rounded" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25);">
-              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #10b981;">Expected Business Scope</div>
-              <div class="text-xl font-bold" style="color: #10b981;">${App.Fmt.currency(recon.business.value)}</div>
-              <div class="text-xs text-muted mt-2"><strong>${App.Fmt.number(recon.expectedRows)}</strong> scoped rows | <strong>${App.Fmt.number(recon.business.units)}</strong> units</div>
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.18); display: flex; flex-direction: column; justify-content: space-between; min-height: 82px;">
+              <div class="text-xs font-semibold uppercase" style="color: #10b981; font-size: 10.5px; letter-spacing: 0.03em;">Expected Business Scope</div>
+              <div class="text-lg font-bold" style="color: #10b981; margin: 2px 0;">${App.Fmt.currency(recon.business.value)}</div>
+              <div class="text-xs text-muted" style="font-size: 11px;"><strong>${App.Fmt.number(recon.expectedRows)}</strong> scoped rows &middot; <strong>${App.Fmt.number(recon.business.units)}</strong> units</div>
             </div>
 
             <!-- Value & Units Delta Card -->
-            <div class="p-12 rounded" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25);">
-              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #f59e0b;">Scope Delta</div>
-              <div class="text-xl font-bold" style="color: ${deltaVal === 0 ? '#10b981' : '#f59e0b'};">
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.18); display: flex; flex-direction: column; justify-content: space-between; min-height: 82px;">
+              <div class="text-xs font-semibold uppercase" style="color: #f59e0b; font-size: 10.5px; letter-spacing: 0.03em;">Scope Delta</div>
+              <div class="text-lg font-bold" style="color: ${deltaVal === 0 ? '#10b981' : '#f59e0b'}; margin: 2px 0;">
                 ${deltaVal > 0 ? '+' : ''}${App.Fmt.currency(deltaVal)}
               </div>
-              <div class="text-xs text-muted mt-2">Units Δ: <strong>${recon.unitsDelta > 0 ? '+' : ''}${recon.unitsDelta}</strong> | Rows Δ: <strong>${deltaRows > 0 ? '+' : ''}${deltaRows}</strong></div>
+              <div class="text-xs text-muted" style="font-size: 11px;">Units &Delta;: <strong>${recon.unitsDelta > 0 ? '+' : ''}${recon.unitsDelta}</strong> &middot; Rows &Delta;: <strong>${deltaRows > 0 ? '+' : ''}${deltaRows}</strong></div>
             </div>
 
             <!-- Exact Overlap / Intersection Card -->
-            <div class="p-12 rounded" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25);">
-              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #38bdf8;">Exact Row Overlap</div>
-              <div class="text-xl font-bold" style="color: #38bdf8;">${App.Fmt.currency(recon.reconciliation.intersectionValue)}</div>
-              <div class="text-xs text-muted mt-2"><strong>${recon.reconciliation.intersectionCount}</strong> rows in both scopes</div>
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.18); display: flex; flex-direction: column; justify-content: space-between; min-height: 82px;">
+              <div class="text-xs font-semibold uppercase" style="color: #38bdf8; font-size: 10.5px; letter-spacing: 0.03em;">Exact Row Overlap</div>
+              <div class="text-lg font-bold" style="color: #38bdf8; margin: 2px 0;">${App.Fmt.currency(recon.reconciliation.intersectionValue)}</div>
+              <div class="text-xs text-muted" style="font-size: 11px;"><strong>${recon.reconciliation.intersectionCount}</strong> rows in both scopes</div>
             </div>
 
             <!-- Missing & Extra Rows Breakdown Card -->
-            <div class="p-12 rounded" style="background: rgba(167, 139, 250, 0.08); border: 1px solid rgba(167, 139, 250, 0.25);">
-              <div class="text-xs text-muted mb-4 font-semibold uppercase" style="color: #a78bfa;">Set Differences</div>
-              <div class="text-sm font-semibold mt-4">
+            <div class="p-12 rounded recon-kpi-card" style="background: rgba(167, 139, 250, 0.04); border: 1px solid rgba(167, 139, 250, 0.18); display: flex; flex-direction: column; justify-content: space-between; min-height: 82px;">
+              <div class="text-xs font-semibold uppercase" style="color: #a78bfa; font-size: 10.5px; letter-spacing: 0.03em;">Set Differences</div>
+              <div class="text-xs font-semibold" style="margin-top: 2px;">
                 <span style="color: #f59e0b;">Extra Rows: <strong>${recon.extraRows}</strong></span> (${App.Fmt.currency(recon.reconciliation.canonicalOnlyValue)})
               </div>
-              <div class="text-sm font-semibold mt-4">
+              <div class="text-xs font-semibold" style="margin-top: 1px;">
                 <span style="color: #ec4899;">Missing Rows: <strong>${recon.missingRows}</strong></span> (${App.Fmt.currency(recon.reconciliation.businessOnlyValue)})
               </div>
             </div>
           </div>
 
           <!-- Scope Row Set Filter Tabs -->
-          <div class="flex items-center justify-between flex-wrap gap-8 pt-12" style="border-top: 1px solid rgba(255, 255, 255, 0.08);">
+          <div class="flex items-center justify-between flex-wrap gap-8 pt-10" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
             <div class="flex items-center gap-6 flex-wrap">
               <span class="text-xs font-semibold text-muted mr-4">View Scope:</span>
-              <button class="btn btn-xs ${_activeScopeMode === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('all')">
-                📊 All Canonical (${recon.actualRows})
+              <button class="btn btn-xs scope-filter-tab ${_activeScopeMode === 'all' ? 'btn-primary' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('all')">
+                ${allCanonicalSvg} All Canonical (${recon.actualRows})
               </button>
-              <button class="btn btn-xs ${_activeScopeMode === 'business' ? 'btn-success' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('business')">
-                🎯 Business Scope (${recon.expectedRows})
+              <button class="btn btn-xs scope-filter-tab ${_activeScopeMode === 'business' ? 'btn-success' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('business')">
+                ${businessScopeSvg} Business Scope (${recon.expectedRows})
               </button>
               ${recon.extraRows > 0 ? `
-                <button class="btn btn-xs ${_activeScopeMode === 'delta_canonical' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_canonical')">
-                  🔵 Extra Canonical Rows (${recon.extraRows})
+                <button class="btn btn-xs scope-filter-tab ${_activeScopeMode === 'delta_canonical' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_canonical')">
+                  ${extraRowsSvg} Extra Canonical Rows (${recon.extraRows})
                 </button>
               ` : ''}
               ${recon.missingRows > 0 ? `
-                <button class="btn btn-xs ${_activeScopeMode === 'delta_biz' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_biz')">
-                  🟠 Missing / Business-Only (${recon.missingRows})
+                <button class="btn btn-xs scope-filter-tab ${_activeScopeMode === 'delta_biz' ? 'btn-warning' : 'btn-secondary'}" onclick="App.Views.CategoryDetail.setScopeMode('delta_biz')">
+                  ${missingRowsSvg} Missing / Business-Only (${recon.missingRows})
                 </button>
               ` : ''}
             </div>
@@ -452,13 +533,13 @@ App.Views.CategoryDetail = (() => {
     const valuePct = totalValue ? ((scData.value / totalValue) * 100).toFixed(1) : '0';
     const unitsPct = totalUnits ? ((scData.qty / totalUnits) * 100).toFixed(1) : '0';
 
-    titleEl.innerHTML = `<span class="subcat-summary-icon">📋</span> ${escHtml(scData.name)}`;
+    titleEl.innerHTML = `<span class="subcat-summary-icon" style="display:inline-flex;align-items:center;color:var(--primary)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></span> ${escHtml(scData.name)}`;
 
     let businessScopeCardHtml = '';
     if (recon && recon.hasBusinessScope) {
       businessScopeCardHtml = `
         <div class="subcat-stat-card" style="--stat-color: #ec4899">
-          <div class="subcat-stat-icon">🎯</div>
+          <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></div>
           <div class="subcat-stat-info">
             <div class="subcat-stat-value">${App.Fmt.currency(recon.business.value)}</div>
             <div class="subcat-stat-label">Business Scope (${recon.scopeLabel})</div>
@@ -469,21 +550,21 @@ App.Views.CategoryDetail = (() => {
 
     gridEl.innerHTML = `
       <div class="subcat-stat-card" style="--stat-color: #6366f1">
-        <div class="subcat-stat-icon">📦</div>
+        <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></div>
         <div class="subcat-stat-info">
           <div class="subcat-stat-value">${App.Fmt.number(skuCount)}</div>
           <div class="subcat-stat-label">SKUs</div>
         </div>
       </div>
       <div class="subcat-stat-card" style="--stat-color: #10b981">
-        <div class="subcat-stat-icon">📊</div>
+        <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></div>
         <div class="subcat-stat-info">
           <div class="subcat-stat-value">${App.Fmt.number(scData.qty)}</div>
           <div class="subcat-stat-label">Units <span class="subcat-stat-pct">(${unitsPct}%)</span></div>
         </div>
       </div>
       <div class="subcat-stat-card" style="--stat-color: #f59e0b">
-        <div class="subcat-stat-icon">💰</div>
+        <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="18"></line></svg></div>
         <div class="subcat-stat-info">
           <div class="subcat-stat-value">${App.Fmt.currency(scData.value)}</div>
           <div class="subcat-stat-label">Canonical Value <span class="subcat-stat-pct">(${valuePct}%)</span></div>
@@ -491,23 +572,23 @@ App.Views.CategoryDetail = (() => {
       </div>
       ${businessScopeCardHtml}
       <div class="subcat-stat-card" style="--stat-color: #38bdf8">
-        <div class="subcat-stat-icon">⚖️</div>
+        <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"></path></svg></div>
         <div class="subcat-stat-info">
           <div class="subcat-stat-value">${App.Fmt.weight(scData.weight)}</div>
           <div class="subcat-stat-label">Weight</div>
         </div>
       </div>
       <div class="subcat-stat-card" style="--stat-color: #a78bfa">
-        <div class="subcat-stat-icon">🏷️</div>
+        <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path></svg></div>
         <div class="subcat-stat-info">
           <div class="subcat-stat-value">${App.Fmt.number(brandCount)}</div>
           <div class="subcat-stat-label">Brands</div>
         </div>
       </div>
       <div class="subcat-stat-card" style="--stat-color: #fb923c">
-        <div class="subcat-stat-info">💵</div>
+        <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg></div>
         <div class="subcat-stat-info">
-          <div class="subcat-stat-value">${scData.qty ? App.Fmt.currency(scData.value / scData.qty) : '—'}</div>
+          <div class="subcat-stat-value">${scData.qty ? App.Fmt.currency(scData.value / scData.qty) : '&mdash;'}</div>
           <div class="subcat-stat-label">Avg Value / Unit</div>
         </div>
       </div>
@@ -587,7 +668,7 @@ App.Views.CategoryDetail = (() => {
     });
 
     if (!brands.length) {
-      wrap.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div>No brands found in this scope</div></div>';
+      wrap.innerHTML = '<div class="empty-state"><div class="empty-state-icon" style="display:flex;justify-content:center;margin-bottom:8px"><svg width="36" height="36" style="opacity:0.4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div><div>No brands found in this scope</div></div>';
     }
   }
 

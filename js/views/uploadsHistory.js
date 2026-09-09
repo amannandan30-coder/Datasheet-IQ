@@ -57,8 +57,8 @@ App.Views.UploadsHistory = (() => {
         </div>
         <div class="upload-row-actions">
           ${!isActive ? `<button class="btn btn-sm btn-primary" onclick="App.UI.loadDataset('${ds.id}')">Load</button>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="App.UI.downloadReconciliation('${ds.id}')">📊 Reconciliation</button>
-          <button class="btn btn-sm btn-ghost" onclick="App.UI.deleteDataset('${ds.id}')">🗑️</button>
+          <button class="btn btn-sm btn-secondary" onclick="App.UI.downloadReconciliation('${ds.id}')" style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Reconciliation</button>
+          <button class="btn btn-sm btn-ghost" onclick="App.UI.deleteDataset('${ds.id}')" title="Delete Dataset" style="display:inline-flex;align-items:center;color:var(--danger)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
         </div>
       `;
       container.appendChild(el);
@@ -105,7 +105,7 @@ App.Views.InventoryTable = (() => {
           <div class="empty-state-icon">📭</div>
           <div class="font-bold text-base mb-8">No Dataset Loaded</div>
           <div class="text-sm text-muted mb-16">Please upload or select an inventory spreadsheet to view inventory records.</div>
-          <button class="btn btn-primary" onclick="App.UI.showUploadModal()"><span>📂</span> Upload Spreadsheet</button>
+          <button class="btn btn-primary" onclick="App.UI.showUploadModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Spreadsheet</button>
         </div>`;
       return;
     }
@@ -184,7 +184,7 @@ App.Views.InventoryTable = (() => {
           <span id="inv-page-info" style="font-size:13px;color:var(--text-muted)"></span>
           <div class="flex gap-8 items-center">
             <button class="btn btn-sm btn-secondary" onclick="prevPage()" id="inv-prev-btn">← Prev</button>
-            <button class="btn btn-sm btn-secondary" onclick="nextPage()" id="inv-next-btn">Next →</button>
+            <button class="btn btn-sm btn-secondary" onclick="nextPage()" id="inv-next-btn">Next &rarr;→</button>
           </div>
         </div>
       </div>

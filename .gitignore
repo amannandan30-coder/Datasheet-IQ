@@ -14,3 +14,18 @@ Thumbs.db
 # Large temporary archives
 *.zip
 *.mp4
+
+# Scratch and temporary audit files
+scratch_*
+*.json
+!package.json
+!package-lock.json
+*.csv
+*.txt
+!LICENSE
+!README.md
+*_cleaned*.xlsx
+TEST_*.xlsx
+AUDIT_*.xlsx
+INDEPENDENT_*.xlsx
+FORMULA_CELL_TEST.xlsx

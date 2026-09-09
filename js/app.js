@@ -1,8 +1,8 @@
-window.App = window.App || {};
+﻿window.App = window.App || {};
 console.log('[ROUTE-DIAG] app.js v3.3 ACTIVE | ' + new Date().toISOString());
 
 /* ============================================================
-   MAIN APP — Router + State + UI helpers
+   MAIN APP â€” Router + State + UI helpers
    ============================================================ */
 
 // Global timestamp baseline and Boot ID
@@ -53,7 +53,7 @@ App.State = {
   params: {},
 };
 
-/* ── Router ──────────────────────────────────────────────── */
+/* â”€â”€ Router â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 App.Router = {
   historyStack: [],
 
@@ -111,7 +111,7 @@ App.Router = {
   },
 };
 
-/* ── UI ──────────────────────────────────────────────────── */
+/* â”€â”€ UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 App.UI = {
 
   toggleMobileMenu() {
@@ -145,7 +145,7 @@ App.UI = {
     console.log(`[EDGE-LOOP] ${_appTs()} RENDER #${renderNum} START: route="${route}" hash="${window.location.hash}" dataset_id=${dataset_id}`);
     console.log(`[ROUTE-DIAG] RENDER_START #${renderNum} | route="${route}" | HASH="${window.location.hash}" | isAuthenticated=${isAuthenticated}`);
 
-    // ── FIREBASE AUTHENTICATION ROUTE GUARD ──────────────────
+    // â”€â”€ FIREBASE AUTHENTICATION ROUTE GUARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
     const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
 
@@ -157,7 +157,7 @@ App.UI = {
       main.innerHTML = `
         <div class="flex flex-col items-center justify-center" style="height:70vh">
           <div class="spinner mb-16" style="width:36px;height:36px"></div>
-          <div class="text-muted font-medium text-sm">Authenticating Liquidation IQ…</div>
+          <div class="text-muted font-medium text-sm">Authenticating Liquidation IQâ€¦</div>
         </div>`;
       return;
     }
@@ -227,6 +227,7 @@ App.UI = {
       case 'uploads':         await App.Views.UploadsHistory.render(main); break;
       case 'inventory':       await App.Views.InventoryTable.render(main, params, dataset_id); break;
       case 'suggestions':     await App.Views.DataQuality.render(main, params, dataset_id); break;
+      case 'clean-excel':    await App.Views.ExcelCleaner.render(main); break;
       case 'about':           await App.Views.About.render(main); break;
       default:                
         if (isAuthenticated) {
@@ -280,7 +281,7 @@ App.UI = {
 
     bc.innerHTML = crumbs.map((c,i) => {
       if (c.active) return `<span class="breadcrumb-item active">${c.label}</span>`;
-      return `<span class="breadcrumb-item" onclick="App.Router.go('${c.route}',${JSON.stringify(c.routeParams||{})})">${c.label}</span>${i<crumbs.length-1?'<span class="breadcrumb-sep">›</span>':''}`;
+      return `<span class="breadcrumb-item" onclick="App.Router.go('${c.route}',${JSON.stringify(c.routeParams||{})})">${c.label}</span>${i<crumbs.length-1?'<span class="breadcrumb-sep">/</span>':''}`;
     }).join('');
   },
 
@@ -290,7 +291,7 @@ App.UI = {
     localStorage.setItem('liq_active_dataset', id);
     App.UI.updateDatasetDisplay();
     App.Router.go('dashboard');
-    App.UI.toast('Dataset loaded ✅');
+    App.UI.toast('Dataset loaded successfully');
   },
 
   /* Custom Confirmation Modal */
@@ -303,7 +304,7 @@ App.UI = {
       <div class="modal" style="max-width:440px">
         <div class="modal-header">
           <div class="modal-title">${title}</div>
-          <button class="modal-close" onclick="document.getElementById('confirm-modal-overlay').remove()">✕</button>
+          <button class="modal-close" onclick="document.getElementById('confirm-modal-overlay').remove()">âœ•</button>
         </div>
         <div class="modal-body" style="padding:16px 20px">
           <div style="font-size:14px;color:var(--text-primary);line-height:1.5">${message}</div>
@@ -325,7 +326,7 @@ App.UI = {
     const ds = await App.DB.getDataset(id);
     const fname = ds ? ds.filename : 'this dataset';
     App.UI.showConfirmModal({
-      title: '🗑️ Delete Dataset',
+      title: 'ðŸ—‘ï¸ Delete Dataset',
       message: `Are you sure you want to delete <strong>${fname}</strong>?<br><br><span style="color:var(--text-muted);font-size:12px">This will remove all associated inventory records, brands, categories, and KPI stats. This action cannot be undone.</span>`,
       confirmText: 'Delete Dataset',
       danger: true,
@@ -343,7 +344,7 @@ App.UI = {
             await App.UI.updateDatasetDisplay();
           }
           await App.UI.render();
-          App.UI.toast('Dataset deleted ✅');
+          App.UI.toast('Dataset deleted ');
         } catch (err) {
           console.error('[Delete Dataset]', err);
           App.UI.toast('Failed to delete dataset: ' + err.message);
@@ -387,10 +388,10 @@ App.UI = {
     } else {
       App.Exporter.exportToCSV(filename, records);
     }
-    App.UI.toast(`Exported ${records.length} records to ${format.toUpperCase()} ✅`);
+    App.UI.toast(`Exported ${records.length} records to ${format.toUpperCase()} `);
   },
 
-  /* ── Upload Modal ────────────────────────────────────────── */
+  /* â”€â”€ Upload Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   showUploadModal() {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -398,7 +399,7 @@ App.UI = {
     overlay.innerHTML = `
       <div class="modal" id="upload-modal" style="max-width:560px">
         <div class="modal-header">
-          <div class="modal-title">📂 Upload Inventory Spreadsheet</div>
+          <div class="modal-title flex items-center gap-8"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Inventory Spreadsheet</div>
           <button class="modal-close" onclick="App.UI.closeUploadModal()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -407,16 +408,16 @@ App.UI = {
         </div>
         <div class="modal-body">
           <div class="drop-zone" id="drop-zone">
-            <div class="drop-zone-icon">📊</div>
+            <div class="drop-zone-icon" style="display:flex;justify-content:center;align-items:center;margin-bottom:12px"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#6366f1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><polyline points="10 13 12 11 14 13"></polyline><line x1="12" y1="11" x2="12" y2="17"></line></svg></div>
             <div class="drop-zone-title">Drag & Drop your Excel or CSV file here</div>
-            <div class="drop-zone-sub">or click to browse — supports .xlsx, .xls, .csv (up to 100 MB)</div>
+            <div class="drop-zone-sub">or click to browse &mdash; supports .xlsx, .xls, .csv (up to 100 MB)</div>
             <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
           </div>
 
           <div id="file-info" style="display:none" class="mt-16 card" style="background:var(--bg-surface-2);padding:12px 16px">
             <div class="flex items-center justify-between mb-8">
               <div class="flex items-center gap-10">
-                <span style="font-size:24px">📄</span>
+                <span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></span>
                 <div>
                   <div class="font-semibold text-sm" id="file-name"></div>
                   <div class="text-xs text-muted" id="file-size"></div>
@@ -431,7 +432,7 @@ App.UI = {
 
           <div id="pipeline-stages-wrap" style="display:none" class="mt-16">
             <div class="flex justify-between items-center mb-8">
-              <div class="text-xs font-semibold text-muted" id="pipeline-current-action">Processing pipeline…</div>
+              <div class="text-xs font-semibold text-muted" id="pipeline-current-action">Processing pipelineâ€¦</div>
               <div class="text-xs font-bold text-primary" id="pipeline-progress-pct">0%</div>
             </div>
             <div style="width:100%;height:6px;background:var(--bg-surface-2);border-radius:3px;overflow:hidden;margin-bottom:14px">
@@ -440,7 +441,7 @@ App.UI = {
             <div class="pipeline-stages" id="pipeline-stages">
               ${App.Pipeline.STAGES.map(s => `
                 <div class="pipeline-stage pending" id="stage-${s.id}">
-                  <div class="stage-icon" id="stage-icon-${s.id}">⋯</div>
+                  <div class="stage-icon" id="stage-icon-${s.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg></div>
                   <div class="stage-name">${s.label}</div>
                   <div class="stage-status" id="stage-status-${s.id}"></div>
                 </div>`).join('')}
@@ -452,7 +453,7 @@ App.UI = {
           </div>
 
           <div class="mt-16 flex items-center gap-8" style="font-size:11px;color:var(--text-muted);border-top:1px solid var(--border-subtle);padding-top:10px">
-            <span>🔒</span>
+            <span style="display:inline-flex;align-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-muted);flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
             <span><strong>Technical Privacy Standard:</strong> Client-Side Execution. File data is processed solely in local browser memory and IndexedDB with zero remote transmission.</span>
           </div>
         </div>
@@ -526,7 +527,7 @@ App.UI = {
     if (!file) return;
 
     document.getElementById('process-btn').disabled = true;
-    document.getElementById('process-btn').innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Processing…';
+    document.getElementById('process-btn').innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Processingâ€¦';
     document.getElementById('pipeline-stages-wrap').style.display = '';
     document.getElementById('modal-footer').style.display = 'none';
 
@@ -549,14 +550,14 @@ App.UI = {
         if (actEl) actEl.textContent = msg || `Running stage: ${stageId}`;
       }
       if (status === 'done') {
-        iconEl.textContent = '✅';
+        iconEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
         completedStages++;
         const pct = Math.min(Math.round((completedStages / stageIds.length) * 100), 100);
         if (pctEl) pctEl.textContent = `${pct}%`;
         if (barEl) barEl.style.width = `${pct}%`;
       }
       if (status === 'error') {
-        iconEl.textContent = '❌';
+        iconEl.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
       }
       if (statusEl) statusEl.textContent = msg || '';
     });
@@ -571,7 +572,7 @@ App.UI = {
       setTimeout(async () => {
         App.UI.closeUploadModal();
         await App.UI.loadDataset(result.dataset_id);
-        App.UI.toast(`✅ "${file.name}" processed: ${App.Fmt.number(result.stats.rowCount)} records, ${result.stats.brandCount} brands, ${result.stats.familyCount} product families`);
+        App.UI.toast(`âœ… "${file.name}" processed: ${App.Fmt.number(result.stats.rowCount)} records, ${result.stats.brandCount} brands, ${result.stats.familyCount} product families`);
       }, 700);
     } else {
       const errEl = document.getElementById('upload-error');
@@ -590,7 +591,7 @@ App.UI = {
   },
 
 
-  /* ── Record Drawer ───────────────────────────────────────── */
+  /* â”€â”€ Record Drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async openDrawer(record_id) {
     const rec = await App.DB.get('inventory_records', record_id);
     if (!rec) return;
@@ -616,13 +617,13 @@ App.UI = {
         <div class="flex justify-between items-start">
           <div>
             <div class="text-lg font-bold">${rec.normalized_product_name || 'Product Detail'}</div>
-            <div class="text-sm text-muted mt-4">${rec.normalized_brand||'—'} · ${rec.normalized_category||'—'}</div>
+            <div class="text-sm text-muted mt-4">${rec.normalized_brand||'â€”'} · ${rec.normalized_category||'â€”'}</div>
           </div>
-          <button class="btn btn-ghost btn-icon" onclick="document.getElementById('drawer-overlay').remove()">✕</button>
+          <button class="btn btn-ghost btn-icon" onclick="document.getElementById('drawer-overlay').remove()">âœ•</button>
         </div>
         <div class="flex gap-6 mt-10">
           <span class="badge ${badgeCls}">${displayStatus}</span>
-          <span class="badge badge-muted">${rec.subcategory||'—'}</span>
+          <span class="badge badge-muted">${rec.subcategory||'â€”'}</span>
           ${rec.normalization_confidence ? `<span class="badge ${App.Fmt.badge_confidence(rec.normalization_confidence)}">${rec.normalization_confidence}</span>` : ''}
         </div>
       </div>
@@ -630,37 +631,37 @@ App.UI = {
 
         <div class="drawer-section">
           <div class="drawer-section-title">Inventory Details</div>
-          ${drawerField('Quantity',    rec.qty,                    '📦')}
-          ${drawerField('MRP',         rec.variant_mrp ? App.Fmt.currencyFull(rec.variant_mrp) : '—', '💰')}
-          ${drawerField('Value',        rec.source_value ? App.Fmt.currencyFull(rec.source_value) : '—','💵')}
-          ${drawerField('Weight (unit)',rec.weight ? App.Fmt.weight(rec.weight) : '—',  '⚖️')}
-          ${drawerField('Total Weight', rec.total_weight ? App.Fmt.weight(rec.total_weight) : '—', '⚖️')}
-          ${drawerField('UOM',          rec.normalized_uom || rec.raw_uom || '—', '📏')}
-          ${drawerField('Warehouse',    rec.normalized_warehouse || '—', '🏭')}
-          ${drawerField('Status', displayStatus, '🏷️')}
-          ${rec.resolution_source ? drawerField('Resolution Source', rec.resolution_source, '🔍') : ''}
-          ${rec.resolution_rule ? drawerField('Resolution Rule', rec.resolution_rule, '📜') : ''}
-          ${rec.raw_bad_inventory_type && rec.raw_bad_inventory_type !== 'unknown' ? drawerField('Condition / Bad Bucket', rec.raw_bad_inventory_type, '⚠️') : ''}
+          ${drawerField('Quantity',    rec.qty,                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>')}
+          ${drawerField('MRP',         rec.variant_mrp ? App.Fmt.currencyFull(rec.variant_mrp) : '&mdash;', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="18"/></svg>')}
+          ${drawerField('Value',        rec.source_value ? App.Fmt.currencyFull(rec.source_value) : '&mdash;', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="18"/></svg>')}
+          ${drawerField('Weight (unit)',rec.weight ? App.Fmt.weight(rec.weight) : '&mdash;',  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"/></svg>')}
+          ${drawerField('Total Weight', rec.total_weight ? App.Fmt.weight(rec.total_weight) : '&mdash;', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"/></svg>')}
+          ${drawerField('UOM',          rec.normalized_uom || rec.raw_uom || '&mdash;', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>')}
+          ${drawerField('Warehouse',    rec.normalized_warehouse || '&mdash;', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M4 7l8-4 8 4"/><line x1="10" y1="12" x2="14" y2="12"/></svg>')}
+          ${drawerField('Status', displayStatus, '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>')}
+          ${rec.resolution_source ? drawerField('Resolution Source', rec.resolution_source, '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>') : ''}
+          ${rec.resolution_rule ? drawerField('Resolution Rule', rec.resolution_rule, '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>') : ''}
+          ${rec.raw_bad_inventory_type && rec.raw_bad_inventory_type !== 'unknown' ? drawerField('Condition / Bad Bucket', rec.raw_bad_inventory_type, '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>') : ''}
         </div>
 
         <div class="drawer-section">
           <div class="drawer-section-title">Identification</div>
-          ${drawerField('Item ID',    rec.item_id    || '—', '🔑')}
-          ${drawerField('UPC',         rec.upc        || '—', '📊')}
-          ${drawerField('Variant ID',  rec.variant_id || '—', '🏷️')}
+          ${drawerField('Item ID',    rec.item_id    || 'â€”', 'ðŸ”‘')}
+          ${drawerField('UPC',         rec.upc        || 'â€”', 'ðŸ“Š')}
+          ${drawerField('Variant ID',  rec.variant_id || 'â€”', 'ðŸ·ï¸')}
         </div>
 
         <div class="drawer-section">
           <div class="drawer-section-title">Normalized Values</div>
-          ${drawerField('Category',   rec.normalized_category    || '—', '')}
-          ${drawerField('Subcategory',rec.subcategory             || '—', '')}
-          ${drawerField('Brand',      rec.normalized_brand        || '—', '')}
-          ${drawerField('Product',    rec.normalized_product_name || '—', '')}
-          ${drawerField('Grouping',   rec.grouping_method         || '—', '')}
+          ${drawerField('Category',   rec.normalized_category    || 'â€”', '')}
+          ${drawerField('Subcategory',rec.subcategory             || 'â€”', '')}
+          ${drawerField('Brand',      rec.normalized_brand        || 'â€”', '')}
+          ${drawerField('Product',    rec.normalized_product_name || 'â€”', '')}
+          ${drawerField('Grouping',   rec.grouping_method         || 'â€”', '')}
         </div>
 
         <div class="drawer-section">
-          <div class="drawer-section-title">📄 Original Excel Record (RAW)</div>
+          <div class="drawer-section-title flex items-center gap-6"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Original Excel Record (RAW)</div>
           ${Object.entries(rec._raw||{}).map(([k,v]) => `
             <div class="raw-record-field">
               <div class="raw-field-key">${k}</div>
@@ -674,7 +675,7 @@ App.UI = {
     document.body.appendChild(overlay);
   },
 
-  /* ── Toast ───────────────────────────────────────────────── */
+  /* â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   toast(msg, duration = 3500) {
     const t = document.createElement('div');
     t.style.cssText = `position:fixed;bottom:20px;right:20px;background:var(--bg-surface-2);border:1px solid var(--border-strong);color:var(--text-primary);padding:12px 18px;border-radius:var(--r-md);font-size:13px;box-shadow:var(--shadow-lg);z-index:9999;animation:fadeInUp 0.3s ease;max-width:400px;line-height:1.4`;
@@ -703,7 +704,7 @@ App.UI = {
     URL.revokeObjectURL(url);
   },
 
-  /* ── User Header Control (Dashboard Topbar) ───────────── */
+  /* â”€â”€ User Header Control (Dashboard Topbar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   updateUserHeader() {
     const container = document.getElementById('user-header-control');
     if (!container) return;
@@ -718,7 +719,7 @@ App.UI = {
     const photoURL = user.photoURL;
     const name = user.displayName || user.email.split('@')[0] || 'User';
     const email = user.email || 'authenticated_user';
-    const providerLabel = user.providerId === 'google.com' ? '🌐 Google' : '🔑 Email';
+    const providerLabel = user.providerId === 'google.com' ? 'ðŸŒ Google' : 'ðŸ”‘ Email';
 
     container.innerHTML = `
       <div class="user-profile-badge" id="user-profile-toggle" onclick="App.UI.toggleUserDropdown(event)" title="User Profile: ${name}">
@@ -762,7 +763,7 @@ App.UI = {
         await App.Auth.signOut();
       }
       console.log(`[AUTH-FLOW] ${_appTs()} HANDLE SIGN-OUT COMPLETE, navigating to login`);
-      App.UI.toast('Signed out successfully 👋');
+      App.UI.toast('Signed out successfully ');
       App.Router.go('login');
     } catch (err) {
       console.error(`[AUTH-FLOW] ${_appTs()} HANDLE SIGN-OUT ERROR:`, err);
@@ -778,7 +779,7 @@ function drawerField(label, value, icon) {
   </div>`;
 }
 
-/* ── Global search ───────────────────────────────────────── */
+/* â”€â”€ Global search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 App.GlobalSearch = {
   async search(q) {
     if (!q || !App.State.dataset_id) return [];
@@ -795,7 +796,7 @@ App.GlobalSearch = {
   }
 };
 
-/* ── Boot ────────────────────────────────────────────────── */
+/* â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 (async function init() {
   console.log(`[EDGE-LOOP] ${_appTs()} ========== APP BOOT START ========== (BOOT_ID = ${BOOT_ID})`);
   console.log(`[EDGE-LOOP] ${_appTs()} CURRENT_URL: ${window.location.href}`);
@@ -884,20 +885,59 @@ function renderSidebar() {
 
   const NAV = [
     { label: 'Main', items: [
-      { route:'dashboard', icon:'🏠', label:'Dashboard' },
-      { route:'inventory', icon:'📋', label:'Inventory' },
+      { 
+        route: 'dashboard', 
+        icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>', 
+        label: 'Dashboard' 
+      },
+      { 
+        route: 'inventory', 
+        icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', 
+        label: 'Inventory' 
+      },
     ]},
     { label: 'Analysis', items: [
-      { route:'brands',     icon:'🏷️',  label:'Brands' },
-      { route:'warehouses', icon:'🏭',  label:'Warehouses' },
+      { 
+        route: 'brands', 
+        icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>', 
+        label: 'Brands' 
+      },
+      { 
+        route: 'warehouses', 
+        icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M3 7v14"></path><path d="M21 7v14"></path><path d="M4 7l8-4 8 4"></path><line x1="10" y1="12" x2="14" y2="12"></line></svg>', 
+        label: 'Warehouses' 
+      },
     ]},
     { label: 'Quality', items: [
-      { route:'quality',  icon:'⚠️',   label:'Data Quality' },
-      { route:'suggestions', icon:'🔀', label:'Merge Review' },
+      { 
+        route: 'quality', 
+        icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>', 
+        label: 'Data Quality' 
+      },
+      { 
+        route: 'suggestions', 
+        icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M6 21V9a9 9 0 0 0 9 9"></path></svg>', 
+        label: 'Merge Review' 
+      },
+    ]},
+    { label: 'Tools', items: [
+      { 
+        route: 'clean-excel', 
+        icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', 
+        label: 'Excel Cleaner' 
+      },
     ]},
     { label: 'Settings', items: [
-      { route:'uploads',  icon:'📂',   label:'Uploads' },
-      { route:'about',    icon:'ℹ️',   label:'About' },
+      { 
+        route: 'uploads', 
+        icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>', 
+        label: 'Uploads' 
+      },
+      { 
+        route: 'about', 
+        icon: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>', 
+        label: 'About' 
+      },
     ]},
   ];
 
@@ -962,7 +1002,7 @@ function setupGlobalSearch() {
 
         return `
           <div class="search-result-card" onclick="App.UI.openDrawer('${r.id}');document.getElementById('global-search').value='';document.getElementById('search-results-dropdown').style.display='none'">
-            <div class="search-result-icon">📦</div>
+            <div class="search-result-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></div>
             <div class="search-result-info">
               <div class="search-result-name" title="${prodName}">${prodName}</div>
               ${metaParts.length ? `<div class="search-result-meta">${metaParts.join(' · ')}</div>` : ''}
