@@ -1,14 +1,14 @@
 window.App = window.App || {};
 
 /* ============================================================
-   CATEGORIZER — Category + Subcategory classification
+   CATEGORIZER ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Category + Subcategory classification
    Enforces a strict Product Identity Priority System:
    Product Identity > Explicit Trusted Domain > Generic Domain Inference
    > Subcategory Keyword Matching > Default Fallback
    ============================================================ */
 App.Categorizer = (() => {
 
-  /* ── Category → Subcategory → keyword rules ──────────────── */
+  /* ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ Category ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Subcategory ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ keyword rules ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ */
   const CATEGORY_RULES = {
     'Grocery': {
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
@@ -19,7 +19,7 @@ App.Categorizer = (() => {
         'Flours': { kw: ['\\bflour\\b', '\\bflours\\b', '\\bmaida\\b', '\\bbesan\\b', '\\bsuji\\b', '\\brava\\b', '\\bsooji\\b', 'multigrain flour', 'rice flour', 'corn flour', 'gram flour', 'wheat flour', 'bajra flour', 'ragi flour', 'sattu', 'jowar', 'bajra', 'ragi', 'jau', 'barley', 'rajgira'] },
         'Rice': { kw: ['\\brice\\b', '\\bbasmati\\b', '\\bsella\\b', '\\bmogra\\b', '\\bpoha\\b'] },
         'Pulses & Lentils': { kw: ['\\bdal\\b', '\\bdaal\\b', '\\bmoong\\b', '\\bmasoor\\b', '\\burad\\b', '\\bchana\\b', '\\brajma\\b', '\\barhar\\b', '\\btoor\\b', '\\blentil\\b', '\\bpulses\\b', 'lobiya'] },
-        'Dry Fruits & Nuts': { kw: ['almond', 'almonds', 'badam', 'cashew', 'cashews', 'kaju', 'walnut', 'walnuts', 'akhrot', 'pista', 'pistachio', 'pistachios', 'raisin', 'raisins', 'kismis', 'kishmish', 'makhana', 'foxnut', 'foxnuts', 'dates', 'khajoor', 'khajur', 'anjeer', 'fig', 'figs', 'hazelnut', 'hazelnuts', 'dry fruit', 'dry fruits', 'nut mix', 'trail mix', 'chia seed', 'chia seeds', 'flax seed', 'flax seeds', 'pumpkin seeds', 'sunflower seeds', 'watermelon seeds'] },
+        'Dry Fruits & Nuts': { kw: ['almond', 'almonds', 'badam', 'cashew', 'cashews', 'kaju', 'walnut', 'walnuts', 'akhrot', 'pista', 'pistachio', 'pistachios', 'raisin', 'raisins', 'kismis', 'kishmish', 'makhana', 'foxnut', 'foxnuts', 'dates', 'khajoor', 'khajur', 'anjeer', 'fig', 'figs', 'hazelnut', 'hazelnuts', 'dry fruit', 'dry fruits', 'nut mix', 'trail mix', 'chia seed', 'chia seeds', 'flax seed', 'flax seeds', 'pumpkin seeds', 'sunflower seeds', 'watermelon seeds', 'sesame seed', 'sesame seeds', 'til'] },
         'Oils': { kw: ['\\boil\\b', '\\boils\\b', 'sunflower', 'mustard', 'olive', 'refined', 'groundnut', 'sesame', 'canola', 'coconut oil', 'rice bran', 'cooking oil', 'edible oil'] },
         'Ghee': { kw: ['\\bghee\\b', '\\bdalda\\b', 'vanaspati', 'cow ghee', 'desi ghee'] },
         'Sugar': { kw: ['\\bsugar\\b', '\\bjaggery\\b', '\\bcheeni\\b', '\\bshakkar\\b', '\\bgur\\b', 'brown sugar', 'white sugar', 'mishri', 'boora', 'bura', 'batasha'] },
@@ -93,7 +93,7 @@ App.Categorizer = (() => {
       icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
       color: '#fb923c',
       subcategories: {
-        'Skin Care': { kw: ['moisturizer', 'cream', 'lotion', 'sunscreen', 'face wash', 'cleanser', 'toner', 'serum', 'lipstick', 'lip', 'gloss', 'kajal', 'eyeliner', 'mascara', 'compact', 'foundation', 'nail polish', 'cosmetics', 'sugar pop', 'tea tree', 'hair removal', 'wax'] },
+        'Skin Care': { kw: ['moisturizer', 'cream', 'lotion', 'sunscreen', 'face wash', 'cleanser', 'toner', 'serum', 'lipstick', 'lip', 'gloss', 'kajal', 'eyeliner', 'mascara', 'compact', 'foundation', 'nail polish', 'cosmetics', 'sugar pop', 'tea tree', 'hair removal', 'wax', 'rose water', 'gulab jal'] },
         'Hair Care': { kw: ['shampoo', 'conditioner', 'hair oil', 'hair mask', 'serum', 'headandshoulders', 'pantene', 'dove shampoo', 'hair spray', 'hair growth', 'hair tonic'] },
         'Oral Care': { kw: ['toothpaste', 'toothbrush', 'mouthwash', 'floss', 'colgate', 'closeup', 'pepsodent', 'oral-b', 'mouth spray'] },
         'Deodorants': { kw: ['deodorant', 'deo', 'perfume', 'body spray', 'axe', 'dove deo', 'rexona'] },
@@ -205,6 +205,28 @@ App.Categorizer = (() => {
 
   /* Direct mapping for raw source l0 categories */
   const RAW_CATEGORY_MAP = {
+    'atta': { category: 'Grocery', subcategory: 'Atta & Flours' },
+    'flour': { category: 'Grocery', subcategory: 'Atta & Flours' },
+    'flours': { category: 'Grocery', subcategory: 'Atta & Flours' },
+    'rice': { category: 'Grocery', subcategory: 'Rice' },
+    'oil': { category: 'Grocery', subcategory: 'Oils' },
+    'oils': { category: 'Grocery', subcategory: 'Oils' },
+    'ghee': { category: 'Grocery', subcategory: 'Ghee' },
+    'dal': { category: 'Grocery', subcategory: 'Dals & Pulses' },
+    'dals': { category: 'Grocery', subcategory: 'Dals & Pulses' },
+    'pulses': { category: 'Grocery', subcategory: 'Dals & Pulses' },
+    'spices': { category: 'Grocery', subcategory: 'Masalas & Spices' },
+    'masala': { category: 'Grocery', subcategory: 'Masalas & Spices' },
+    'masalas': { category: 'Grocery', subcategory: 'Masalas & Spices' },
+    'tea': { category: 'Grocery', subcategory: 'Tea & Coffee' },
+    'coffee': { category: 'Grocery', subcategory: 'Tea & Coffee' },
+    'biscuits': { category: 'Grocery', subcategory: 'Biscuits & Cookies' },
+    'biscuit': { category: 'Grocery', subcategory: 'Biscuits & Cookies' },
+    'cookies': { category: 'Grocery', subcategory: 'Biscuits & Cookies' },
+    'snacks': { category: 'Grocery', subcategory: 'Snacks & Namkeen' },
+    'namkeen': { category: 'Grocery', subcategory: 'Snacks & Namkeen' },
+    'beverages': { category: 'Grocery', subcategory: 'Beverages' },
+    'drinks': { category: 'Grocery', subcategory: 'Beverages' },
     'sports nutrition': { category: 'Sports Nutrition', subcategory: 'Protein & Workout Supplements' },
     'health & nutrition': { category: 'Sports Nutrition', subcategory: 'Protein & Workout Supplements' },
     'protein & workout': { category: 'Sports Nutrition', subcategory: 'Protein & Workout Supplements' },
@@ -266,7 +288,25 @@ App.Categorizer = (() => {
 
   /* Infer category and subcategory using strict priority architecture */
   function classify(sourceCategory, productName, brand) {
-    const rawCatLower = normLower(sourceCategory);
+    let rawCatLower = normLower(sourceCategory);
+
+    // Sheet-name / inventory-status tokens that are NOT product categories.
+    // Normalize to empty so all downstream checks treat them as unclassified.
+    const STATUS_TOKENS = new Set([
+      'missing', 'unknown', 'uncategorized', 'general', 'other', 'none',
+      'saleable', 'salable', 'sellable', 'non saleable', 'non-saleable', 'nonsaleable',
+      'non sellable', 'non-sellable', 'unsaleable', 'unsellable',
+      'dump', 'damaged', 'damage', 'expired', 'near expiry', 'nearexpiry',
+      'quarantine', 'scrap', 'rtv', 'bad rtv', 'bad', 'active', 'in stock',
+      'good', 'available', 'dn prn', 'dn', 'prn', 'd3', 'lq',
+      'sheet1', 'sheet 1', 'sheet2', 'sheet 2', 'sheet3', 'sheet 3',
+      'data', 'summary', 'master', 'inventory', 'stock', 'lot', 'export', 'report'
+    ]);
+    const cleanedRaw = rawCatLower.replace(/[()_\-\[\]]/g, ' ').replace(/\s+/g, ' ').trim();
+    const rawWords = cleanedRaw.split(/\s+/).filter(Boolean);
+    if (STATUS_TOKENS.has(rawCatLower) || STATUS_TOKENS.has(cleanedRaw) || /^(sheet\s*\d+|lot[\s-]*\d+)$/i.test(rawCatLower) || (rawWords.length > 0 && rawWords.every(w => STATUS_TOKENS.has(w) || /^\d+$/i.test(w)))) {
+      rawCatLower = '';
+    }
     const prodLower = normLower(productName);
     const brandLower = normLower(brand);
     const combinedText = normLower(`${productName || ''} ${brand || ''}`);
@@ -302,11 +342,11 @@ App.Categorizer = (() => {
     if (rawCatLower && RAW_CATEGORY_MAP[rawCatLower]) {
       mainCat = RAW_CATEGORY_MAP[rawCatLower].category;
       subCat = RAW_CATEGORY_MAP[rawCatLower].subcategory;
-    } else if (rawCatLower && rawCatLower !== 'missing' && rawCatLower !== 'unknown' && rawCatLower !== 'uncategorized' && rawCatLower !== 'general' && rawCatLower !== 'other' && rawCatLower !== 'none') {
+    } else if (rawCatLower) {
       const directCfg = getCategoryConfig(sourceCategory);
       mainCat = directCfg.canonical;
       // If user provided an explicit non-grocery category (Automotive, Industrial, Apparel, Tools, Furniture, Books, Electronics, etc.)
-      if (mainCat !== 'Grocery' && mainCat !== 'Food & Beverages' && mainCat !== 'Other / Uncategorized') {
+      if (CATEGORY_RULES[mainCat] && mainCat !== 'Grocery' && mainCat !== 'Food & Beverages' && mainCat !== 'Other / Uncategorized') {
         isExplicitNonFoodDomain = true;
       }
     }
@@ -355,7 +395,7 @@ App.Categorizer = (() => {
     }
 
     // 1.2 Pooja / Religious Items
-    const isPooja = /\b(pooja|puja|diya batti|ghee diya|havan samagri|roli chawal|camphor|kapur|agarbatti|incense)\b/i.test(prodLower) ||
+    const isPooja = /\b(pooja|puja|diya batti|ghee diya|havan samagri|roli chawal|camphor|kapur|agarbatti|incense|laddu gopal|ladoo gopal|gopal ji|jhula|shringar|vastra|poshak|murti|idol)\b/i.test(prodLower) ||
       (/\b(diya|non[- ]edible)\b/i.test(prodLower) && /\bghee\b/i.test(prodLower));
     if (isPooja) {
       return buildOutput('Home Care', 'Decor', 'HIGH', 'pooja_decor_rule');
@@ -481,7 +521,7 @@ App.Categorizer = (() => {
 
     // 1.13 Cosmetics & Skincare
     const isFoodItemWithCosmeticKeyword = /\b(chips|popcorn|nachos|puff|namkeen|milkshake|shake|protein milkshake|soft drink|soda|biscuit|cookie|wafer|cake|pastry|ice cream|chocolate bar|chocolate box)\b/i.test(prodLower);
-    const isCosmeticOrPersonal = (/\b(skin treatment|treatment cream|moisturizing cream|nourishing.*cream|face gel|face cream|body cream|face wash|body lotion|lotion|after shave|moisturizer|cleanser|sunscreen|anti-acne|pimple|serum|facial kit|rice water.*gel|rice water.*cream|rice water.*facial|rice water.*cleanser|rice water.*brightening|moisturizing gel|kajal|lipstick|lip balm|lip gloss|eyeliner|mascara|compact|foundation|nail polish|cosmetics|shampoo|conditioner|hair oil|hair spray|hair growth|hair mask|hair tonic|toothpaste|toothbrush|mouthwash|deodorant|deo|body spray|perfume|sanitary pad|tampon|soap|body wash|handwash|essential oil|eucalyptus oil|tea tree oil)\b/i.test(prodLower) ||
+    const isCosmeticOrPersonal = (/\b(skin treatment|treatment cream|moisturizing cream|nourishing.*cream|face gel|face cream|body cream|face wash|body lotion|lotion|after shave|moisturizer|cleanser|sunscreen|anti-acne|pimple|serum|facial kit|rice water.*gel|rice water.*cream|rice water.*facial|rice water.*cleanser|rice water.*brightening|moisturizing gel|kajal|lipstick|lip balm|lip gloss|eyeliner|mascara|compact|foundation|nail polish|cosmetics|shampoo|conditioner|hair oil|hair spray|hair growth|hair mask|hair tonic|toothpaste|toothbrush|mouthwash|deodorant|deo|body spray|perfume|sanitary pad|tampon|soap|body wash|handwash|essential oil|eucalyptus oil|tea tree oil|rose water|gulab jal)\b/i.test(prodLower) ||
       (/\b(sugar pop|sugar cosmetics|glamveda|the face shop)\b/i.test(combinedText)) ||
       ((rawCatLower === 'beauty & cosmetics' || rawCatLower === 'personal care') && !isFoodItemWithCosmeticKeyword)) &&
       !isFoodItemWithCosmeticKeyword;
@@ -569,7 +609,8 @@ App.Categorizer = (() => {
       !isBakeryBiscuit && !isBeverage && !isNoodle;
 
     const isMithai = /\b(laddu|ladoo|laddoo|burfi|barfi|halwa|mithai|gulab jamun|rasgulla|soan papdi|sonpapdi|peda|kaju katli|milk cake|mysore pak|cham cham|rasbhari|ghevar|chikki|gajak)\b/i.test(prodLower) &&
-      !isBakeryBiscuit && !isBeverage && !isNamkeen && !isNoodle;
+      !isBakeryBiscuit && !isBeverage && !isNamkeen && !isNoodle &&
+      !/\b(dress|jhula|shringar|vastra|poshak|murti|idol|gopal)\b/i.test(prodLower);
 
     const isChocolateConfectionery = (/\b(chocolate|chocolates|cadbury|dairy milk|kitkat|snickers|gems|candy|candies|toffee|toffees|lollipop|lollipops|eclairs|perk|5 star|munch|ferrero|kinder|chewing gum|bubble gum|gum|mints|mentos|orbit|trident|wrigley|happydent|center fresh|center fruit)\b/i.test(prodLower) ||
       (rawCatLower === 'sweet tooth' && !isMithai && !isBakeryBiscuit)) &&
@@ -577,9 +618,10 @@ App.Categorizer = (() => {
 
     const isSpice = (/\b(masala|masalas|spice|spices|turmeric|chilli|coriander|haldi|mirch|cumin|garam masala|sambar|rasam|kitchen king|paneer masala|meat masala|chicken masala|biryani masala|ajwain|star anise|chakriphool|saunf|fennel|jeera|methi dana|poppy seeds|khaskhas|dalchini|cinnamon|cloves|laung|elaichi|cardamom|black pepper|kali mirch|nutmeg|jaiphal|mace|javitri|bay leaf|tejpatta|kasuri methi|panch phoron|dry ginger powder|ginger powder|hing|asafoetida)\b/i.test(prodLower) ||
       (/\bwith natural oils\b/i.test(prodLower) && /\b(powder|masala|turmeric|haldi|chilli|coriander)\b/i.test(prodLower))) &&
-      !isNamkeen && !isBeverage && !isChocolateConfectionery && !isMithai && !isNoodle;
+      !isNamkeen && !isBeverage && !isChocolateConfectionery && !isMithai && !isNoodle &&
+      !/\b(spray|safety|repellent)\b/i.test(prodLower);
 
-    const isDryFruit = /\b(almond|almonds|badam|cashew|cashews|kaju|walnut|walnuts|akhrot|pista|pistachio|pistachios|raisin|raisins|kismis|kishmish|makhana|foxnut|foxnuts|dates|khajoor|khajur|anjeer|fig|figs|hazelnut|hazelnuts|dry fruit|dry fruits|nut mix|trail mix|chia seed|chia seeds|flax seed|flax seeds|pumpkin seeds|sunflower seeds|watermelon seeds)\b/i.test(prodLower) &&
+    const isDryFruit = /\b(almond|almonds|badam|cashew|cashews|kaju|walnut|walnuts|akhrot|pista|pistachio|pistachios|raisin|raisins|kismis|kishmish|makhana|foxnut|foxnuts|dates|khajoor|khajur|anjeer|fig|figs|hazelnut|hazelnuts|dry fruit|dry fruits|nut mix|trail mix|chia seed|chia seeds|flax seed|flax seeds|pumpkin seeds|sunflower seeds|watermelon seeds|sesame seed|sesame seeds|til)\b/i.test(prodLower) &&
       !isBeverage && !isBakeryBiscuit && !isNamkeen && !isChocolateConfectionery && !isMithai && !isNoodle;
 
     const isGhee = /\b(ghee|dalda|vanaspati)\b/i.test(prodLower) &&
@@ -587,7 +629,8 @@ App.Categorizer = (() => {
 
     const isOil = (/\b(mustard oil|sunflower oil|olive oil|refined oil|groundnut oil|sesame oil|canola oil|rice bran oil|cooking oil|edible oil|cooking spray|olive oil spray)\b/i.test(prodLower) ||
       (/\boil\b/i.test(prodLower) && /\b(refined|mustard|sunflower|olive|groundnut|sesame|canola|rice bran|soyabean|soybean|edible|cooking|kachi ghani)\b/i.test(prodLower))) &&
-      !isGhee && !isSpice && !isBeverage && !isPersonalSprayOrWax && !isNoodle;
+      !isGhee && !isSpice && !isBeverage && !isPersonalSprayOrWax && !isNoodle &&
+      !/\b(seeds?)\b/i.test(prodLower);
 
     const isSugar = /\b(sugar|jaggery|cheeni|shakkar|gur|mishri|boora|bura|batasha)\b/i.test(prodLower) &&
       !/\b(sugar[\s-]*free|zero[\s-]*sugar|no[\s-]*added[\s-]*sugar|low[\s-]*sugar|sugarless|lipstick|sugar pop)\b/i.test(prodLower) &&
@@ -654,7 +697,7 @@ App.Categorizer = (() => {
 
     // Fallback main category
     if (!mainCat) {
-      if (sourceCategory && sourceCategory !== 'Uncategorized' && sourceCategory !== 'Missing' && sourceCategory !== 'none') {
+      if (rawCatLower) {
         mainCat = normTitle(sourceCategory);
       } else {
         mainCat = 'Other / Uncategorized';
@@ -695,6 +738,7 @@ App.Categorizer = (() => {
     }
 
     return {
+      category: mainCat,
       normalized_category: mainCat,
       category_icon: catCfg.icon || '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
       category_color: catCfg.color || '#64748b',

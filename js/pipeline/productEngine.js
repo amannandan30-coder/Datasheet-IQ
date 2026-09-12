@@ -1,74 +1,121 @@
 window.App = window.App || {};
 
 /* ============================================================
-   PRODUCT ENGINE
+   PRODUCT ENGINE (Generic Core Engine)
    Grouping priority:
-     1. STRONG: same item_id  (same product family)
-     2. STRONG: same UPC      (same product)
-     3. MEDIUM: same brand + normalized name tokens match
-     4. WEAK: fuzzy name sim  (suggestion only, not auto-merge)
-   
-   Variant detection:
-     - Different variant_id OR different UOM / MRP within same family
+     1. STRONG: same item_id  (same product line)
+     2. STRONG: same UPC      (same product variant barcode)
+     3. CONSERVATIVE: brand + exact core product descriptor matching
+        - Pack size & packaging differences (5kg vs 10kg, pouch vs bottle) remain merged
+        - Domain-specific identity-bearing descriptors are resolved via configurable profiles
+        - Default: generic mode (no domain profile active)
    ============================================================ */
 App.ProductEngine = (() => {
 
   function normLower(s) { return (s||'').toString().toLowerCase().trim().replace(/\s+/g,' '); }
 
-  // UOM regex
+  // Generic UOM regex
   const UOM_RE = /\b\d+(?:\.\d+)?\s*(?:kg|kgs?|gm?s?|ml|ltr?s?|liters?|pcs?|packs?|w|watt|piece|unit|tab|tablet|nos?|m|meter)\b/gi;
-  // Packaging noise regex
-  const PACKAGING_RE = /\((?:packet|pack|pouch|jar|box|bottle|bag|container|can|tin|wrapper|pouch\/pack|pkt)\)/gi;
+  const MULTI_PACK_RE = /\b\d+\s*x\s*\d+(?:\.\d+)?\s*(?:kg|kgs?|gm?s?|ml|ltr?s?|liters?|g)\b/gi;
+  // Generic packaging noise regex
+  const PACKAGING_RE = /\((?:packet|pack|pouch|jar|box|bottle|bag|container|can|tin|wrapper|pouch\/pack|pkt|carton|pet bottle|glass bottle|bucket|drum|dispenser|cup|tray|tube|refill|tetra pack|sachet|sachets|m30)\)/gi;
 
   function stripUOMAndPackaging(name) {
     return normLower(name)
+      .replace(MULTI_PACK_RE, '')
       .replace(UOM_RE, '')
       .replace(PACKAGING_RE, '')
-      .replace(/[-_]/g, ' ')
+      .replace(/[-_(),\[\]]/g, ' ')
       .replace(/\s+/g,' ')
       .trim();
   }
 
-  const COLOR_DESCRIPTORS = new Set([
-    'black','blue','white','red','green','yellow','silver','gold','grey','gray','pink','purple','orange','brown','navy','beige','maroon','teal'
-  ]);
-  const SIZE_DESCRIPTORS = new Set([
-    'xs','s','m','l','xl','xxl','xxxl'
-  ]);
-
-  const STOP_WORDS = new Set([
-    'the','a','an','and','or','for','of','with','in','pack','size','new','special','edition','packet','pouch','jar','bottle',
-    ...COLOR_DESCRIPTORS, ...SIZE_DESCRIPTORS
-  ]);
-
-  const MODEL_MODIFIERS = new Set([
-    '2.0','3.0','4.0','pro','max','anc','plus','ultra','lite','se','gt','gen2','gen3','mk2','mkii','2024','2025','2026'
+  // Generic grammatical stop words
+  const GRAMMAR_STOP_WORDS = new Set([
+    'the','a','an','and','or','for','of','with','in','at','by','to','from','on',
+    'packet','pouch','jar','bottle','pack','box','bag','tin','can','container','carton','tray','cup','tube',
+    'piece','pieces','pcs','unit','units','sachet','sachets','refill',
+    'combo','multipack','value','saver','new','extra'
   ]);
 
   function getTokens(name) {
     return stripUOMAndPackaging(name)
       .split(/\W+/)
-      .filter(t => t.length > 2 && !STOP_WORDS.has(t));
+      .filter(t => t.length > 1 && !GRAMMAR_STOP_WORDS.has(t));
   }
 
   function getModelTokens(name) {
     const rawTokens = normLower(name).replace(/[-_]/g, ' ').split(/\s+/);
-    return new Set(rawTokens.filter(t => MODEL_MODIFIERS.has(t) || /^\d+\.\d+$/.test(t)));
+    return new Set(rawTokens.filter(t => /^\d+\.\d+$/.test(t) || /^(pro|max|plus|ultra|lite|se|gt|gen2|gen3|mk2|mkii|2024|2025|2026)$/i.test(t)));
   }
 
-  function tokenSimilarity(tokensA, tokensB) {
-    if (!tokensA.length || !tokensB.length) return 0;
-    const setA = new Set(tokensA), setB = new Set(tokensB);
-    const intersection = [...setA].filter(t => setB.has(t)).length;
-    const union = new Set([...setA, ...setB]).size;
-    return union === 0 ? 0 : intersection / union; // Jaccard
+  function areTokensIdentical(tokensA, tokensB) {
+    if (!tokensA.length || !tokensB.length) return false;
+    const setA = new Set(tokensA);
+    const setB = new Set(tokensB);
+    if (setA.size !== setB.size) return false;
+    for (const t of setA) {
+      if (!setB.has(t)) return false;
+    }
+    return true;
+  }
+
+  function isSameProductVariant(tokensA, tokensB, profile) {
+    if (areTokensIdentical(tokensA, tokensB)) return true;
+
+    // If a domain identity profile is active, use its configured identity rules
+    if (profile && profile.identityTokens) {
+      const setA = new Set(tokensA);
+      const setB = new Set(tokensB);
+
+      // If an identity-bearing token is present in one, it MUST be present in the other
+      for (const t of profile.identityTokens) {
+        if (setA.has(t) !== setB.has(t)) {
+          return false; // Identity conflict! Never merge!
+        }
+      }
+
+      // Check allowable marketing claims / non-identity substitutions if configured
+      if (profile.marketingClaims) {
+        const diffA = tokensA.filter(t => !setB.has(t));
+        const diffB = tokensB.filter(t => !setA.has(t));
+        const allDiffs = [...diffA, ...diffB];
+
+        const isAllowedDiff = (t) => {
+          if (profile.marketingClaims.has(t)) return true;
+          if (profile.nonIdentitySubstitutions && profile.nonIdentitySubstitutions.some(re => re.test(t))) return true;
+          return false;
+        };
+
+        if (allDiffs.length > 0 && allDiffs.every(isAllowedDiff)) {
+          const sharedTokens = tokensA.filter(t => setB.has(t));
+          if (sharedTokens.length >= 2) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   /* Product family grouping */
-  function groupProducts(records, dataset_id) {
+  function groupProducts(records, dataset_id, options) {
     const itemIdMap = new Map(); // item_id -> family_id
     const upcMap    = new Map(); // upc -> family_id
     const families  = new Map(); // family_id -> family obj
+
+    // Resolve active profile: options override -> global registry -> null (Generic mode)
+    let activeProfile = null;
+    if (options && options.profile !== undefined) {
+      if (typeof options.profile === 'string' && typeof window !== 'undefined' && window.App && App.ProductIdentityProfiles && typeof App.ProductIdentityProfiles.getProfile === 'function') {
+        activeProfile = App.ProductIdentityProfiles.getProfile(options.profile);
+      } else {
+        activeProfile = options.profile;
+      }
+    } else if (typeof window !== 'undefined' && window.App && App.ProductIdentityProfiles && typeof App.ProductIdentityProfiles.getActiveProfile === 'function') {
+      activeProfile = App.ProductIdentityProfiles.getActiveProfile();
+    }
 
     const enrichedRecords = [];
     const suggestions     = [];
@@ -97,13 +144,24 @@ App.ProductEngine = (() => {
         method     = 'upc';
         confidence = 'HIGH';
       }
-      // 3. MEDIUM: brand + name tokens
+      // 3. CONSERVATIVE: Same brand + identical product formulation tokens
       else {
-        let bestMatch = null, bestScore = 0;
+        let bestMatch = null;
         for (const [fid, fam] of families) {
-          if (brand_id && fam.brand_id && fam.brand_id !== brand_id) continue; // Different brand -> skip
+          if (brand_id && fam.brand_id && fam.brand_id !== brand_id) continue;
+
+          // Category compatibility gate for name-token matching
+          if (
+            fam.normalized_category &&
+            rec.normalized_category &&
+            fam.normalized_category !== 'Other / Uncategorized' &&
+            rec.normalized_category !== 'Other / Uncategorized' &&
+            fam.normalized_category !== rec.normalized_category
+          ) {
+            continue;
+          }
           
-          // Model modifier conflict check (e.g. 2.0 Pro ANC vs standard)
+          // Model modifier conflict check
           let hasModelConflict = false;
           if (fam.modelTokens) {
             for (const m of modelTokens) {
@@ -117,17 +175,16 @@ App.ProductEngine = (() => {
           }
           if (hasModelConflict) continue;
 
-          const sim = tokenSimilarity(tokens, fam.tokens);
-          if (sim > bestScore && sim >= 0.70) {
-            bestScore = sim;
+          if (isSameProductVariant(tokens, fam.tokens, activeProfile)) {
             bestMatch = fid;
+            break;
           }
         }
 
         if (bestMatch) {
           family_id  = bestMatch;
           method     = 'name_tokens';
-          confidence = bestScore >= 0.85 ? 'HIGH' : 'MEDIUM';
+          confidence = 'HIGH';
         }
       }
 
@@ -185,7 +242,7 @@ App.ProductEngine = (() => {
 
     const finalRecords = enrichedRecords.map(rec => {
       const fid  = rec.product_family_id;
-      const vKey = `${fid}||${rec.variant_id || ''}||${rec.upc || ''}||${rec.normalized_uom || ''}||${rec.variant_mrp || ''}`;
+      const vKey = fid + '||' + (rec.variant_id || '') + '||' + (rec.upc || '') + '||' + (rec.normalized_uom || '') + '||' + (rec.variant_mrp || '');
 
       let variant_id;
       if (variantMap.has(vKey)) {

@@ -223,5 +223,66 @@ App.Validator = (() => {
     return { valid, review };
   }
 
-  return { mapColumns, validateFile, validateRows, suggestColumnMatches, normalizeHeader, EXPECTED_COLUMNS, COLUMN_ALIASES };
+  
+  function detectHeaderUnit(h) {
+    if (!h) return null;
+    const s = String(h).toLowerCase();
+    if (/\b(?:kg|kgs|kilogram|kilograms)\b|_kg|\(kg\)/.test(s)) return 'KG';
+    if (/\b(?:g|gm|gms|gram|grams)\b|_g|\(g\)/.test(s)) return 'G';
+    if (/\b(?:l|ltr|ltrs|liter|litres|litre)\b|_l|\(l\)/.test(s)) return 'L';
+    if (/\b(?:ml)\b|_ml|\(ml\)/.test(s)) return 'ML';
+    return null;
+  }
+
+  function detectWeightSchema(headers, rows, mapping) {
+    const rawHeaders = headers || [];
+    const weightCol = mapping?.Weight;
+    const totalWeightCol = mapping?.['Total Weight'];
+
+    // 1. Direct header detection
+    let weightSchemaUnit = detectHeaderUnit(weightCol);
+    let totalWeightSchemaUnit = detectHeaderUnit(totalWeightCol);
+    let weightSchemaProvenance = (weightSchemaUnit || totalWeightSchemaUnit) ? 'source_header' : 'unknown';
+
+    // 2. If not in header, check sample rows for statistical UOM cross-validation
+    if (!weightSchemaUnit && rows && rows.length > 0 && weightCol) {
+      let massMatches = 0;
+      let massChecked = 0;
+      const sampleSize = Math.min(rows.length, 500);
+
+      for (let i = 0; i < sampleSize; i++) {
+        const r = rows[i];
+        const rawW = r[weightCol] ?? r.Weight ?? r.weight;
+        const wVal = typeof rawW === 'number' ? rawW : parseFloat(String(rawW || '').replace(/,/g, ''));
+        const uomText = String(r.variant_uom_text || r.uom || r.name || r['Product Name'] || '').trim();
+
+        if (!isNaN(wVal) && wVal > 0 && uomText) {
+          const kgM = uomText.match(/\b(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilogram|kilograms)\b/i);
+          const gM = uomText.match(/\b(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/i);
+          if (kgM) {
+            massChecked++;
+            if (Math.abs(parseFloat(kgM[1]) - wVal) < 1e-3) massMatches++;
+          } else if (gM) {
+            massChecked++;
+            if (Math.abs(parseFloat(gM[1]) / 1000 - wVal) < 1e-3) massMatches++;
+          }
+        }
+      }
+
+      // If at least 5 cross-validation samples exist and >= 80% confirm KG scale
+      if (massChecked >= 5 && (massMatches / massChecked) >= 0.8) {
+        weightSchemaUnit = 'KG';
+        totalWeightSchemaUnit = 'KG';
+        weightSchemaProvenance = 'source_schema_evidence';
+      }
+    }
+
+    return {
+      weightSchemaUnit: weightSchemaUnit || null,
+      totalWeightSchemaUnit: totalWeightSchemaUnit || null,
+      weightSchemaProvenance
+    };
+  }
+
+  return { mapColumns, validateFile, validateRows, suggestColumnMatches, normalizeHeader, detectHeaderUnit, detectWeightSchema, EXPECTED_COLUMNS, COLUMN_ALIASES };
 })();

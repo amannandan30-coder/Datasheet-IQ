@@ -1,7 +1,13 @@
-﻿window.App = window.App || {};
+window.App = window.App || {};
 
 /* ============================================================
    CLEANER - Text normalization without losing raw data
+   Strict Weight & Volume Physical Provenance Hierarchy:
+     Priority 1: Authoritative Source Total Weight (when unit is verified KG)
+     Priority 2: Derived from Source Unit Weight * Qty (when unit is verified KG)
+     Priority 3: Derived mass from generic mass units (kg/g only in name/UOM)
+     Rule: Bare numeric values without schema/header evidence remain UNKNOWN unit.
+     Rule: Volume (L/ml) is tracked separately and NEVER converted to mass.
    ============================================================ */
 App.Cleaner = (() => {
 
@@ -56,7 +62,7 @@ App.Cleaner = (() => {
       const match = raw.match(pattern);
       if (match) {
         return {
-          normalized_uom: `${match[1]} ${unit}`,
+          normalized_uom: match[1] + ' ' + unit,
           uom_size: parseFloat(match[1]),
           uom_type: unit
         };
@@ -76,7 +82,7 @@ App.Cleaner = (() => {
         else if (['PCS', 'PACK', 'PK', 'UNIT', 'UNITS'].includes(rawUnit)) mappedUnit = 'PCS';
 
         return {
-          normalized_uom: `${val} ${mappedUnit}`,
+          normalized_uom: val + ' ' + mappedUnit,
           uom_size: parseFloat(val),
           uom_type: mappedUnit
         };
@@ -90,39 +96,99 @@ App.Cleaner = (() => {
     };
   }
 
-  function parseWeightToKG(val) {
+  /* ── Header unit detection ──────────────────────────────── */
+  function detectHeaderUnit(h) {
+    if (!h) return null;
+    const s = String(h).toLowerCase();
+    if (/\b(?:kg|kgs|kilogram|kilograms)\b|_kg|\(kg\)/.test(s)) return 'KG';
+    if (/\b(?:g|gm|gms|gram|grams)\b|_g|\(g\)/.test(s)) return 'G';
+    if (/\b(?:l|ltr|ltrs|liter|litres|litre)\b|_l|\(l\)/.test(s)) return 'L';
+    if (/\b(?:ml)\b|_ml|\(ml\)/.test(s)) return 'ML';
+    return null;
+  }
+
+  /* ── Unit-aware weight value parser ─────────────────────── */
+  function parseWeightValue(val, headerName, options) {
     if (val == null || val === '') return null;
-    if (typeof val === 'number') return isNaN(val) ? null : val;
-    const str = String(val).trim().toLowerCase();
-    if (!str || str === '-') return null;
+    const opts = options || {};
+    const headerUnit = opts.schemaUnit || detectHeaderUnit(headerName);
 
-    const kgMatch = str.match(/^([\d.]+)\s*(?:kg|kgs|kilogram|kilograms)$/);
-    if (kgMatch) return parseFloat(kgMatch[1]);
+    if (typeof val === 'string') {
+      const s = val.trim();
+      if (!s || s === '-') return null;
 
-    const gMatch = str.match(/^([\d.]+)\s*(?:g|gm|gms|gram|grams)$/);
-    if (gMatch) return parseFloat(gMatch[1]) / 1000;
+      // Explicit mass unit in string
+      const kgMatch = s.match(/^([\d.]+)\s*(?:kg|kgs|kilogram|kilograms)$/i);
+      if (kgMatch) {
+        const num = parseFloat(kgMatch[1]);
+        return { raw_value: num, unit: 'KG', value_kg: num, provenance: 'source_explicit' };
+      }
+      const gMatch = s.match(/^([\d.]+)\s*(?:g|gm|gms|gram|grams)$/i);
+      if (gMatch) {
+        const num = parseFloat(gMatch[1]);
+        return { raw_value: num, unit: 'G', value_kg: num / 1000, provenance: 'source_explicit' };
+      }
 
-    const pureNum = Number(str.replace(/,/g, ''));
-    if (!isNaN(pureNum)) return pureNum;
+      // Volume in string -> NOT mass
+      if (/^([\d.]+)\s*(?:l|ltr|ltrs|liter|litres|litre|ml|milliliter|millilitres)$/i.test(s)) {
+        return null;
+      }
+
+      const cleanNum = Number(s.replace(/,/g, ''));
+      if (!isNaN(cleanNum)) {
+        val = cleanNum;
+      } else {
+        return null;
+      }
+    }
+
+    if (typeof val === 'number') {
+      if (isNaN(val)) return null;
+      if (headerUnit === 'KG') {
+        return { raw_value: val, unit: 'KG', value_kg: val, provenance: 'source_schema' };
+      } else if (headerUnit === 'G') {
+        return { raw_value: val, unit: 'G', value_kg: val / 1000, provenance: 'source_schema' };
+      } else {
+        return { raw_value: val, unit: 'UNKNOWN', value_kg: null, provenance: 'unknown' };
+      }
+    }
 
     return null;
   }
 
-  function extractWeightKG(uomStr, nameStr) {
-    const combined = `${uomStr || ''} ${nameStr || ''}`.toLowerCase();
-    const kgMatch = combined.match(/(\d+(?:\.\d+)?)\s*(?:kg|kgs)\b/);
+  // Legacy compatibility helper (only converts when unit is known KG)
+  function parseWeightToKG(val, headerName, options) {
+    const res = parseWeightValue(val, headerName, options);
+    return res ? res.value_kg : null;
+  }
+
+  // Generic mass extraction: kg / g ONLY (never volume)
+  function extractMassKG(uomStr, nameStr) {
+    const combined = ((uomStr || '') + ' ' + (nameStr || '')).toLowerCase();
+    const kgMatch = combined.match(/\b(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilogram|kilograms)\b/);
     if (kgMatch) return parseFloat(kgMatch[1]);
 
-    const gMatch = combined.match(/(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/);
+    const gMatch = combined.match(/\b(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/);
     if (gMatch) return parseFloat(gMatch[1]) / 1000;
 
-    const lMatch = combined.match(/(\d+(?:\.\d+)?)\s*(?:l|ltr|liter|litres)\b/);
+    return null;
+  }
+
+  // Generic volume extraction: L / ml ONLY (never mass)
+  function extractVolumeL(uomStr, nameStr) {
+    const combined = ((uomStr || '') + ' ' + (nameStr || '')).toLowerCase();
+    const lMatch = combined.match(/\b(\d+(?:\.\d+)?)\s*(?:l|ltr|ltrs|liter|litres|litre)\b/);
     if (lMatch) return parseFloat(lMatch[1]);
 
-    const mlMatch = combined.match(/(\d+(?:\.\d+)?)\s*(?:ml)\b/);
+    const mlMatch = combined.match(/\b(\d+(?:\.\d+)?)\s*(?:ml|milliliter|millilitres)\b/);
     if (mlMatch) return parseFloat(mlMatch[1]) / 1000;
 
     return null;
+  }
+
+  // Legacy compatibility alias
+  function extractWeightKG(uomStr, nameStr) {
+    return extractMassKG(uomStr, nameStr);
   }
 
   function toNumber(val) {
@@ -164,7 +230,7 @@ App.Cleaner = (() => {
   }
 
   /* ── Core cleaner ───────────────────────────────────────── */
-  function cleanRecord(rec) {
+  function cleanRecord(rec, options) {
     const raw = rec._raw || {};
     const raw_name  = rec.name  || rec.product_name || rec.Product_Name || raw['Product Name'] || raw.name || '';
     const raw_brand = rec.brand || raw.brand || raw.Brand || '';
@@ -184,7 +250,7 @@ App.Cleaner = (() => {
     const raw_condition = norm(rec.condition || rec.Condition || raw.Condition || raw.condition || raw['Stock Condition'] || '');
     const raw_disposition = norm(rec.disposition || rec.Disposition || raw.Disposition || raw.disposition || raw.Action || raw.action || '');
 
-    // If Remark/Remarks contains an explicit status token (saleable/non_saleable/etc), promote to inventory_status if empty
+    // If Remark/Remarks contains an explicit status token, promote to inventory_status if empty
     let effective_inv_status = raw_inv_status;
     if (!effective_inv_status && raw_remarks) {
       if (typeof App.InventoryStatusResolver !== 'undefined' && App.InventoryStatusResolver.hasSellableSignal) {
@@ -234,36 +300,94 @@ App.Cleaner = (() => {
     }
     source_value = source_value ?? 0;
 
-    // Weight disambiguation: unit weight vs total weight
-    const raw_total_wt = parseWeightToKG(rec['Total Weight'] || rec.total_weight || rec.gross_weight || rec.batch_weight || raw['Total Weight']);
-    const raw_unit_wt  = parseWeightToKG(rec.Weight || rec.weight || rec.unit_weight || rec.net_weight || raw.Weight || raw.weight);
-    const extractedPackWeight = extractWeightKG(raw_uom, raw_name);
+    // ── STRICT WEIGHT & VOLUME PHYSICAL PROVENANCE HIERARCHY ──
+    const rawTotalWeightVal = rec['Total Weight'] ?? rec.total_weight ?? rec.gross_weight ?? rec.batch_weight ?? raw['Total Weight'];
+    const rawUnitWeightVal  = rec.Weight ?? rec.weight ?? rec.unit_weight ?? rec.net_weight ?? raw.Weight ?? raw.weight;
 
-    let unit_weight = raw_unit_wt;
-    if (unit_weight == null) {
-      unit_weight = extractedPackWeight;
-    }
+    const parsedTotalWeight = parseWeightValue(rawTotalWeightVal, rec._total_weight_header || 'Total Weight', { schemaUnit: options?.totalWeightSchemaUnit || options?.schemaUnit });
+    const parsedUnitWeight  = parseWeightValue(rawUnitWeightVal, rec._weight_header || 'Weight', { schemaUnit: options?.weightSchemaUnit || options?.schemaUnit });
 
-    let total_weight = raw_total_wt;
-    if (total_weight == null || total_weight === 0) {
-      if (raw_unit_wt != null) {
-        if (extractedPackWeight != null && extractedPackWeight > 0 && qty > 1 &&
-            Math.abs(raw_unit_wt - (extractedPackWeight * qty)) < 0.05 * (extractedPackWeight * qty) &&
-            Math.abs(raw_unit_wt - extractedPackWeight) >= 0.05 * extractedPackWeight) {
-          total_weight = raw_unit_wt;
-          unit_weight = extractedPackWeight;
+    const extractedMass = extractMassKG(raw_uom, raw_name);
+    const extractedVol  = extractVolumeL(raw_uom, raw_name);
+
+    let source_total_weight_kg = null;
+    let derived_source_weight_kg = null;
+    let derived_name_mass_kg = null;
+
+    let total_weight_value = parsedTotalWeight ? parsedTotalWeight.raw_value : null;
+    let total_weight_unit  = parsedTotalWeight ? parsedTotalWeight.unit : 'UNKNOWN';
+    let weight_value       = parsedUnitWeight ? parsedUnitWeight.raw_value : null;
+    let weight_unit        = parsedUnitWeight ? parsedUnitWeight.unit : 'UNKNOWN';
+    let weight_unit_source = 'unknown';
+    let weight_source      = 'unavailable';
+    let weight_validation_status = 'N/A';
+
+    // Priority 1: Authoritative Source Total Weight (when unit is verified KG)
+    if (parsedTotalWeight != null && parsedTotalWeight.raw_value > 0) {
+      if (parsedTotalWeight.unit === 'KG' || parsedTotalWeight.unit === 'G') {
+        total_weight_unit = 'KG';
+        source_total_weight_kg = parsedTotalWeight.value_kg;
+        weight_source = 'source_total_weight';
+        weight_unit_source = parsedTotalWeight.provenance;
+      }
+      if (parsedUnitWeight != null && parsedUnitWeight.raw_value > 0) {
+        if ((parsedUnitWeight.unit === 'KG' || parsedUnitWeight.unit === 'G') &&
+            (parsedTotalWeight.unit === 'KG' || parsedTotalWeight.unit === 'G')) {
+          const unitKgVal = parsedUnitWeight.value_kg;
+          const totalKgVal = parsedTotalWeight.value_kg;
+          const expectedTw = unitKgVal * qty;
+          const diff = Math.abs(totalKgVal - expectedTw);
+          if (diff < 1e-5) weight_validation_status = 'EXACT';
+          else if (diff <= 0.01 || diff / Math.max(totalKgVal, 1) < 0.005) weight_validation_status = 'MINOR_ROUNDING';
+          else weight_validation_status = 'MATERIAL_MISMATCH';
         } else {
-          total_weight = unit_weight * qty;
+          weight_validation_status = 'UNKNOWN_UNIT';
         }
-      } else if (unit_weight != null && unit_weight > 0) {
-        total_weight = unit_weight * qty;
-      } else {
-        total_weight = 0;
+      }
+    }
+    // Priority 2: Derived from Source Unit Weight * Qty (when unit is verified KG and Total Weight is blank/0)
+    else if (parsedUnitWeight != null && parsedUnitWeight.raw_value > 0) {
+      if (parsedUnitWeight.unit === 'KG' || parsedUnitWeight.unit === 'G') {
+        derived_source_weight_kg = parsedUnitWeight.value_kg * qty;
+        weight_source = 'source_unit_weight_qty';
+        weight_unit_source = parsedUnitWeight.provenance;
+        weight_validation_status = 'EXACT';
       }
     }
 
-    unit_weight = unit_weight ?? 0;
-    total_weight = total_weight ?? 0;
+    // Priority 3: Derived mass from verified generic mass units in Product Name / UOM (kg/g only)
+    if (source_total_weight_kg == null && derived_source_weight_kg == null && extractedMass != null && extractedMass > 0) {
+      derived_name_mass_kg = extractedMass * qty;
+      weight_source = 'derived_mass_uom';
+      weight_unit_source = 'derived_from_uom';
+      weight_value = extractedMass;
+      weight_unit  = 'KG';
+    }
+
+    // Canonical total_weight in KG (for backward compatibility, never contains volume and never assumes unverified bare numbers as KG)
+    const total_weight = source_total_weight_kg ?? derived_source_weight_kg ?? derived_name_mass_kg ?? 0;
+    const unit_weight  = source_total_weight_kg != null ? (qty > 0 ? source_total_weight_kg / qty : source_total_weight_kg) :
+                         (derived_source_weight_kg != null ? (parsedUnitWeight.value_kg) :
+                         (derived_name_mass_kg != null ? extractedMass : 0));
+
+    // Volume tracking (strictly separated from mass)
+    const total_volume_l = (extractedVol != null && extractedVol > 0) ? extractedVol * qty : 0;
+    const unit_volume_l  = extractedVol ?? 0;
+    const volume_uom     = extractedVol != null ? 'L' : null;
+
+    
+    let mass_status = 'UNKNOWN';
+    if (source_total_weight_kg != null && source_total_weight_kg > 0) {
+      mass_status = 'VERIFIED';
+    } else if ((derived_source_weight_kg != null && derived_source_weight_kg > 0) || (derived_name_mass_kg != null && derived_name_mass_kg > 0)) {
+      mass_status = 'DERIVED';
+    } else if (total_volume_l > 0) {
+      mass_status = 'NOT_APPLICABLE';
+    } else if (qty > 0 && (rawUnitWeightVal != null || rawTotalWeightVal != null)) {
+      mass_status = 'UNKNOWN';
+    } else {
+      mass_status = 'NOT_APPLICABLE';
+    }
 
     const uomNorm = normalizeUOM(raw_uom, raw_name);
 
@@ -279,8 +403,8 @@ App.Cleaner = (() => {
       raw_mrp:                rec.variant_mrp ?? rec.mrp ?? rec.price ?? raw.mrp,
       raw_qty:                rec.qty ?? rec.quantity ?? raw.qty ?? raw['Sum of QTY'],
       raw_value:              rec.Value ?? rec.value ?? rec.amount ?? raw.Value,
-      raw_weight:             rec.Weight ?? rec.weight ?? raw.Weight,
-      raw_total_weight:       rec['Total Weight'] ?? rec.total_weight ?? rec.gross_weight ?? raw['Total Weight'],
+      raw_weight:             rawUnitWeightVal,
+      raw_total_weight:       rawTotalWeightVal,
       raw_item_type:          raw_item_type,
       raw_inventory_status:   effective_inv_status,
       raw_bad_inventory_type: raw_bad_type || 'unknown',
@@ -305,8 +429,28 @@ App.Cleaner = (() => {
       qty,
       variant_mrp,
       source_value,
+
+      // Weight & Mass Provenance
       weight: unit_weight,
       total_weight,
+      source_total_weight_kg,
+      derived_source_weight_kg,
+      derived_name_mass_kg,
+      weight_value,
+      weight_unit,
+      total_weight_value,
+      total_weight_unit,
+      weight_source,
+      weight_unit_source,
+      weight_validation_status,
+      mass_status,
+
+      // Volume Tracking
+      unit_volume: unit_volume_l,
+      total_volume: total_volume_l,
+      unit_volume_l,
+      total_volume_l,
+      volume_uom,
 
       // UOM
       normalized_uom: uomNorm.normalized_uom,
@@ -316,9 +460,9 @@ App.Cleaner = (() => {
     };
   }
 
-  function cleanAll(records) {
-    return records.map(cleanRecord);
+  function cleanAll(records, options) {
+    return records.map(r => cleanRecord(r, options));
   }
 
-  return { cleanRecord, cleanAll, normalizeUOM, cleanBrand, normLower, norm, normTitle, toNumber, extractWeightKG, parseWeightToKG };
+  return { cleanRecord, cleanAll, normalizeUOM, cleanBrand, normLower, norm, normTitle, toNumber, parseWeightValue, parseWeightToKG, extractMassKG, extractVolumeL, extractWeightKG, detectHeaderUnit };
 })();

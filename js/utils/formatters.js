@@ -31,6 +31,30 @@ App.Fmt = (() => {
     return numFmt.format(Number(val));
   }
 
+  function mass(val) {
+    if (val == null || isNaN(val) || Number(val) === 0) return '—';
+    const n = Number(val);
+    if (n >= 1000) {
+      const t = n / 1000;
+      return (Number.isInteger(t) ? t : t.toFixed(2)) + ' T';
+    }
+    if (n >= 1) {
+      return (Number.isInteger(n) ? n : n.toFixed(2)) + ' KG';
+    }
+    const g = n * 1000;
+    return (Number.isInteger(g) ? g : g.toFixed(0)) + ' g';
+  }
+
+  function volume(val) {
+    if (val == null || isNaN(val) || Number(val) === 0) return '—';
+    const n = Number(val);
+    if (n >= 1000) {
+      const kl = n / 1000;
+      return kl.toFixed(2) + ' kL';
+    }
+    return n.toFixed(2) + ' L';
+  }
+
   function weight(val) {
     if (val == null || isNaN(val) || Number(val) === 0) return '—';
     const n = Number(val);
@@ -80,6 +104,6 @@ App.Fmt = (() => {
     return map[conf] || 'badge-muted';
   }
 
-  return { currency, currencyFull, number, weight, pct, date, shortDate, badge_confidence, escapeHtml };
+  return { currency, currencyFull, number, weight, mass, volume, pct, date, shortDate, badge_confidence, escapeHtml };
 })();
 

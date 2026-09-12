@@ -58,6 +58,8 @@ App.Views.CategoryDetail = (() => {
     const totalUnits = catRecords.reduce((s,r) => s+(r.qty||0), 0);
     const totalValue = catRecords.reduce((s,r) => s+(r.source_value||0), 0);
     const totalWeight= catRecords.reduce((s,r) => s+(r.total_weight||0), 0);
+    const totalMass  = catRecords.reduce((s,r) => s+(r.total_weight||0), 0);
+    const totalVolume= catRecords.reduce((s,r) => s+(r.total_volume_l||0), 0);
     const totalSKUs  = new Set(catRecords.map(r => r.product_family_id)).size;
     const brandSet   = new Set(catRecords.map(r => r.normalized_brand));
 
@@ -75,11 +77,13 @@ App.Views.CategoryDetail = (() => {
     const subcatMap = new Map();
     for (const r of catRecords) {
       const sc = r.subcategory || 'General';
-      if (!subcatMap.has(sc)) subcatMap.set(sc, { name:sc, qty:0, value:0, weight:0, skus:new Set(), brands:new Set(), records:[] });
+      if (!subcatMap.has(sc)) subcatMap.set(sc, { name:sc, qty:0, value:0, weight:0, mass:0, volume:0, skus:new Set(), brands:new Set(), records:[] });
       const s = subcatMap.get(sc);
       s.qty    += (r.qty||0);
       s.value  += (r.source_value||0);
       s.weight += (r.total_weight||0);
+      s.mass   += (r.total_weight||0);
+      s.volume += (r.total_volume_l||0);
       s.skus.add(r.product_family_id);
       s.brands.add(r.normalized_brand);
       s.records.push(r);
@@ -109,7 +113,7 @@ App.Views.CategoryDetail = (() => {
             <span class="badge badge-neutral">${subcats.length} subcategories</span>
             <span class="badge badge-neutral">${brandSet.size} brands</span>
           </div>
-          <div class="text-sm text-muted">Complete breakdown of inventory, brand share, and scope-aware reconciliation.</div>
+          <div class="text-sm text-muted">Complete breakdown of inventory, brand share, and SKU analytics.</div>
         </div>
         <button class="btn btn-secondary" onclick="App.Router.go('dashboard')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to Dashboard
@@ -120,7 +124,8 @@ App.Views.CategoryDetail = (() => {
       <div class="kpi-grid mb-24">
         ${kpi('Total Value (Canonical)', App.Fmt.currency(totalValue), '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="18"/></svg>', '#10b981')}
         ${kpi('Total Units',            App.Fmt.number(totalUnits),   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>', '#6366f1')}
-        ${kpi('Total Weight',           App.Fmt.weight(totalWeight),  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"/></svg>', '#38bdf8')}
+        ${kpi('Total Mass',             App.Fmt.mass(totalMass),      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"/></svg>', '#38bdf8')}
+        ${kpi('Total Volume',           App.Fmt.volume(totalVolume),  '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8M12 2v6M5 8h14l-2 13H7L5 8z"/></svg>', '#06b6d4')}
         ${kpi('Total SKUs',             App.Fmt.number(totalSKUs),    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>', '#f59e0b')}
         ${kpi('Active Brands',          App.Fmt.number(brandSet.size),'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>', '#a78bfa')}
       </div>
@@ -181,24 +186,29 @@ App.Views.CategoryDetail = (() => {
     window._subcatMap = subcatMap;
     window._activeScopeMode = 'all';
 
-    // Helper to render scope reconciliation
+    // Helper to render scope reconciliation (only when explicitly opted in)
     function renderScopeReconciliation(scName) {
       const reconWrap = container.querySelector('#scope-recon-container');
       if (!reconWrap) return;
 
-      if (!App.ReportingMapper || typeof App.ReportingMapper.getCategoryReconciliation !== 'function') {
+      const activeProfile = window.App?.State?.activeReportingProfile;
+      const isExplicitBusinessProfile = activeProfile && 
+        !String(activeProfile).toLowerCase().includes('canonical') && 
+        !String(activeProfile).toLowerCase().includes('standard');
+
+      if (!isExplicitBusinessProfile || !App.ReportingMapper || typeof App.ReportingMapper.getCategoryReconciliation !== 'function') {
         reconWrap.innerHTML = '';
+        _currentRecon = null;
         return;
       }
 
       // If viewing category-level (scName is empty)
       if (!scName) {
-        // Check if any subcategory in this category has a configured business scope
         const configuredBuckets = [];
         for (const sc of subcats) {
           const b = App.ReportingMapper.getFMBucketForSubcat(sc.name, catName);
           if (b && !configuredBuckets.some(x => x.bucketName === b)) {
-            const r = App.ReportingMapper.getCategoryReconciliation(catName, sc.name, allDatasetRecords);
+            const r = App.ReportingMapper.getCategoryReconciliation(catName, sc.name, allDatasetRecords, activeProfile);
             if (r && r.hasBusinessScope) {
               configuredBuckets.push(r);
             }
@@ -206,6 +216,9 @@ App.Views.CategoryDetail = (() => {
         }
 
         if (configuredBuckets.length > 0) {
+          const recon = configuredBuckets[0];
+          const deltaVal = recon.valueDelta;
+          const deltaRows = recon.actualRows - recon.expectedRows;
           reconWrap.innerHTML = `
         <div class="card p-18 scope-recon-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%); border: 1px solid rgba(99, 102, 241, 0.18); border-radius: 12px; margin-bottom: 16px;">
           <div class="flex items-center justify-between mb-14 flex-wrap gap-8">
@@ -301,42 +314,22 @@ App.Views.CategoryDetail = (() => {
           </div>
         </div>
       `;
-    } else {
-          reconWrap.innerHTML = `
-            <div class="card p-16" style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 12px;">
-              <div class="flex items-center gap-12">
-                <span class="flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-                <div>
-                  <div class="font-semibold text-sm">No business reporting scope configured</div>
-                  <div class="text-xs text-muted">Category "${escHtml(catName)}" operates under the Standard Canonical Taxonomy with full inventory visibility across all sheets.</div>
-                </div>
-              </div>
-            </div>
-          `;
+        } else {
+          reconWrap.innerHTML = '';
         }
         _currentRecon = null;
         return;
       }
 
-      const recon = App.ReportingMapper.getCategoryReconciliation(catName, scName, allDatasetRecords);
+      const recon = App.ReportingMapper.getCategoryReconciliation(catName, scName, allDatasetRecords, activeProfile);
       _currentRecon = recon;
 
       if (!recon || !recon.hasBusinessScope) {
-        reconWrap.innerHTML = `
-          <div class="card p-16" style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 12px;">
-            <div class="flex items-center gap-12">
-              <span class="flex items-center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
-              <div>
-                <div class="font-semibold text-sm">No business reporting scope configured</div>
-                <div class="text-xs text-muted">This subcategory ("${escHtml(scName)}") operates under the Standard Canonical Taxonomy with full inventory visibility across all sheets.</div>
-              </div>
-            </div>
-          </div>
-        `;
+        reconWrap.innerHTML = '';
         return;
       }
 
-            const deltaVal = recon.valueDelta;
+      const deltaVal = recon.valueDelta;
       const deltaRows = recon.actualRows - recon.expectedRows;
 
       reconWrap.innerHTML = `
@@ -536,7 +529,12 @@ App.Views.CategoryDetail = (() => {
     titleEl.innerHTML = `<span class="subcat-summary-icon" style="display:inline-flex;align-items:center;color:var(--primary)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></span> ${escHtml(scData.name)}`;
 
     let businessScopeCardHtml = '';
-    if (recon && recon.hasBusinessScope) {
+    const activeProfile = window.App?.State?.activeReportingProfile;
+    const isExplicitBusinessProfile = activeProfile && 
+      !String(activeProfile).toLowerCase().includes('canonical') && 
+      !String(activeProfile).toLowerCase().includes('standard');
+
+    if (recon && recon.hasBusinessScope && isExplicitBusinessProfile) {
       businessScopeCardHtml = `
         <div class="subcat-stat-card" style="--stat-color: #ec4899">
           <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></div>
@@ -575,7 +573,7 @@ App.Views.CategoryDetail = (() => {
         <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"></path></svg></div>
         <div class="subcat-stat-info">
           <div class="subcat-stat-value">${App.Fmt.weight(scData.weight)}</div>
-          <div class="subcat-stat-label">Weight</div>
+          <div class="subcat-stat-label">Mass</div>
         </div>
       </div>
       <div class="subcat-stat-card" style="--stat-color: #a78bfa">
@@ -605,12 +603,14 @@ App.Views.CategoryDetail = (() => {
     for (const r of records) {
       const b = r.normalized_brand || 'Unknown';
       if (!brandMap.has(b)) brandMap.set(b, {
-        name:b, brand_id:r.brand_id, qty:0, value:0, weight:0, skus:new Set()
+        name:b, brand_id:r.brand_id, qty:0, value:0, weight:0, mass:0, volume:0, skus:new Set()
       });
       const bm = brandMap.get(b);
       bm.qty    += (r.qty||0);
       bm.value  += (r.source_value||0);
       bm.weight += (r.total_weight||0);
+      bm.mass   += (r.total_weight||0);
+      bm.volume += (r.total_volume_l||0);
       bm.skus.add(r.product_family_id);
     }
 
@@ -639,8 +639,12 @@ App.Views.CategoryDetail = (() => {
             <div class="brand-stat-lbl">Units</div>
           </div>
           <div class="brand-stat-item">
-            <div class="brand-stat-val">${App.Fmt.weight(b.weight)}</div>
-            <div class="brand-stat-lbl">Weight</div>
+            <div class="brand-stat-val">${App.Fmt.mass(b.mass || b.weight)}</div>
+            <div class="brand-stat-lbl">Mass</div>
+          </div>
+          <div class="brand-stat-item">
+            <div class="brand-stat-val">${(b.volume > 0 ? App.Fmt.volume(b.volume) : "—")}</div>
+            <div class="brand-stat-lbl">Volume</div>
           </div>
           <div class="brand-stat-item">
             <div class="brand-stat-val">${App.Fmt.currency(b.value)}</div>

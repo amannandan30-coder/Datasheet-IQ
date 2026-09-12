@@ -51,6 +51,7 @@ App.Pipeline = (() => {
 
       // Apply mapping
       const mappedRows = App.Parser.applyMapping(rows, mapping);
+      const weightSchema = App.Validator.detectWeightSchema ? App.Validator.detectWeightSchema(headers, mappedRows, mapping) : {};
 
       // Row-level validation
       const { valid, review } = App.Validator.validateRows(rows, mapping);
@@ -67,7 +68,7 @@ App.Pipeline = (() => {
 
       // ── 5. Clean ──────────────────────────────────────────
       prog('clean','active','Normalizing text & numbers...');
-      const cleaned = App.Cleaner.cleanAll(rawRecords);
+      const cleaned = App.Cleaner.cleanAll(rawRecords, weightSchema);
       // Resolve and persist canonical inventory status on all records
       if (App.InventoryStatusResolver && typeof App.InventoryStatusResolver.resolveRecordStatusDetailed === 'function') {
         for (const rec of cleaned) {

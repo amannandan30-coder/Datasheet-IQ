@@ -419,13 +419,17 @@ App.ReportingMapper = (() => {
   }
 
   // Exact row-level reconciliation between Canonical records and Business Scope records
-  function getCategoryReconciliation(catName, subcatName, allDatasetRecords, profileName) {
-    profileName = profileName || PROFILES.GROFERS_FM_20;
+  function getCategoryReconciliation(catName, subcatName, allDatasetRecords, profileName, options) {
+    profileName = profileName || (window.App && window.App.State && window.App.State.activeReportingProfile) || PROFILES.CANONICAL_STANDARD;
     if (!allDatasetRecords || !allDatasetRecords.length) {
       return { hasBusinessScope: false, isConfigured: false };
     }
 
-    const isApplicable = isProfileApplicable(profileName, allDatasetRecords);
+    if (profileName === PROFILES.CANONICAL_STANDARD) {
+      return { hasBusinessScope: false, isProfileApplicable: false, isConfigured: false, profileName };
+    }
+
+    const isApplicable = (options && options.force) ? true : isProfileApplicable(profileName, allDatasetRecords);
     if (!isApplicable) {
       return { hasBusinessScope: false, isProfileApplicable: false, isConfigured: false };
     }
@@ -628,57 +632,19 @@ App.ReportingMapper = (() => {
   }
 
   function isProfileApplicable(profileName, records) {
-    if (!profileName) return true;
+    if (!profileName) return false;
     const pNorm = String(profileName).toLowerCase().trim();
     if (pNorm.includes('canonical') || pNorm.includes('standard')) return true;
     
-    if (pNorm.includes('grofers') || pNorm.includes('fm') || pNorm.includes('20')) {
-      if (!records || !records.length) return false;
-      
-      // 1. Check for dedicated Atta sheet (case-insensitive)
-      const hasAttaSheet = records.some(r => {
-        const s = String(r._sheet_name || r._raw_sheet_name || (r._raw && r._raw._sheet_name) || '').trim().toLowerCase();
-        return s === 'atta' || s.startsWith('atta');
-      });
-      if (hasAttaSheet) return true;
-
-      // 2. Check for Saleable sheet (case-insensitive)
-      const hasSaleable = records.some(r => {
-        const s = String(r._sheet_name || r._raw_sheet_name || (r._raw && r._raw._sheet_name) || '').trim().toLowerCase();
-        return s === 'saleable' || s === 'sellable' || s.includes('saleable') || s.includes('sellable');
-      });
-
-      // 3. Inspect available workbook metadata fields generically
-      const hasRetailVendorMeta = records.some(r => {
-        const rawObj = r._raw || {};
-        const metaText = [
-          r.raw_entity_name,
-          r.entity_name,
-          r.entity_vendor_name,
-          r.warehouse_id,
-          r.warehouse,
-          rawObj.entity_name,
-          rawObj.entity_vendor_name,
-          rawObj.vendor_name,
-          rawObj.Warehouse,
-          rawObj.warehouse_id,
-          rawObj.location
-        ].filter(Boolean).join(' ').toLowerCase();
-
-        return metaText.length > 0 && (
-          metaText.includes('grofers') ||
-          metaText.includes('dasna') ||
-          metaText.includes('feeder') ||
-          metaText.includes('sr feeder') ||
-          metaText.includes('bcpl') ||
-          metaText.includes('warehouse') ||
-          metaText.includes('hub') ||
-          metaText.includes('dc') ||
-          metaText.includes('fmcg')
-        );
-      });
-
-      return hasSaleable && hasRetailVendorMeta;
+    // Explicit opt-in only:
+    // Grofers FM 20-Bucket or other historical business profiles are NEVER automatically activated
+    // for arbitrary workbooks based on loose heuristics (sheet names like 'atta' or generic warehouse terms).
+    // It is only applicable if explicitly enabled on the application state / active profile.
+    if (typeof window !== 'undefined' && window.App && window.App.State && window.App.State.activeReportingProfile) {
+      const activeP = String(window.App.State.activeReportingProfile).toLowerCase().trim();
+      if (activeP === pNorm || (activeP.includes('grofers') && pNorm.includes('grofers'))) {
+        return true;
+      }
     }
     return false;
   }

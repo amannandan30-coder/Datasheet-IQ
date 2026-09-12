@@ -53,6 +53,8 @@ App.Views.BrandDetail = (() => {
     const totalUnits = brandRecords.reduce((s,r) => s+(r.qty||0), 0);
     const totalValue = brandRecords.reduce((s,r) => s+(r.source_value||0), 0);
     const totalWeight= brandRecords.reduce((s,r) => s+(r.total_weight||0), 0);
+    const totalMass  = brandRecords.reduce((s,r) => s+(r.total_weight||0), 0);
+    const totalVolume= brandRecords.reduce((s,r) => s+(r.total_volume_l||0), 0);
     const totalSKUs  = new Set(brandRecords.map(r => r.product_family_id)).size;
     const cats       = [...new Set(brandRecords.map(r => r.normalized_category))];
 
@@ -66,7 +68,7 @@ App.Views.BrandDetail = (() => {
         brand: brandName,
         category: r.normalized_category,
         subcategory: r.subcategory,
-        qty:0, value:0, weight:0,
+        qty:0, value:0, weight:0, mass:0, volume:0,
         variants: new Map(), // variant_id → variant
         records: [],
       });
@@ -74,18 +76,22 @@ App.Views.BrandDetail = (() => {
       f.qty    += (r.qty||0);
       f.value  += (r.source_value||0);
       f.weight += (r.total_weight||0);
+    f.mass   += (r.total_weight||0);
+    f.volume += (r.total_volume_l||0);
       f.records.push(r);
 
       // Group variants
       const vid = r.product_variant_id;
       if (!f.variants.has(vid)) f.variants.set(vid, {
         id: vid, uom: r.normalized_uom||r.raw_uom||'', mrp: r.variant_mrp,
-        raw_uom: r.raw_uom, qty:0, value:0, weight:0, records:[]
+        raw_uom: r.raw_uom, qty:0, value:0, weight:0, mass:0, volume:0, records:[]
       });
       const v = f.variants.get(vid);
       v.qty    += (r.qty||0);
       v.value  += (r.source_value||0);
       v.weight += (r.total_weight||0);
+    v.mass   += (r.total_weight||0);
+    v.volume += (r.total_volume_l||0);
       v.records.push(r);
     }
 
@@ -150,7 +156,8 @@ App.Views.BrandDetail = (() => {
         ${kpi('SKUs',    App.Fmt.number(totalSKUs),    '📦', '#6366f1')}
         ${kpi('Units',   App.Fmt.number(totalUnits),   '📊', '#10b981')}
         ${kpi('Value',   App.Fmt.currency(totalValue), '💰', '#f59e0b')}
-        ${kpi('Weight',  App.Fmt.weight(totalWeight),  '⚖️', '#38bdf8')}
+        ${kpi('Total Mass',   App.Fmt.mass(totalMass),      '⚖️', '#38bdf8')}
+        ${kpi('Total Volume', App.Fmt.volume(totalVolume),  '🧪', '#06b6d4')}
       </div>
 
       <div class="section-header">
@@ -204,8 +211,12 @@ App.Views.BrandDetail = (() => {
               <div class="product-summary-lbl">Units</div>
             </div>
             <div class="product-summary-stat">
-              <div class="product-summary-val">${App.Fmt.weight(fam.weight)}</div>
-              <div class="product-summary-lbl">Weight</div>
+              <div class="product-summary-val">${fam.mass > 0 ? App.Fmt.mass(fam.mass) : "—"}</div>
+              <div class="product-summary-lbl">Mass</div>
+            </div>
+            <div class="product-summary-stat">
+              <div class="product-summary-val">${fam.volume > 0 ? App.Fmt.volume(fam.volume) : "—"}</div>
+              <div class="product-summary-lbl">Volume</div>
             </div>
             <div class="product-summary-stat">
               <div class="product-summary-val">${App.Fmt.currency(fam.value)}</div>
@@ -233,10 +244,81 @@ App.Views.BrandDetail = (() => {
     };
   }
 
+      function getRecordMassProvenance(r) {
+    if (!r || !(r.total_weight > 0)) return null;
+    if (r.source_total_weight_kg != null && r.source_total_weight_kg > 0) {
+      return {
+        type: 'source_total',
+        label: 'Source col',
+        description: 'Source Total Weight column'
+      };
+    }
+    if (r.weight_source === 'source_unit_weight_qty' || r.weight_source === 'source_unit_weight') {
+      return {
+        type: 'source_unit',
+        label: 'Source col',
+        description: 'Source Unit Weight column'
+      };
+    }
+    const unitMassStr = r.weight ? App.Fmt.mass(r.weight) : (r.qty > 0 ? App.Fmt.mass(r.total_weight / r.qty) : '');
+    const totalMassStr = App.Fmt.mass(r.total_weight);
+    const mathStr = (unitMassStr && r.qty > 1) ? (unitMassStr + ' × ' + r.qty + ' = ' + totalMassStr) : totalMassStr;
+    return {
+      type: 'package_derived',
+      label: 'Name/package-derived',
+      description: 'Package-derived mass: ' + mathStr
+    };
+  }
+
+  function getVariantMassProvenance(records, totalQty, totalMass) {
+    const massRecs = (records || []).filter(r => (r.total_weight || 0) > 0);
+    if (massRecs.length === 0) return { label: '', title: '' };
+
+    const provs = massRecs.map(getRecordMassProvenance).filter(Boolean);
+    if (provs.length === 0) return { label: '', title: '' };
+
+    const types = new Set(provs.map(p => p.type));
+
+    if (types.size === 1) {
+      const p = provs[0];
+      if (p.type === 'package_derived') {
+        const firstRec = massRecs[0];
+        const unitMass = firstRec.weight || (firstRec.qty > 0 ? firstRec.total_weight / firstRec.qty : 0);
+        const unitMassStr = unitMass > 0 ? App.Fmt.mass(unitMass) : '';
+        const totalMassStr = App.Fmt.mass(totalMass);
+        const formula = (unitMassStr && totalQty > 1) ? (unitMassStr + ' × ' + totalQty + ' = ' + totalMassStr) : totalMassStr;
+        return {
+          label: 'Name/package-derived',
+          title: 'Package-derived mass: ' + formula
+        };
+      }
+      return {
+        label: p.label,
+        title: 'Mass source: ' + p.description
+      };
+    }
+
+    const descList = [...new Set(provs.map(p => p.description))].join('; ');
+    return {
+      label: 'Mixed sources',
+      title: 'Mixed sources: ' + descList
+    };
+  }
+
   function variantRow(v, fam_id) {
     const cleanUom = App.Fmt.escapeHtml(v.uom || 'N/A');
     const cleanRaw = App.Fmt.escapeHtml(v.raw_uom || '');
-    return `<div class="variant-row" onclick="App.UI.openDrawer('${v.records[0]?.id}')">
+    const firstRec = v.records[0] || {};
+    
+    const massProv = v.mass > 0 ? getVariantMassProvenance(v.records, v.qty, v.mass) : { label: '', title: '' };
+    
+    let volumeProvenanceTitle = '';
+    if (v.volume > 0) {
+      const volFormula = v.qty > 1 ? (cleanUom + ' × ' + v.qty + ' = ' + App.Fmt.volume(v.volume)) : cleanUom;
+      volumeProvenanceTitle = 'Volume source: Variant UOM declaration (' + volFormula + ')';
+    }
+
+    return `<div class="variant-row" onclick="App.UI.openDrawer('${firstRec.id}')">
       <div class="variant-uom-badge">${cleanUom}</div>
       <div class="variant-name">
         MRP: ${v.mrp ? App.Fmt.currencyFull(v.mrp) : '—'}
@@ -248,16 +330,22 @@ App.Views.BrandDetail = (() => {
           <div class="variant-stat-val">${App.Fmt.number(v.qty)}</div>
           <div class="variant-stat-lbl">Units</div>
         </div>
-        <div class="variant-stat">
-          <div class="variant-stat-val">${App.Fmt.weight(v.weight)}</div>
-          <div class="variant-stat-lbl">Weight</div>
+        <div class="variant-stat" ${massProv.title ? `title="${App.Fmt.escapeHtml(massProv.title)}"` : ''}>
+          <div class="variant-stat-val">${v.mass > 0 ? App.Fmt.mass(v.mass) : "—"}</div>
+          <div class="variant-stat-lbl">Mass</div>
+          ${massProv.label ? `<div style="font-size:9px;color:var(--text-muted);opacity:0.85;margin-top:2px">${massProv.label}</div>` : ''}
+        </div>
+        <div class="variant-stat" ${volumeProvenanceTitle ? `title="${App.Fmt.escapeHtml(volumeProvenanceTitle)}"` : ''}>
+          <div class="variant-stat-val">${v.volume > 0 ? App.Fmt.volume(v.volume) : "—"}</div>
+          <div class="variant-stat-lbl">Volume</div>
+          ${v.volume > 0 ? `<div style="font-size:9px;color:var(--text-muted);opacity:0.85;margin-top:2px">Variant UOM</div>` : ''}
         </div>
         <div class="variant-stat">
           <div class="variant-stat-val">${App.Fmt.currency(v.value)}</div>
           <div class="variant-stat-lbl">Value</div>
         </div>
         <div class="variant-stat">
-          <span class="badge ${statusBadge(v.records[0]?.raw_bad_inventory_type)}">${v.records[0]?.raw_bad_inventory_type || 'unknown'}</span>
+          <span class="badge ${statusBadge(firstRec.raw_bad_inventory_type)}">${firstRec.raw_bad_inventory_type || 'unknown'}</span>
         </div>
       </div>
     </div>`;

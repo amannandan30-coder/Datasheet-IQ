@@ -67,13 +67,15 @@ App.Views.Dashboard = (() => {
     for (const r of records) {
       const cat = r.normalized_category || 'Uncategorized';
       if (!catMap.has(cat)) catMap.set(cat, {
-        name: cat, qty:0, value:0, weight:0, skus: new Set(),
+        name: cat, qty:0, value:0, weight:0, mass:0, volume:0, skus: new Set(),
         brands: new Set(), subcats: new Set(), color: null
       });
       const c = catMap.get(cat);
       c.qty    += (r.qty||0);
       c.value  += (r.source_value||0);
       c.weight += (r.total_weight||0);
+      c.mass   += (r.total_weight||0);
+      c.volume += (r.total_volume_l||0);
       c.skus.add(r.product_family_id);
       c.brands.add(r.normalized_brand);
       c.subcats.add(r.subcategory);
@@ -117,7 +119,8 @@ App.Views.Dashboard = (() => {
         ${kpiCard('TOTAL SKUS',    App.Fmt.number(kpis.total_skus),  'Unique product families', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', '#6366f1')}
         ${kpiCard('TOTAL UNITS',   App.Fmt.number(kpis.total_units), 'Across all warehouses',   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>', '#10b981')}
         ${kpiCard('TOTAL VALUE',   App.Fmt.currency(kpis.total_value), 'MRP-based inventory value','<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="18"></line></svg>', '#f59e0b')}
-        ${kpiCard('TOTAL WEIGHT',  App.Fmt.weight(kpis.total_weight), 'Gross weight',            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><path d="M6 7l6-4 6 4"></path><path d="M4 14h4l-2 5z"></path><path d="M16 14h4l-2 5z"></path></svg>', '#38bdf8')}
+        ${kpiCard('TOTAL MASS',    App.Fmt.mass(kpis.total_weight), 'Total physical mass',            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><path d="M6 7l6-4 6 4"></path><path d="M4 14h4l-2 5z"></path><path d="M16 14h4l-2 5z"></path></svg>', '#38bdf8')}
+        ${kpiCard('TOTAL VOLUME',  App.Fmt.volume(records.reduce((s,r)=>s+(r.total_volume_l||0),0)), 'Total fluid volume', '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8M12 2v6M5 8h14l-2 13H7L5 8z"></path></svg>', '#06b6d4')}
         ${kpiCard('DAMAGED',       App.Fmt.currency(kpis.damaged_value), 'Damaged inventory value','<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>', '#ef4444')}
         ${kpiCard('NEAR EXPIRY',   App.Fmt.currency(kpis.near_expiry_value),'Near expiry value','<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>', '#f59e0b')}
       </div>`;
@@ -292,8 +295,12 @@ App.Views.Dashboard = (() => {
             <div class="category-stat-lbl">SKUs</div>
           </div>
           <div class="category-stat-item">
-            <div class="category-stat-val">${App.Fmt.weight(cat.weight)}</div>
-            <div class="category-stat-lbl">Weight</div>
+            <div class="category-stat-val">${App.Fmt.mass(cat.mass || cat.weight)}</div>
+            <div class="category-stat-lbl">Mass</div>
+          </div>
+          <div class="category-stat-item">
+            <div class="category-stat-val">${(cat.volume > 0 ? App.Fmt.volume(cat.volume) : "—")}</div>
+            <div class="category-stat-lbl">Volume</div>
           </div>
         </div>`;
       el.onclick = () => App.Router.go('category', { name: encodeURIComponent(cat.name) });
