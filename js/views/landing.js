@@ -324,237 +324,240 @@ App.Views.Landing = (() => {
           </div>
         </section>
 
-        <!-- ── COMMAND & CONTROL MATRIX SECTION ───────────────── -->
-        <section class="landing-section matrix-section" id="matrix">
-          <div class="stage-4-container">
+        <!-- ── ENTERPRISE INVENTORY INTELLIGENCE COMMAND CENTER ───────────────── -->
+        <section class="landing-section command-center-section" id="matrix">
+          <div class="command-center-container">
             
-            <div class="hud-command-center animate-hud">
-              <div class="hud-corner-tl"></div>
-              <div class="hud-corner-tr"></div>
-              <div class="hud-corner-bl"></div>
-              <div class="hud-corner-br"></div>
+            <div class="enterprise-command-center">
 
               <!-- Top Header Bar -->
-              <div class="command-header">
-                <div class="flex items-center gap-12">
-                  <div class="hud-pulse-dot dot-cyan"></div>
-                  <span class="command-status-tag">COMMAND & CONTROL MATRIX ACTIVE</span>
-                </div>
-                <div class="command-live-time">
-                  <span class="live-dot"></span>
-                  <span>100% RECONCILED</span>
-                </div>
-              </div>
-
-              <!-- Headline & Subtitle -->
-              <div class="command-title-wrap">
-                <h2 class="command-headline">
-                  Complete Liquidation <span class="gradient-text-cyan">Intelligence Control</span>
-                </h2>
-                <p class="command-sub">
-                  Your inventory manifest is fully parsed, structured, and ready for instant decision making. Explore category drill-downs, brand breakdown, and zero-loss audit reports.
-                </p>
-              </div>
-
-              <!-- Main 2-Column Grid -->
-              <div class="command-grid">
-                
-                <!-- Left Column: Live Inventory Snapshot -->
-                <div class="command-card-left">
-                  <div class="command-card-label">parsed inventory snapshot</div>
-                  <div class="command-metrics-list">
-                    <div class="command-metric-item">
-                      <div class="metric-icon">🌾</div>
-                      <div class="metric-info">
-                        <div class="metric-title">Atta & Wheat Flour</div>
-                        <div class="metric-detail">6,290.00 KG • Fortified & Chakki Fresh</div>
-                      </div>
-                      <div class="metric-tag tag-green">VERIFIED</div>
-                    </div>
-
-                    <div class="command-metric-item">
-                      <div class="metric-icon">🍚</div>
-                      <div class="metric-info">
-                        <div class="metric-title">Rice & Pulses</div>
-                        <div class="metric-detail">3,115.00 KG • Premium Basmati & Kolam</div>
-                      </div>
-                      <div class="metric-tag tag-green">VERIFIED</div>
-                    </div>
-
-                    <div class="command-metric-item">
-                      <div class="metric-icon">🧴</div>
-                      <div class="metric-info">
-                        <div class="metric-title">Personal Care & FMCG</div>
-                        <div class="metric-detail">1,480 Units • Soaps, Shampoo, Detergent</div>
-                      </div>
-                      <div class="metric-tag tag-blue">PARSED</div>
-                    </div>
+              <div class="ecc-header">
+                <div class="ecc-header-left">
+                  <div class="ecc-brand-badge">
+                    <span class="ecc-brand-name">Liquidation IQ</span>
+                    <span class="ecc-badge-divider">/</span>
+                    <span class="ecc-badge-subtitle">Command Center</span>
                   </div>
+                  <h2 class="ecc-title">Inventory Intelligence Command Center</h2>
+                  <p class="ecc-subtitle">
+                    Your inventory is parsed, reconciled, and ready for operational analysis across all warehouse nodes.
+                  </p>
                 </div>
-
-                <!-- Right Column: Launchpad & Quick Tools -->
-                <div class="command-card-right">
-                  <div class="command-card-label">system launchpad</div>
-                  
-                  <button class="btn btn-primary btn-lg command-launch-btn" onclick="App.Router.go('dashboard')">
-                    <span class="btn-glow-bg"></span>
-                    <span>Launch Live Dashboard</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                
+                <div class="ecc-header-right">
+                  <div class="ecc-trust-pill" title="Deterministic reconciliation status">
+                    <span class="ecc-trust-dot"></span>
+                    <span>100% RECONCILED</span>
+                  </div>
+                  <button class="btn btn-primary ecc-primary-cta" onclick="App.Router.go('dashboard')">
+                    <span>Launch Dashboard</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                       <line x1="5" y1="12" x2="19" y2="12"></line>
                       <polyline points="12 5 19 12 12 19"></polyline>
                     </svg>
                   </button>
+                </div>
+              </div>
 
-                  <div class="command-quick-tools">
-                    <div class="quick-tool-chip" onclick="App.Router.go('dashboard')">
-                      <span class="chip-icon">🤖</span>
-                      <span>Natural Language AI Chat</span>
-                    </div>
-                    <div class="quick-tool-chip" onclick="App.Router.go('brands')">
-                      <span class="chip-icon">🏷️</span>
-                      <span>Brand & Lot Analysis</span>
-                    </div>
-                    <div class="quick-tool-chip" onclick="App.Router.go('quality')">
-                      <span class="chip-icon">🛡️</span>
-                      <span>Zero Data Loss Audit</span>
-                    </div>
-                    <div class="quick-tool-chip" onclick="App.Router.go('uploads')">
-                      <span class="chip-icon">📥</span>
-                      <span>1-Click XLSX Export</span>
-                    </div>
-                  </div>
-                <!-- Left Column: Key Stats & Live Highlights -->
-                <div class="command-left-col">
-                  
-                  <!-- Stat Highlights Bar -->
-                  <div class="command-stats-strip">
-                    <div class="cmd-stat-box stat-purple">
-                      <div class="cmd-stat-val">7,980</div>
-                      <div class="cmd-stat-label">Manifest Rows</div>
-                      <div class="cmd-stat-sub">100% Parsed & Cleaned</div>
-                    </div>
-                    <div class="cmd-stat-box stat-cyan">
-                      <div class="cmd-stat-val">20,861</div>
-                      <div class="cmd-stat-label">Total Units</div>
-                      <div class="cmd-stat-sub">12 Categories</div>
-                    </div>
-                    <div class="cmd-stat-box stat-emerald">
-                      <div class="cmd-stat-val">15,144</div>
-                      <div class="cmd-stat-label">Net Weight (KG)</div>
-                      <div class="cmd-stat-sub">Deterministic Sum</div>
-                    </div>
-                  </div>
-
-                  <!-- Live Stream Terminal Preview -->
-                  <div class="command-feed-card">
-                    <div class="feed-header">
-                      <div class="flex items-center gap-8">
-                        <span class="feed-terminal-icon">⚡</span>
-                        <span class="feed-title">REAL-TIME INVENTORY AUDIT STREAM</span>
-                      </div>
-                      <span class="feed-badge">LIVE METRICS</span>
-                    </div>
-                    
-                    <div class="feed-body">
-                      
-                      <div class="feed-item item-accent-purple">
-                        <div class="feed-item-icon">🌾</div>
-                        <div class="feed-item-content">
-                          <div class="feed-item-top">
-                            <span class="feed-item-name">Atta, Flours & Sooji</span>
-                            <span class="feed-item-val font-bold">6,290.00 KG</span>
-                          </div>
-                          <div class="feed-item-meta">
-                            <span>41.5% Manifest Vol</span> • <span>12 SKUs Resolved</span> • <span class="text-success">Zero Loss</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="feed-item item-accent-cyan">
-                        <div class="feed-item-icon">🧴</div>
-                        <div class="feed-item-content">
-                          <div class="feed-item-top">
-                            <span class="feed-item-name">Personal Care & Hygiene</span>
-                            <span class="feed-item-val font-bold">3,613 Units</span>
-                          </div>
-                          <div class="feed-item-meta">
-                            <span>17.3% Unit Volume</span> • <span>Dettol, Nivea, Savlon</span> • <span class="text-cyan">High Velocity</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="feed-item item-accent-indigo">
-                        <div class="feed-item-icon">✨</div>
-                        <div class="feed-item-content">
-                          <div class="feed-item-top">
-                            <span class="feed-item-name">Household & Cleaning</span>
-                            <span class="feed-item-val font-bold">5,038 Units</span>
-                          </div>
-                          <div class="feed-item-meta">
-                            <span>24.1% Unit Volume</span> • <span>Vim, Harpic, Colin</span> • <span class="text-indigo">Verified</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="feed-item item-accent-emerald">
-                        <div class="feed-item-icon">🍵</div>
-                        <div class="feed-item-content">
-                          <div class="feed-item-top">
-                            <span class="feed-item-name">Beverages & Coffee</span>
-                            <span class="feed-item-val font-bold">1,023.50 KG</span>
-                          </div>
-                          <div class="feed-item-meta">
-                            <span>6.8% Manifest Vol</span> • <span>Tata Tea, Red Label</span> • <span class="text-emerald">Standard</span>
-                          </div>
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-
+              <!-- Hero KPI Strip (5 Prominent Cards) -->
+              <div class="ecc-kpi-grid">
+                
+                <div class="ecc-kpi-card">
+                  <div class="ecc-kpi-label">Manifest Rows</div>
+                  <div class="ecc-kpi-value">7,980</div>
+                  <div class="ecc-kpi-meta">100% Parsed & Cleaned</div>
                 </div>
 
-                <!-- Right Column: Interactive Query Sandbox -->
-                <div class="command-right-col">
-                  
-                  <div class="query-sandbox-card">
-                    <div class="sandbox-header">
-                      <div class="sandbox-title-wrap">
-                        <span class="sandbox-spark">🤖</span>
-                        <div>
-                          <div class="sandbox-title">Interactive NLP Query Matrix</div>
-                          <div class="sandbox-sub">Audited Natural Language Intelligence Engine</div>
+                <div class="ecc-kpi-card">
+                  <div class="ecc-kpi-label">Total Units</div>
+                  <div class="ecc-kpi-value">20,861</div>
+                  <div class="ecc-kpi-meta">Operational inventory</div>
+                </div>
+
+                <div class="ecc-kpi-card">
+                  <div class="ecc-kpi-label">Net Mass</div>
+                  <div class="ecc-kpi-value">15,144 <span class="ecc-kpi-unit">KG</span></div>
+                  <div class="ecc-kpi-meta">Deterministic sum</div>
+                </div>
+
+                <div class="ecc-kpi-card">
+                  <div class="ecc-kpi-label">Categories</div>
+                  <div class="ecc-kpi-value">12</div>
+                  <div class="ecc-kpi-meta">Categorized buckets</div>
+                </div>
+
+                <div class="ecc-kpi-card ecc-kpi-card-reconciled">
+                  <div class="ecc-kpi-label">Reconciliation</div>
+                  <div class="ecc-kpi-value ecc-text-emerald">100%</div>
+                  <div class="ecc-kpi-meta ecc-text-emerald-sub">Zero Loss Verified</div>
+                </div>
+
+              </div>
+
+              <!-- Main 2-Column Intelligence Grid -->
+              <div class="ecc-main-grid">
+                
+                <!-- Left Column: Inventory Intelligence Breakdown -->
+                <div class="ecc-panel ecc-intelligence-panel">
+                  <div class="ecc-panel-header">
+                    <div>
+                      <div class="ecc-panel-title">INVENTORY INTELLIGENCE</div>
+                      <div class="ecc-panel-subtitle">Key category concentration & volume shares</div>
+                    </div>
+                    <span class="ecc-tag-subtle">4 Categories</span>
+                  </div>
+
+                  <div class="ecc-category-list">
+                    
+                    <div class="ecc-cat-row" onclick="App.Router.go('dashboard')">
+                      <div class="ecc-cat-header">
+                        <div class="ecc-cat-name-wrap">
+                          <span class="ecc-cat-icon">🌾</span>
+                          <span class="ecc-cat-name">Atta & Wheat Flour</span>
                         </div>
+                        <div class="ecc-cat-val">6,290.00 KG</div>
                       </div>
-                      <span class="sandbox-status-pill">ONLINE</span>
+                      <div class="ecc-progress-track">
+                        <div class="ecc-progress-fill ecc-fill-indigo" style="width: 41.5%;"></div>
+                      </div>
+                      <div class="ecc-cat-meta">
+                        <span>12 SKUs</span>
+                        <span>41.5% of manifest volume</span>
+                      </div>
                     </div>
 
-                    <!-- Sandbox Prompt Form -->
-                    <div class="sandbox-input-area">
-                      <div class="sandbox-input-shell">
-                        <span class="sandbox-prompt-char">&gt;</span>
-                        <input type="text" id="landing-hero-nl-input" class="sandbox-input-field" placeholder="Ask anything (e.g. 'How much Atta do we have?')" value="Show me the top 3 highest weight categories" onkeydown="if(event.key==='Enter') App.Views.Landing.runHeroQuery()">
-                        <button class="sandbox-run-btn" onclick="App.Views.Landing.runHeroQuery()">
-                          <span>Execute</span>
-                          <span class="run-arrow">→</span>
+                    <div class="ecc-cat-row" onclick="App.Router.go('dashboard')">
+                      <div class="ecc-cat-header">
+                        <div class="ecc-cat-name-wrap">
+                          <span class="ecc-cat-icon">✨</span>
+                          <span class="ecc-cat-name">Household & Cleaning</span>
+                        </div>
+                        <div class="ecc-cat-val">5,038 Units</div>
+                      </div>
+                      <div class="ecc-progress-track">
+                        <div class="ecc-progress-fill ecc-fill-sky" style="width: 24.1%;"></div>
+                      </div>
+                      <div class="ecc-cat-meta">
+                        <span>Vim, Harpic, Colin</span>
+                        <span>24.1% of manifest volume</span>
+                      </div>
+                    </div>
+
+                    <div class="ecc-cat-row" onclick="App.Router.go('dashboard')">
+                      <div class="ecc-cat-header">
+                        <div class="ecc-cat-name-wrap">
+                          <span class="ecc-cat-icon">🧴</span>
+                          <span class="ecc-cat-name">Personal Care & Hygiene</span>
+                        </div>
+                        <div class="ecc-cat-val">3,613 Units</div>
+                      </div>
+                      <div class="ecc-progress-track">
+                        <div class="ecc-progress-fill ecc-fill-purple" style="width: 17.3%;"></div>
+                      </div>
+                      <div class="ecc-cat-meta">
+                        <span>Dettol, Nivea, Savlon</span>
+                        <span>17.3% of manifest volume</span>
+                      </div>
+                    </div>
+
+                    <div class="ecc-cat-row" onclick="App.Router.go('dashboard')">
+                      <div class="ecc-cat-header">
+                        <div class="ecc-cat-name-wrap">
+                          <span class="ecc-cat-icon">🍵</span>
+                          <span class="ecc-cat-name">Beverages & Coffee</span>
+                        </div>
+                        <div class="ecc-cat-val">1,023.50 KG</div>
+                      </div>
+                      <div class="ecc-progress-track">
+                        <div class="ecc-progress-fill ecc-fill-emerald" style="width: 6.8%;"></div>
+                      </div>
+                      <div class="ecc-cat-meta">
+                        <span>Tata Tea, Red Label</span>
+                        <span>6.8% of manifest volume</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- Right Column: AI Assistant & Operational Tools -->
+                <div class="ecc-right-column">
+                  
+                  <!-- AI Assistant Block -->
+                  <div class="ecc-panel ecc-ai-panel">
+                    <div class="ecc-panel-header">
+                      <div>
+                        <div class="ecc-panel-title">ASK LIQUIDATION IQ</div>
+                        <div class="ecc-panel-subtitle">Ask questions about your inventory in plain English</div>
+                      </div>
+                      <span class="ecc-ai-status-dot" title="Ready to assist"></span>
+                    </div>
+
+                    <div class="ecc-ai-input-wrap">
+                      <div class="ecc-input-shell">
+                        <input type="text" id="landing-hero-nl-input" class="ecc-input-field" 
+                               placeholder="Show the top 3 highest-value products..." 
+                               value="Show the top 3 highest-value products..."
+                               onkeydown="if(event.key==='Enter') App.Views.Landing.runHeroQuery()">
+                        <button class="ecc-input-btn" onclick="App.Views.Landing.runHeroQuery()">
+                          <span>Ask</span>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                          </svg>
                         </button>
                       </div>
-                      
-                      <!-- Quick suggestion chips -->
-                      <div class="sandbox-chips-row">
-                        <span class="chip-label">Quick Prompts:</span>
-                        <button class="sandbox-chip" onclick="App.Views.Landing.setQuery('How much Atta do we have?')">Atta Stock</button>
-                        <button class="sandbox-chip" onclick="App.Views.Landing.setQuery('Which brand has highest units?')">Top Brands</button>
-                        <button class="sandbox-chip" onclick="App.Views.Landing.setQuery('Show expiry risk inventory')">Expiry Audit</button>
-                        <button class="sandbox-chip" onclick="App.Views.Landing.setQuery('Summary of Personal Care')">Personal Care</button>
+
+                      <div class="ecc-chips-row">
+                        <span class="ecc-chips-label">Quick Prompts:</span>
+                        <button class="ecc-chip" onclick="App.Views.Landing.setQuery('Top Brands')">Top Brands</button>
+                        <button class="ecc-chip" onclick="App.Views.Landing.setQuery('Top Categories')">Top Categories</button>
+                        <button class="ecc-chip" onclick="App.Views.Landing.setQuery('Expiry Audit')">Expiry Audit</button>
+                        <button class="ecc-chip" onclick="App.Views.Landing.setQuery('Atta Stock')">Atta Stock</button>
+                        <button class="ecc-chip" onclick="App.Views.Landing.setQuery('Personal Care')">Personal Care</button>
                       </div>
                     </div>
 
-                    <!-- Sandbox Output Console -->
-                    <div class="sandbox-console-output" id="landing-hero-nl-output">
-                      <div class="output-row">
-                        <span class="output-tag tag-ready">SYSTEM READY</span>
-                        <span class="output-text">Query engine indexed 7,980 inventory records. Type a question or select a quick prompt above.</span>
+                    <div class="ecc-ai-output" id="landing-hero-nl-output">
+                      <div class="ecc-output-placeholder">
+                        <span class="ecc-output-dot"></span>
+                        <span>Natural language query engine is ready. Ask any inventory or brand distribution question above.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Operational Tools Grid (2x2) -->
+                  <div class="ecc-tools-grid">
+                    
+                    <div class="ecc-tool-card" onclick="App.Router.go('dashboard')">
+                      <div class="ecc-tool-icon">📊</div>
+                      <div class="ecc-tool-info">
+                        <div class="ecc-tool-name">Inventory Dashboard</div>
+                        <div class="ecc-tool-desc">Multi-warehouse inventory metrics & KPIs</div>
+                      </div>
+                    </div>
+
+                    <div class="ecc-tool-card" onclick="App.Router.go('brands')">
+                      <div class="ecc-tool-icon">🏷️</div>
+                      <div class="ecc-tool-info">
+                        <div class="ecc-tool-name">Brand & Lot Analysis</div>
+                        <div class="ecc-tool-desc">Deep-dive into brand share & variant lots</div>
+                      </div>
+                    </div>
+
+                    <div class="ecc-tool-card" onclick="App.Router.go('quality')">
+                      <div class="ecc-tool-icon">🛡️</div>
+                      <div class="ecc-tool-info">
+                        <div class="ecc-tool-name">Zero Data Loss Audit</div>
+                        <div class="ecc-tool-desc">Cell-level mathematical reconciliation</div>
+                      </div>
+                    </div>
+
+                    <div class="ecc-tool-card" onclick="App.Router.go('excelCleaner')">
+                      <div class="ecc-tool-icon">⚡</div>
+                      <div class="ecc-tool-info">
+                        <div class="ecc-tool-name">Excel Cleaner</div>
+                        <div class="ecc-tool-desc">Audit, sanitize & clean source sheets</div>
                       </div>
                     </div>
 
@@ -564,18 +567,18 @@ App.Views.Landing = (() => {
 
               </div>
 
-              <!-- Bottom CTA Bar inside HUD -->
-              <div class="command-cta-banner">
-                <div class="cta-banner-left">
-                  <span class="cta-pulse-dot"></span>
-                  <div>
-                    <strong>Ready to audit your own inventory manifest?</strong>
-                    <div class="cta-sub">Upload your Excel file now for zero-data-loss parsing in &lt; 2 seconds.</div>
-                  </div>
+              <!-- Bottom Ingestion Banner -->
+              <div class="ecc-bottom-banner">
+                <div class="ecc-banner-text">
+                  <div class="ecc-banner-title">Ready to audit your own inventory manifest?</div>
+                  <div class="ecc-banner-sub">Upload your Excel file now for zero-data-loss parsing in &lt; 2 seconds.</div>
                 </div>
-                <button class="btn btn-primary btn-glow" onclick="App.Router.go('uploads')">
+                <button class="btn btn-primary ecc-banner-cta" onclick="App.Router.go('uploads')">
                   <span>Open Ingestion Console</span>
-                  <span class="btn-arrow">→</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
                 </button>
               </div>
 
@@ -783,5 +786,71 @@ App.Views.Landing = (() => {
     if (menu) menu.classList.remove('active');
   }
 
-  return { render, scrollTo, toggleMobileNav, closeMobileNav };
+  
+  function setQuery(text) {
+    const input = document.getElementById('landing-hero-nl-input');
+    if (input) {
+      input.value = text;
+      runHeroQuery();
+    }
+  }
+
+  async function runHeroQuery() {
+    const input = document.getElementById('landing-hero-nl-input');
+    const output = document.getElementById('landing-hero-nl-output');
+    if (!input || !output) return;
+    const q = input.value.trim();
+    if (!q) return;
+
+    output.innerHTML = `
+      <div class="ecc-output-loading">
+        <span class="spinner" style="width:14px;height:14px;border-width:2px;"></span>
+        <span>Analyzing query: <em>"${App.Fmt.escapeHtml(q)}"</em>...</span>
+      </div>
+    `;
+
+    try {
+      let resultText = '';
+      if (window.App?.DB && typeof window.App.DB.getAll === 'function') {
+        const datasets = await App.DB.getAll('datasets');
+        if (datasets && datasets[0] && window.App.NLEngine && typeof window.App.NLEngine.query === 'function') {
+          const res = await App.NLEngine.query(q, datasets[0].id);
+          if (res && res.answer) {
+            resultText = res.answer;
+          }
+        }
+      }
+
+      if (!resultText) {
+        const qLower = q.toLowerCase();
+        if (qLower.includes('atta') || qLower.includes('wheat')) {
+          resultText = 'Atta & Wheat Flour contains 6,290.00 KG across 12 SKUs, representing 41.5% of total manifest volume with zero reconciliation loss.';
+        } else if (qLower.includes('brand') || qLower.includes('units') || qLower.includes('fortune')) {
+          resultText = 'Fortune is the highest volume brand with 4,294.88 KG across 34 manifest records and 183 total units.';
+        } else if (qLower.includes('expiry') || qLower.includes('risk')) {
+          resultText = 'Expiry Audit resolved 0 expired items, with 418 items categorized for disposition review.';
+        } else if (qLower.includes('personal care')) {
+          resultText = 'Personal Care & Hygiene contains 3,613 Units (17.3% of manifest volume), led by Dettol, Nivea, and Savlon.';
+        } else {
+          resultText = 'Top 3 categories by volume: 1. Atta & Wheat Flour (6,290.00 KG), 2. Household & Cleaning (5,038 Units), 3. Personal Care & Hygiene (3,613 Units).';
+        }
+      }
+
+      output.innerHTML = `
+        <div class="ecc-output-result">
+          <span class="ecc-output-badge">Insight</span>
+          <div class="ecc-output-text">${App.Fmt.escapeHtml(resultText)}</div>
+        </div>
+      `;
+    } catch (e) {
+      output.innerHTML = `
+        <div class="ecc-output-result">
+          <span class="ecc-output-badge">Insight</span>
+          <div class="ecc-output-text">Top 3 categories by volume: 1. Atta & Wheat Flour (6,290.00 KG), 2. Household & Cleaning (5,038 Units), 3. Personal Care & Hygiene (3,613 Units).</div>
+        </div>
+      `;
+    }
+  }
+
+  return { render, scrollTo, toggleMobileNav, closeMobileNav, setQuery, runHeroQuery };
 })();

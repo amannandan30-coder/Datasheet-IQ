@@ -126,7 +126,7 @@ App.Views.NLQuery = (() => {
           </div>
           <div class="brand-stats">
             <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.number(b.qty)}</div><div class="brand-stat-lbl">Units</div></div>
-            <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.weight(b.weight)}</div><div class="brand-stat-lbl">Weight</div></div>
+            <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.mass(b.mass || b.weight)}</div><div class="brand-stat-lbl">Mass</div></div><div class="brand-stat-item"><div class="brand-stat-val">${(b.volume > 0 ? App.Fmt.volume(b.volume) : "—")}</div><div class="brand-stat-lbl">Volume</div></div>
             <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.currency(b.value)}</div><div class="brand-stat-lbl">Value</div></div>
           </div>
         </div>`).join('');
@@ -276,7 +276,7 @@ App.Views.AllBrands = (() => {
         </div>
         <div class="brand-stats">
           <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.number(b.qty)}</div><div class="brand-stat-lbl">Units</div></div>
-          <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.weight(b.weight)}</div><div class="brand-stat-lbl">Weight</div></div>
+          <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.mass(b.mass || b.weight)}</div><div class="brand-stat-lbl">Mass</div></div><div class="brand-stat-item"><div class="brand-stat-val">${(b.volume > 0 ? App.Fmt.volume(b.volume) : "—")}</div><div class="brand-stat-lbl">Volume</div></div>
           <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.currency(b.value)}</div><div class="brand-stat-lbl">Value</div></div>
           <div class="brand-stat-item"><div class="brand-stat-val">${pct}%</div><div class="brand-stat-lbl">of Total</div></div>
         </div>

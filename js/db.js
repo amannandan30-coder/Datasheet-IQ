@@ -209,6 +209,7 @@ App.DB = (() => {
   /* ── Dataset convenience helpers ─────────────────────────── */
   async function saveDataset(ds) { return put('datasets', ds); }
   async function getDataset(id)  { return get('datasets', id); }
+  async function getRecord(id)   { return get('inventory_records', id); }
   async function getAllDatasets() {
     const all = await getAll('datasets');
     return all.sort((a,b) => b.uploadedAt - a.uploadedAt);
@@ -225,7 +226,7 @@ App.DB = (() => {
   return {
     open, put, putBulk, get, getAll, getAllByIndex, del, clearByDataset,
     count, countByIndex, query,
-    saveDataset, getDataset, getAllDatasets, deleteDataset,
+    saveDataset, getDataset, getAllDatasets, getRecord, deleteDataset,
     deleteDatasetCascade: deleteDataset
   };
 })();

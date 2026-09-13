@@ -55,11 +55,13 @@ App.Views.WarehouseView = (() => {
     const whMap = new Map();
     for (const r of records) {
       const wh = r.normalized_warehouse || 'Unknown';
-      if (!whMap.has(wh)) whMap.set(wh, { name:wh, qty:0, value:0, weight:0, skus:new Set(), damaged:0, nearExpiry:0, expired:0 });
+      if (!whMap.has(wh)) whMap.set(wh, { name:wh, qty:0, value:0, weight:0, mass:0, volume:0, skus:new Set(), damaged:0, nearExpiry:0, expired:0 });
       const w = whMap.get(wh);
       w.qty    += (r.qty||0);
       w.value  += (r.source_value||0);
       w.weight += (r.total_weight||0);
+      w.mass   += (r.total_weight||0);
+      w.volume += (r.total_volume_l||0);
       w.skus.add(r.product_family_id);
       const t = (r.raw_bad_inventory_type||'').toLowerCase();
       if (t === 'damaged') w.damaged += (r.source_value||0);
@@ -161,6 +163,8 @@ App.Views.WarehouseView = (() => {
     const totalQty   = whRecs.reduce((s,r) => s+(r.qty||0), 0);
     const totalValue = whRecs.reduce((s,r) => s+(r.source_value||0), 0);
     const totalWeight= whRecs.reduce((s,r) => s+(r.total_weight||0), 0);
+    const totalMass  = whRecs.reduce((s,r) => s+(r.total_weight||0), 0);
+    const totalVolume= whRecs.reduce((s,r) => s+(r.total_volume_l||0), 0);
     const skuCount   = new Set(whRecs.map(r => r.product_family_id)).size;
 
     // Group by category
@@ -187,7 +191,8 @@ App.Views.WarehouseView = (() => {
       <div class="grid-4 mb-24">
         ${kpi('Units',   App.Fmt.number(totalQty),    '📊','#10b981')}
         ${kpi('Value',   App.Fmt.currency(totalValue),'💰','#f59e0b')}
-        ${kpi('Weight',  App.Fmt.weight(totalWeight), '⚖️','#38bdf8')}
+        ${kpi('Total Mass',   App.Fmt.mass(totalMass),      '⚖️', '#38bdf8')}
+        ${kpi('Total Volume', App.Fmt.volume(totalVolume),  '🧪', '#06b6d4')}
         ${kpi('SKUs',    App.Fmt.number(skuCount),    '📦','#6366f1')}
       </div>
       <div class="section-title mb-16">Categories in this Warehouse</div>

@@ -1,0 +1,14 @@
+// NOTE: Firebase Storage is deprecated/inactive. Original file archiving migrated to Cloudflare R2.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Original uploaded Excel file archives (Liquidation IQ)
+    // Only authenticated users can access and manage their own archived files.
+    match /original-uploads/{userId}/{uploadId}/{filename} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if false; // Immutable archive: cannot be altered or overwritten
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

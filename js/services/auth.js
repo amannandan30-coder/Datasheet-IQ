@@ -118,7 +118,7 @@ App.Auth = (() => {
         uid: user.uid,
         email: user.email || '',
         displayName: user.displayName || user.email?.split('@')[0] || 'User',
-        photoURL: user.photoURL || null,
+        photoURL: user.photoURL || (user.providerData && user.providerData.find(p => p.photoURL)?.photoURL) || null,
         emailVerified: user.emailVerified || false,
         providerId: user.providerData && user.providerData[0] ? user.providerData[0].providerId : 'password'
       };
@@ -375,6 +375,13 @@ App.Auth = (() => {
     return state.currentUser ? { ...state.currentUser, context: { ...state.context } } : null;
   }
 
+  async function getIdToken(forceRefresh = false) {
+    if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+      return await firebase.auth().currentUser.getIdToken(forceRefresh);
+    }
+    return null;
+  }
+
   /* User-Friendly Error Mapper */
   function mapErrorMessage(error) {
     if (!error) return 'Google sign-in could not be started. Please try again.';
@@ -426,6 +433,7 @@ App.Auth = (() => {
     sendPasswordReset,
     signOut,
     getCurrentUser,
+    getIdToken,
     mapErrorMessage,
     get isInitialized() { return state.isInitialized; },
     get isAuthenticated() { return state.isAuthenticated; },

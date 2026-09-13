@@ -2,7 +2,7 @@
 console.log('[ROUTE-DIAG] app.js v3.3 ACTIVE | ' + new Date().toISOString());
 
 /* ============================================================
-   MAIN APP â€” Router + State + UI helpers
+   MAIN APP — Router + State + UI helpers
    ============================================================ */
 
 // Global timestamp baseline and Boot ID
@@ -53,7 +53,7 @@ App.State = {
   params: {},
 };
 
-/* â”€â”€ Router â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Router ──────────────────────────────────────────────── */
 App.Router = {
   historyStack: [],
 
@@ -111,7 +111,7 @@ App.Router = {
   },
 };
 
-/* â”€â”€ UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── UI ──────────────────────────────────────────────────── */
 App.UI = {
 
   toggleMobileMenu() {
@@ -145,7 +145,7 @@ App.UI = {
     console.log(`[EDGE-LOOP] ${_appTs()} RENDER #${renderNum} START: route="${route}" hash="${window.location.hash}" dataset_id=${dataset_id}`);
     console.log(`[ROUTE-DIAG] RENDER_START #${renderNum} | route="${route}" | HASH="${window.location.hash}" | isAuthenticated=${isAuthenticated}`);
 
-    // â”€â”€ FIREBASE AUTHENTICATION ROUTE GUARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── FIREBASE AUTHENTICATION ROUTE GUARD ──────────────────
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
     const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
 
@@ -157,7 +157,7 @@ App.UI = {
       main.innerHTML = `
         <div class="flex flex-col items-center justify-center" style="height:70vh">
           <div class="spinner mb-16" style="width:36px;height:36px"></div>
-          <div class="text-muted font-medium text-sm">Authenticating Liquidation IQâ€¦</div>
+          <div class="text-muted font-medium text-sm">Authenticating Liquidation IQ...</div>
         </div>`;
       return;
     }
@@ -304,7 +304,7 @@ App.UI = {
       <div class="modal" style="max-width:440px">
         <div class="modal-header">
           <div class="modal-title">${title}</div>
-          <button class="modal-close" onclick="document.getElementById('confirm-modal-overlay').remove()">âœ•</button>
+          <button class="modal-close" onclick="document.getElementById('confirm-modal-overlay').remove()" aria-label="Close">&times;</button>
         </div>
         <div class="modal-body" style="padding:16px 20px">
           <div style="font-size:14px;color:var(--text-primary);line-height:1.5">${message}</div>
@@ -326,7 +326,7 @@ App.UI = {
     const ds = await App.DB.getDataset(id);
     const fname = ds ? ds.filename : 'this dataset';
     App.UI.showConfirmModal({
-      title: 'ðŸ—‘ï¸ Delete Dataset',
+      title: 'Delete Dataset',
       message: `Are you sure you want to delete <strong>${fname}</strong>?<br><br><span style="color:var(--text-muted);font-size:12px">This will remove all associated inventory records, brands, categories, and KPI stats. This action cannot be undone.</span>`,
       confirmText: 'Delete Dataset',
       danger: true,
@@ -391,7 +391,7 @@ App.UI = {
     App.UI.toast(`Exported ${records.length} records to ${format.toUpperCase()} `);
   },
 
-  /* â”€â”€ Upload Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── Upload Modal ────────────────────────────────────────── */
   showUploadModal() {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -432,7 +432,7 @@ App.UI = {
 
           <div id="pipeline-stages-wrap" style="display:none" class="mt-16">
             <div class="flex justify-between items-center mb-8">
-              <div class="text-xs font-semibold text-muted" id="pipeline-current-action">Processing pipelineâ€¦</div>
+              <div class="text-xs font-semibold text-muted" id="pipeline-current-action">Processing pipeline...</div>
               <div class="text-xs font-bold text-primary" id="pipeline-progress-pct">0%</div>
             </div>
             <div style="width:100%;height:6px;background:var(--bg-surface-2);border-radius:3px;overflow:hidden;margin-bottom:14px">
@@ -527,7 +527,7 @@ App.UI = {
     if (!file) return;
 
     document.getElementById('process-btn').disabled = true;
-    document.getElementById('process-btn').innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Processingâ€¦';
+    document.getElementById('process-btn').innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Processing...';
     document.getElementById('pipeline-stages-wrap').style.display = '';
     document.getElementById('modal-footer').style.display = 'none';
 
@@ -572,7 +572,7 @@ App.UI = {
       setTimeout(async () => {
         App.UI.closeUploadModal();
         await App.UI.loadDataset(result.dataset_id);
-        App.UI.toast(`âœ… "${file.name}" processed: ${App.Fmt.number(result.stats.rowCount)} records, ${result.stats.brandCount} brands, ${result.stats.familyCount} product families`);
+        App.UI.toast(`✓ "${file.name}" processed: ${App.Fmt.number(result.stats.rowCount)} records, ${result.stats.brandCount} brands, ${result.stats.familyCount} product families`);
       }, 700);
     } else {
       const errEl = document.getElementById('upload-error');
@@ -591,7 +591,7 @@ App.UI = {
   },
 
 
-  /* â”€â”€ Record Drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── Record Drawer ───────────────────────────────────────── */
   async openDrawer(record_id) {
     const rec = await App.DB.get('inventory_records', record_id);
     if (!rec) return;
@@ -617,13 +617,13 @@ App.UI = {
         <div class="flex justify-between items-start">
           <div>
             <div class="text-lg font-bold">${rec.normalized_product_name || 'Product Detail'}</div>
-            <div class="text-sm text-muted mt-4">${rec.normalized_brand||'â€”'} · ${rec.normalized_category||'â€”'}</div>
+            <div class="text-sm text-muted mt-4">${rec.normalized_brand||'—'} &bull; ${rec.normalized_category||'—'}</div>
           </div>
-          <button class="btn btn-ghost btn-icon" onclick="document.getElementById('drawer-overlay').remove()">âœ•</button>
+          <button class="btn btn-ghost btn-icon" onclick="document.getElementById('drawer-overlay').remove()" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div class="flex gap-6 mt-10">
           <span class="badge ${badgeCls}">${displayStatus}</span>
-          <span class="badge badge-muted">${rec.subcategory||'â€”'}</span>
+          <span class="badge badge-muted">${rec.subcategory||'—'}</span>
           ${rec.normalization_confidence ? `<span class="badge ${App.Fmt.badge_confidence(rec.normalization_confidence)}">${rec.normalization_confidence}</span>` : ''}
         </div>
       </div>
@@ -638,8 +638,8 @@ App.UI = {
           ${drawerField('Total Mass',   rec.total_weight ? App.Fmt.mass(rec.total_weight) : '&mdash;', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"/></svg>')}
           ${drawerField('Unit Volume',  rec.unit_volume_l ? App.Fmt.volume(rec.unit_volume_l) : '&mdash;', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8M12 2v6M5 8h14l-2 13H7L5 8z"/></svg>')}
           ${drawerField('Total Volume', rec.total_volume_l ? App.Fmt.volume(rec.total_volume_l) : '&mdash;', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8M12 2v6M5 8h14l-2 13H7L5 8z"/></svg>')}
-          ${(rec.total_weight > 0) ? drawerField('Mass Source', (rec.source_total_weight_kg > 0 ? 'Source Total Weight column' : (rec.weight_source && rec.weight_source.startsWith('source_unit') ? 'Source Unit Weight column' : ('Package-derived mass' + ((rec.weight && rec.qty > 1) ? (': ' + App.Fmt.mass(rec.weight) + ' � ' + rec.qty + ' = ' + App.Fmt.mass(rec.total_weight)) : '')))), '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"/></svg>') : ''}
-          ${(rec.total_volume_l > 0) ? drawerField('Volume Source', ('Variant UOM declaration' + (rec.qty > 1 ? (' (' + (rec.normalized_uom || rec.raw_uom || 'Variant UOM') + ' � ' + rec.qty + ' = ' + App.Fmt.volume(rec.total_volume_l) + ')') : '')), '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8M12 2v6M5 8h14l-2 13H7L5 8z"/></svg>') : ''}
+          ${(rec.total_weight > 0) ? drawerField('Mass Source', (rec.source_total_weight_kg > 0 ? 'Source Total Weight column' : (rec.weight_source && rec.weight_source.startsWith('source_unit') ? 'Source Unit Weight column' : ('Package-derived mass' + ((rec.weight && rec.qty > 1) ? (': ' + App.Fmt.mass(rec.weight) + ' &times; ' + rec.qty + ' &times; ' + App.Fmt.mass(rec.total_weight)) : '')))), '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"/></svg>') : ''}
+          ${(rec.total_volume_l > 0) ? drawerField('Volume Source', ('Variant UOM declaration' + (rec.qty > 1 ? (' (' + (rec.normalized_uom || rec.raw_uom || 'Variant UOM') + ' &times; ' + rec.qty + ' &times; ' + App.Fmt.volume(rec.total_volume_l) + ')') : '')), '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8M12 2v6M5 8h14l-2 13H7L5 8z"/></svg>') : ''}
           ${(rec.total_weight > 0 && rec.total_volume_l > 0) ? drawerField('Measurement Note', 'Mass and volume tracked independently; no density conversion used', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>') : ''}
           ${(rec.total_volume_l > 0) ? drawerField('Volume Source', 'Variant UOM declaration', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8M12 2v6M5 8h14l-2 13H7L5 8z"/></svg>') : ''}
           ${(rec.total_weight > 0 && rec.total_volume_l > 0) ? drawerField('Measurement Note', 'Dual physical tracking (Zero density conversion)', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>') : ''}
@@ -653,18 +653,18 @@ App.UI = {
 
         <div class="drawer-section">
           <div class="drawer-section-title">Identification</div>
-          ${drawerField('Item ID',    rec.item_id    || 'â€”', 'ðŸ”‘')}
-          ${drawerField('UPC',         rec.upc        || 'â€”', 'ðŸ“Š')}
-          ${drawerField('Variant ID',  rec.variant_id || 'â€”', 'ðŸ·ï¸')}
+          ${drawerField('Item ID',    rec.item_id    || '—', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3M18.5 4.5l2 2"/></svg>')}
+          ${drawerField('UPC',         rec.upc        || '—', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/></svg>')}
+          ${drawerField('Variant ID',  rec.variant_id || '—', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>')}
         </div>
 
         <div class="drawer-section">
           <div class="drawer-section-title">Normalized Values</div>
-          ${drawerField('Category',   rec.normalized_category    || 'â€”', '')}
-          ${drawerField('Subcategory',rec.subcategory             || 'â€”', '')}
-          ${drawerField('Brand',      rec.normalized_brand        || 'â€”', '')}
-          ${drawerField('Product',    rec.normalized_product_name || 'â€”', '')}
-          ${drawerField('Grouping',   rec.grouping_method         || 'â€”', '')}
+          ${drawerField('Category',   rec.normalized_category    || '—', '')}
+          ${drawerField('Subcategory',rec.subcategory             || '—', '')}
+          ${drawerField('Brand',      rec.normalized_brand        || '—', '')}
+          ${drawerField('Product',    rec.normalized_product_name || '—', '')}
+          ${drawerField('Grouping',   rec.grouping_method         || '—', '')}
         </div>
 
         <div class="drawer-section">
@@ -682,7 +682,7 @@ App.UI = {
     document.body.appendChild(overlay);
   },
 
-  /* â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── Toast ───────────────────────────────────────────────── */
   toast(msg, duration = 3500) {
     const t = document.createElement('div');
     t.style.cssText = `position:fixed;bottom:20px;right:20px;background:var(--bg-surface-2);border:1px solid var(--border-strong);color:var(--text-primary);padding:12px 18px;border-radius:var(--r-md);font-size:13px;box-shadow:var(--shadow-lg);z-index:9999;animation:fadeInUp 0.3s ease;max-width:400px;line-height:1.4`;
@@ -711,7 +711,7 @@ App.UI = {
     URL.revokeObjectURL(url);
   },
 
-  /* â”€â”€ User Header Control (Dashboard Topbar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── User Header Control (Dashboard Topbar) ───────────── */
   updateUserHeader() {
     const container = document.getElementById('user-header-control');
     if (!container) return;
@@ -726,32 +726,57 @@ App.UI = {
     const photoURL = user.photoURL;
     const name = user.displayName || user.email.split('@')[0] || 'User';
     const email = user.email || 'authenticated_user';
-    const providerLabel = user.providerId === 'google.com' ? 'ðŸŒ Google' : 'ðŸ”‘ Email';
+    const isGoogle = user.providerId === 'google.com' || (user.providerData && user.providerData.some(p => p.providerId === 'google.com'));
 
     container.innerHTML = `
-      <div class="user-profile-badge" id="user-profile-toggle" onclick="App.UI.toggleUserDropdown(event)" title="User Profile: ${name}">
+      <button type="button" class="user-profile-badge" id="user-profile-toggle" onclick="App.UI.toggleUserDropdown(event)" aria-haspopup="menu" aria-expanded="false" aria-controls="user-dropdown-menu" title="User Profile: ${name}">
         <div class="user-avatar-circle">
-          ${photoURL ? `<img src="${photoURL}" alt="${name}" class="user-avatar-img">` : `<span>${initial}</span>`}
+          ${photoURL ? `<img src="${photoURL}" alt="${name}" class="user-avatar-img" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><span style="display:none">${initial}</span>` : `<span>${initial}</span>`}
         </div>
         <span class="user-header-name">${name}</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="user-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
-      </div>
+      </button>
 
-      <div class="user-dropdown-menu" id="user-dropdown-menu">
-        <div class="user-dropdown-header">
-          <div class="user-dropdown-name">${name}</div>
-          <div class="user-dropdown-email">${email}</div>
-          <span class="user-dropdown-provider">${providerLabel}</span>
+      <div class="user-dropdown-menu" id="user-dropdown-menu" role="menu" aria-label="User Account Menu">
+        <div class="user-dropdown-identity">
+          <div class="user-dropdown-avatar">
+            ${photoURL ? `<img src="${photoURL}" alt="${name}" class="user-dropdown-avatar-img" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><span class="user-dropdown-avatar-fallback" style="display:none">${initial}</span>` : `<span class="user-dropdown-avatar-fallback">${initial}</span>`}
+          </div>
+          <div class="user-dropdown-details">
+            <div class="user-dropdown-name" title="${name}">${name}</div>
+            <div class="user-dropdown-email" title="${email}">${email}</div>
+          </div>
         </div>
-        <button class="user-signout-btn" onclick="App.UI.handleSignOut()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+        <div class="user-dropdown-provider-row">
+          ${isGoogle ? `
+            <svg class="google-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.29v3.15C3.26 21.3 7.31 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.29C.47 8.21 0 10.05 0 12s.47 3.79 1.29 5.42l3.99-3.15z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.58l3.99 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+            </svg>
+            <span>Signed in with Google</span>
+          ` : `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <span>Signed in with Email</span>
+          `}
+        </div>
+
+        <div class="user-dropdown-divider" role="separator"></div>
+
+        <button type="button" class="user-signout-btn" onclick="App.UI.handleSignOut()" role="menuitem" aria-label="Sign out">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
             <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
-          <span>Sign Out</span>
+          <span>Sign out</span>
         </button>
       </div>
     `;
@@ -760,7 +785,14 @@ App.UI = {
   toggleUserDropdown(event) {
     if (event) event.stopPropagation();
     const menu = document.getElementById('user-dropdown-menu');
-    if (menu) menu.classList.toggle('active');
+    const toggle = document.getElementById('user-profile-toggle');
+    if (menu) {
+      const isActive = menu.classList.toggle('active');
+      if (toggle) {
+        toggle.classList.toggle('active', isActive);
+        toggle.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+      }
+    }
   },
 
   async handleSignOut() {
@@ -786,7 +818,7 @@ function drawerField(label, value, icon) {
   </div>`;
 }
 
-/* â”€â”€ Global search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Global search ───────────────────────────────────────── */
 App.GlobalSearch = {
   async search(q) {
     if (!q || !App.State.dataset_id) return [];
@@ -803,7 +835,7 @@ App.GlobalSearch = {
   }
 };
 
-/* â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Boot ────────────────────────────────────────────────── */
 (async function init() {
   console.log(`[EDGE-LOOP] ${_appTs()} ========== APP BOOT START ========== (BOOT_ID = ${BOOT_ID})`);
   console.log(`[EDGE-LOOP] ${_appTs()} CURRENT_URL: ${window.location.href}`);
@@ -850,6 +882,26 @@ App.GlobalSearch = {
       if (toggle && (toggle.contains(e.target) || toggle === e.target)) return;
       if (!dropdown.contains(e.target)) {
         dropdown.classList.remove('active');
+        if (toggle) {
+          toggle.classList.remove('active');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      }
+    }
+  });
+
+  // Close dropdown on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const dropdown = document.getElementById('user-dropdown-menu');
+      const toggle = document.getElementById('user-profile-toggle');
+      if (dropdown && dropdown.classList.contains('active')) {
+        dropdown.classList.remove('active');
+        if (toggle) {
+          toggle.classList.remove('active');
+          toggle.setAttribute('aria-expanded', 'false');
+          toggle.focus();
+        }
       }
     }
   });
