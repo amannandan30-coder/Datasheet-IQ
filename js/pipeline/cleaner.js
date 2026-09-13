@@ -56,6 +56,39 @@ App.Cleaner = (() => {
     { pattern: /^(\d+(?:\.\d+)?)\s*(?:pair|pairs)$/i,                unit: 'PAIR' },
   ];
 
+  /* ── Embedded Price Removal (additive normalization) ─────── */
+  /**
+   * Strips embedded price segments from Variant/UOM strings.
+   * Two-pass, measurement-aware approach:
+   *   Pass 1: Remove Rs-prefixed price segments (unambiguous).
+   *           e.g. "- Rs 749.0", "- Rs. 606", "- Rs 265"
+   *   Pass 2: Remove bare-number price segments (after dash)
+   *           ONLY when NOT followed by a unit/descriptor word.
+   *           e.g. "- 480" removed, but "- 2 pack" preserved.
+   *
+   * Preserves legitimate trailing descriptors:
+   *   "5 kg - Rs 265 - Free Jute Bag" -> "5 kg - Free Jute Bag"
+   * Preserves compound UOM:
+   *   "6 x 12.5 g" -> "6 x 12.5 g" (no dash, no change)
+   *
+   * IMPORTANT: This function is applied ONLY before normalizeUOM().
+   * raw_uom source lineage is never modified.
+   */
+  function stripEmbeddedPrice(rawStr) {
+    if (rawStr == null) return '';
+    const str = String(rawStr).trim();
+    if (!str) return str;
+
+    // Pass 1: Remove Rs-prefixed price segments (always safe)
+    let result = str.replace(/\s*-\s*Rs\.?\s*\d+(?:\.\d+)?/gi, '');
+
+    // Pass 2: Remove bare-number price segments after dash,
+    // but only when NOT followed by a unit/descriptor word
+    result = result.replace(/\s*-\s*\d+(?:\.\d+)?(?!\s*[a-zA-Z])/g, '');
+
+    return result.trim();
+  }
+
   function normalizeUOM(rawUOM, productName) {
     const raw = norm(rawUOM);
     for (const { pattern, unit } of UOM_PATTERNS) {
@@ -389,7 +422,7 @@ App.Cleaner = (() => {
       mass_status = 'NOT_APPLICABLE';
     }
 
-    const uomNorm = normalizeUOM(raw_uom, raw_name);
+    const uomNorm = normalizeUOM(stripEmbeddedPrice(raw_uom), raw_name);
 
     return {
       ...rec,
@@ -464,5 +497,5 @@ App.Cleaner = (() => {
     return records.map(r => cleanRecord(r, options));
   }
 
-  return { cleanRecord, cleanAll, normalizeUOM, cleanBrand, normLower, norm, normTitle, toNumber, parseWeightValue, parseWeightToKG, extractMassKG, extractVolumeL, extractWeightKG, detectHeaderUnit };
+  return { cleanRecord, cleanAll, normalizeUOM, stripEmbeddedPrice, cleanBrand, normLower, norm, normTitle, toNumber, parseWeightValue, parseWeightToKG, extractMassKG, extractVolumeL, extractWeightKG, detectHeaderUnit };
 })();

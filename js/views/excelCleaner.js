@@ -310,6 +310,32 @@ App.Views.ExcelCleaner = (() => {
     });
   }
 
+  // Helper: Detect Variant / UOM column headers
+  function _isVariantOrUomHeader(header) {
+    if (header == null) return false;
+    const h = String(header).toLowerCase().trim().replace(/[\-_\.]+/g, ' ').replace(/[^a-z0-9\s]+/g, '').replace(/\s+/g, ' ').trim();
+    
+    // Explicit exclusions for ID, price, status, metrics, etc.
+    if (/^(variant\s*(id|code|mrp|price|rate|cost|val|value)|sku\s*id|item\s*id|product\s*id)$/i.test(h)) return false;
+    if (/^(mrp|price|rate|cost|value|amount|qty|quantity|units?|inventory|stock|status|remarks?|comments?|date|mfg|exp|expiry|best\s*before|remaining|entity|fc\s*name|warehouse|location|upc|barcode|ean|brand|category|subcategory)$/i.test(h)) return false;
+
+    // Positive matches for Variant & UOM columns
+    return /^(variant|variant\s*uom\s*text|variant\s*uom|uom|uom\s*text|unit|unit\s*of\s*measure|pack\s*size|size|pack\s*text|weight\s*uom|pack|uom\s*code|pack\s*spec|uom\s*description|packaging|sku\s*variant|variant\s*name|variant\s*desc|variant\s*description|variant\s*pack)$/i.test(h);
+  }
+
+  // Helper: Strip embedded price from Variant/UOM cell string
+  function _stripEmbeddedPrice(rawStr) {
+    if (typeof App !== 'undefined' && App.Cleaner && typeof App.Cleaner.stripEmbeddedPrice === 'function') {
+      return App.Cleaner.stripEmbeddedPrice(rawStr);
+    }
+    if (rawStr == null) return '';
+    const str = String(rawStr).trim();
+    if (!str) return str;
+    let result = str.replace(/\s*-\s*Rs\.?\s*\d+(?:\.\d+)?(?:\s*\/\s*-?)?/gi, '');
+    result = result.replace(/\s*-\s*\d+(?:\.\d+)?(?!\s*[a-zA-Z])/g, '');
+    return result.trim();
+  }
+
   // Export Cleaned XLSX - SOURCE FIDELITY ARCHITECTURE
   function _exportCleanedXLSX(filename) {
     const results = _state.results;
@@ -387,6 +413,32 @@ App.Views.ExcelCleaner = (() => {
       const saleableRowSet = saleableBySheet.get(wsName) || new Set();
       for (const rowIdx of saleableRowSet) {
         ws[XLSX.utils.encode_cell({ r: rowIdx, c: remarkColIdx })] = { t: 's', v: 'Saleable' };
+      }
+
+      // Identify Variant / UOM columns and normalize cell values (strip embedded prices)
+      const variantColIndices = [];
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: headerRowIdx, c })];
+        if (cell && cell.v != null && _isVariantOrUomHeader(cell.v)) {
+          variantColIndices.push(c);
+        }
+      }
+
+      if (variantColIndices.length > 0) {
+        for (let r = headerRowIdx + 1; r <= range.e.r; r++) {
+          for (const c of variantColIndices) {
+            const addr = XLSX.utils.encode_cell({ r: r, c: c });
+            const cell = ws[addr];
+            if (cell && cell.v != null && typeof cell.v === 'string') {
+              const stripped = _stripEmbeddedPrice(cell.v);
+              if (stripped !== cell.v) {
+                cell.v = stripped;
+                if (cell.w) cell.w = stripped;
+                cell.t = 's';
+              }
+            }
+          }
+        }
       }
 
       const rowsToRemove = removeBySheet.get(wsName) || new Set();

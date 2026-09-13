@@ -325,7 +325,7 @@ App.Views.Landing = (() => {
         </section>
 
         <!-- ── ENTERPRISE INVENTORY INTELLIGENCE COMMAND CENTER ───────────────── -->
-        <section class="landing-section command-center-section" id="matrix">
+        <section class="landing-section command-center-section command-center-page" id="matrix">
           <div class="command-center-container">
             
             <div class="enterprise-command-center">
@@ -334,6 +334,9 @@ App.Views.Landing = (() => {
               <div class="ecc-header">
                 <div class="ecc-header-left">
                   <div class="ecc-brand-badge">
+                    <span class="ecc-brand-icon-svg">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    </span>
                     <span class="ecc-brand-name">Liquidation IQ</span>
                     <span class="ecc-badge-divider">/</span>
                     <span class="ecc-badge-subtitle">Command Center</span>
@@ -347,7 +350,7 @@ App.Views.Landing = (() => {
                 <div class="ecc-header-right">
                   <div class="ecc-trust-pill" title="Deterministic reconciliation status">
                     <span class="ecc-trust-dot"></span>
-                    <span>100% RECONCILED</span>
+                    <span class="ecc-trust-text">100% RECONCILED</span>
                   </div>
                   <button class="btn btn-primary ecc-primary-cta" onclick="App.Router.go('dashboard')">
                     <span>Launch Dashboard</span>
@@ -363,31 +366,56 @@ App.Views.Landing = (() => {
               <div class="ecc-kpi-grid">
                 
                 <div class="ecc-kpi-card">
-                  <div class="ecc-kpi-label">Manifest Rows</div>
+                  <div class="ecc-kpi-top">
+                    <span class="ecc-kpi-label">Manifest Rows</span>
+                    <span class="ecc-kpi-icon">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    </span>
+                  </div>
                   <div class="ecc-kpi-value">7,980</div>
                   <div class="ecc-kpi-meta">100% Parsed & Cleaned</div>
                 </div>
 
                 <div class="ecc-kpi-card">
-                  <div class="ecc-kpi-label">Total Units</div>
+                  <div class="ecc-kpi-top">
+                    <span class="ecc-kpi-label">Total Units</span>
+                    <span class="ecc-kpi-icon">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    </span>
+                  </div>
                   <div class="ecc-kpi-value">20,861</div>
                   <div class="ecc-kpi-meta">Operational inventory</div>
                 </div>
 
                 <div class="ecc-kpi-card">
-                  <div class="ecc-kpi-label">Net Mass</div>
+                  <div class="ecc-kpi-top">
+                    <span class="ecc-kpi-label">Net Mass</span>
+                    <span class="ecc-kpi-icon">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M6 7l6-4 6 4M4 14h4l-2 5zM16 14h4l-2 5z"></path></svg>
+                    </span>
+                  </div>
                   <div class="ecc-kpi-value">15,144 <span class="ecc-kpi-unit">KG</span></div>
                   <div class="ecc-kpi-meta">Deterministic sum</div>
                 </div>
 
                 <div class="ecc-kpi-card">
-                  <div class="ecc-kpi-label">Categories</div>
+                  <div class="ecc-kpi-top">
+                    <span class="ecc-kpi-label">Categories</span>
+                    <span class="ecc-kpi-icon">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    </span>
+                  </div>
                   <div class="ecc-kpi-value">12</div>
                   <div class="ecc-kpi-meta">Categorized buckets</div>
                 </div>
 
                 <div class="ecc-kpi-card ecc-kpi-card-reconciled">
-                  <div class="ecc-kpi-label">Reconciliation</div>
+                  <div class="ecc-kpi-top">
+                    <span class="ecc-kpi-label ecc-text-emerald">Reconciliation</span>
+                    <span class="ecc-kpi-icon ecc-text-emerald">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    </span>
+                  </div>
                   <div class="ecc-kpi-value ecc-text-emerald">100%</div>
                   <div class="ecc-kpi-meta ecc-text-emerald-sub">Zero Loss Verified</div>
                 </div>
@@ -412,7 +440,9 @@ App.Views.Landing = (() => {
                     <div class="ecc-cat-row" onclick="App.Router.go('dashboard')">
                       <div class="ecc-cat-header">
                         <div class="ecc-cat-name-wrap">
-                          <span class="ecc-cat-icon">🌾</span>
+                          <span class="ecc-cat-icon-wrap">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                          </span>
                           <span class="ecc-cat-name">Atta & Wheat Flour</span>
                         </div>
                         <div class="ecc-cat-val">6,290.00 KG</div>
@@ -421,15 +451,17 @@ App.Views.Landing = (() => {
                         <div class="ecc-progress-fill ecc-fill-indigo" style="width: 41.5%;"></div>
                       </div>
                       <div class="ecc-cat-meta">
-                        <span>12 SKUs</span>
-                        <span>41.5% of manifest volume</span>
+                        <span class="ecc-cat-sku-tag">12 SKUs</span>
+                        <span class="ecc-cat-vol-tag">41.5% of manifest volume</span>
                       </div>
                     </div>
 
                     <div class="ecc-cat-row" onclick="App.Router.go('dashboard')">
                       <div class="ecc-cat-header">
                         <div class="ecc-cat-name-wrap">
-                          <span class="ecc-cat-icon">✨</span>
+                          <span class="ecc-cat-icon-wrap">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                          </span>
                           <span class="ecc-cat-name">Household & Cleaning</span>
                         </div>
                         <div class="ecc-cat-val">5,038 Units</div>
@@ -438,15 +470,17 @@ App.Views.Landing = (() => {
                         <div class="ecc-progress-fill ecc-fill-sky" style="width: 24.1%;"></div>
                       </div>
                       <div class="ecc-cat-meta">
-                        <span>Vim, Harpic, Colin</span>
-                        <span>24.1% of manifest volume</span>
+                        <span class="ecc-cat-sku-tag">Vim, Harpic, Colin</span>
+                        <span class="ecc-cat-vol-tag">24.1% of manifest volume</span>
                       </div>
                     </div>
 
                     <div class="ecc-cat-row" onclick="App.Router.go('dashboard')">
                       <div class="ecc-cat-header">
                         <div class="ecc-cat-name-wrap">
-                          <span class="ecc-cat-icon">🧴</span>
+                          <span class="ecc-cat-icon-wrap">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                          </span>
                           <span class="ecc-cat-name">Personal Care & Hygiene</span>
                         </div>
                         <div class="ecc-cat-val">3,613 Units</div>
@@ -455,15 +489,17 @@ App.Views.Landing = (() => {
                         <div class="ecc-progress-fill ecc-fill-purple" style="width: 17.3%;"></div>
                       </div>
                       <div class="ecc-cat-meta">
-                        <span>Dettol, Nivea, Savlon</span>
-                        <span>17.3% of manifest volume</span>
+                        <span class="ecc-cat-sku-tag">Dettol, Nivea, Savlon</span>
+                        <span class="ecc-cat-vol-tag">17.3% of manifest volume</span>
                       </div>
                     </div>
 
                     <div class="ecc-cat-row" onclick="App.Router.go('dashboard')">
                       <div class="ecc-cat-header">
                         <div class="ecc-cat-name-wrap">
-                          <span class="ecc-cat-icon">🍵</span>
+                          <span class="ecc-cat-icon-wrap">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"></path><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"></path><line x1="6" y1="2" x2="6" y2="4"></line><line x1="10" y1="2" x2="10" y2="4"></line><line x1="14" y1="2" x2="14" y2="4"></line></svg>
+                          </span>
                           <span class="ecc-cat-name">Beverages & Coffee</span>
                         </div>
                         <div class="ecc-cat-val">1,023.50 KG</div>
@@ -472,8 +508,8 @@ App.Views.Landing = (() => {
                         <div class="ecc-progress-fill ecc-fill-emerald" style="width: 6.8%;"></div>
                       </div>
                       <div class="ecc-cat-meta">
-                        <span>Tata Tea, Red Label</span>
-                        <span>6.8% of manifest volume</span>
+                        <span class="ecc-cat-sku-tag">Tata Tea, Red Label</span>
+                        <span class="ecc-cat-vol-tag">6.8% of manifest volume</span>
                       </div>
                     </div>
 
@@ -490,11 +526,17 @@ App.Views.Landing = (() => {
                         <div class="ecc-panel-title">ASK LIQUIDATION IQ</div>
                         <div class="ecc-panel-subtitle">Ask questions about your inventory in plain English</div>
                       </div>
-                      <span class="ecc-ai-status-dot" title="Ready to assist"></span>
+                      <div class="ecc-ai-status-indicator">
+                        <span class="ecc-ai-status-dot" title="Ready to assist"></span>
+                        <span class="ecc-ai-status-label">NLP Online</span>
+                      </div>
                     </div>
 
                     <div class="ecc-ai-input-wrap">
                       <div class="ecc-input-shell">
+                        <span class="ecc-input-icon">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
                         <input type="text" id="landing-hero-nl-input" class="ecc-input-field" 
                                placeholder="Show the top 3 highest-value products..." 
                                value="Show the top 3 highest-value products..."
@@ -530,35 +572,55 @@ App.Views.Landing = (() => {
                   <div class="ecc-tools-grid">
                     
                     <div class="ecc-tool-card" onclick="App.Router.go('dashboard')">
-                      <div class="ecc-tool-icon">📊</div>
+                      <div class="ecc-tool-icon-wrap">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                      </div>
                       <div class="ecc-tool-info">
                         <div class="ecc-tool-name">Inventory Dashboard</div>
                         <div class="ecc-tool-desc">Multi-warehouse inventory metrics & KPIs</div>
                       </div>
+                      <span class="ecc-tool-arrow">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                      </span>
                     </div>
 
                     <div class="ecc-tool-card" onclick="App.Router.go('brands')">
-                      <div class="ecc-tool-icon">🏷️</div>
+                      <div class="ecc-tool-icon-wrap">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                      </div>
                       <div class="ecc-tool-info">
                         <div class="ecc-tool-name">Brand & Lot Analysis</div>
                         <div class="ecc-tool-desc">Deep-dive into brand share & variant lots</div>
                       </div>
+                      <span class="ecc-tool-arrow">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                      </span>
                     </div>
 
                     <div class="ecc-tool-card" onclick="App.Router.go('quality')">
-                      <div class="ecc-tool-icon">🛡️</div>
+                      <div class="ecc-tool-icon-wrap">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+                      </div>
                       <div class="ecc-tool-info">
                         <div class="ecc-tool-name">Zero Data Loss Audit</div>
                         <div class="ecc-tool-desc">Cell-level mathematical reconciliation</div>
                       </div>
+                      <span class="ecc-tool-arrow">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                      </span>
                     </div>
 
                     <div class="ecc-tool-card" onclick="App.Router.go('excelCleaner')">
-                      <div class="ecc-tool-icon">⚡</div>
+                      <div class="ecc-tool-icon-wrap">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                      </div>
                       <div class="ecc-tool-info">
                         <div class="ecc-tool-name">Excel Cleaner</div>
                         <div class="ecc-tool-desc">Audit, sanitize & clean source sheets</div>
                       </div>
+                      <span class="ecc-tool-arrow">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                      </span>
                     </div>
 
                   </div>
