@@ -22,10 +22,12 @@ App.Views.ForgotPassword = (() => {
 
           <!-- Brand Header -->
           <div class="auth-brand" onclick="App.Router.go('landing')" role="button" tabindex="0" title="Go to Landing Page">
-            <div class="auth-brand-icon">📦</div>
+            <div class="auth-brand-icon">
+              <img src="assets/logo-icon.svg" alt="DataSheet IQ" width="30" height="30" style="display:block;width:30px;height:30px;object-fit:contain">
+            </div>
             <div>
               <div class="auth-brand-name">DataSheet IQ</div>
-              <div class="auth-brand-sub">Inventory Intelligence Engine</div>
+              <div class="auth-brand-sub">Inventory Intelligent</div>
             </div>
           </div>
 

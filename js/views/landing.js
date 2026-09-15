@@ -21,10 +21,11 @@ App.Views.Landing = (() => {
         <header class="landing-nav" id="landing-nav">
           <div class="landing-nav-container">
             <div class="landing-brand" onclick="App.Views.Landing.scrollTo('overview')" role="button" tabindex="0">
-              <div class="landing-brand-icon">📦</div>
+              <div class="landing-brand-icon">
+                <img src="assets/logo-icon.svg" alt="DataSheet IQ" width="28" height="28" style="display:block;width:28px;height:28px;object-fit:contain">
+              </div>
               <div>
                 <div class="landing-brand-title">DataSheet IQ</div>
-                <div class="landing-brand-sub">Inventory Intelligence</div>
               </div>
             </div>
 
@@ -334,8 +335,8 @@ App.Views.Landing = (() => {
               <div class="ecc-header">
                 <div class="ecc-header-left">
                   <div class="ecc-brand-badge">
-                    <span class="ecc-brand-icon-svg">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                    <span class="ecc-brand-icon-svg" style="display:flex;align-items:center;justify-content:center">
+                      <img src="assets/logo-icon.svg" alt="DataSheet IQ" width="16" height="16" style="display:block;width:16px;height:16px;object-fit:contain">
                     </span>
                     <span class="ecc-brand-name">DataSheet IQ</span>
                     <span class="ecc-badge-divider">/</span>
@@ -748,10 +749,12 @@ App.Views.Landing = (() => {
               <!-- Brand Info -->
               <div class="landing-footer-brand">
                 <div class="flex items-center gap-12 mb-16">
-                  <div class="landing-brand-icon footer-logo-glow">📦</div>
+                  <div class="landing-brand-icon footer-logo-glow">
+                    <img src="assets/logo-icon.svg" alt="DataSheet IQ" width="28" height="28" style="display:block;width:28px;height:28px;object-fit:contain">
+                  </div>
                   <div>
                     <div class="landing-brand-title">DataSheet IQ</div>
-                    <div class="landing-brand-sub">Inventory Intelligence Engine</div>
+                    <div class="landing-brand-sub">Inventory Intelligent</div>
                   </div>
                 </div>
                 <p class="landing-footer-desc">
