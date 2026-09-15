@@ -13,7 +13,7 @@ App.Views.About = (() => {
       <div class="page-header">
         <div>
           <div class="page-title flex items-center gap-10">
-            <span>ℹ️</span> About Liquidation IQ
+            <span>ℹ️</span> About DataSheet IQ
           </div>
           <div class="page-sub">System Information, Architecture & Creator Profile</div>
         </div>
@@ -33,9 +33,9 @@ App.Views.About = (() => {
               <div class="text-xl font-bold" style="color:#ffffff">Aman Nandan</div>
               <span class="badge badge-accent">Creator & Lead Architect</span>
             </div>
-            <div class="text-xs text-muted mt-4">Designed & Engineered Liquidation Inventory Intelligence</div>
+            <div class="text-xs text-muted mt-4">Designed & Engineered DataSheet IQ Intelligence Platform</div>
             <div class="text-sm text-secondary mt-12" style="line-height:1.6;max-width:780px">
-              "Liquidation IQ was engineered to solve a major real-world bottleneck: analyzing massive, messy, multi-worksheet liquidation Excel files without manual spreadsheet cleanup. It automatically normalizes product names, resolves brand duplicates, separates variants, and calculates verified inventory valuation with client-side privacy."
+              "DataSheet IQ was engineered to solve a major real-world bottleneck: analyzing massive, messy, multi-worksheet liquidation Excel files without manual spreadsheet cleanup. It automatically normalizes product names, resolves brand duplicates, separates variants, and calculates verified inventory valuation with client-side privacy."
             </div>
             
             <div class="flex gap-12 mt-16 flex-wrap about-creator-tags">
@@ -54,7 +54,7 @@ App.Views.About = (() => {
       </div>
 
       <!-- ── WHAT IT DOES / PROBLEM SOLVED ───────────────────── -->
-      <div class="section-title mb-16">What Problems Liquidation IQ Solves</div>
+      <div class="section-title mb-16">What Problems DataSheet IQ Solves</div>
       
       <div class="grid-3 mb-24">
         <div class="card">
@@ -131,7 +131,7 @@ App.Views.About = (() => {
 
       <!-- ── FOOTER ──────────────────────────────────────────── -->
       <div class="text-center p-20 text-xs text-muted" style="border-top:1px solid var(--border)">
-        Liquidation Inventory Intelligence (Liquidation IQ) • Built with precision by <strong>Aman Nandan</strong>
+        DataSheet IQ • Built with precision by <strong>Aman Nandan</strong>
       </div>
     `);
   }

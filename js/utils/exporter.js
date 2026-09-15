@@ -289,7 +289,7 @@ App.Exporter = (() => {
     // Sheet 1 — Executive Summary
     // ════════════════════════════════════════════════════════════
     const summaryRows = [
-      ['Liquidation IQ — Category Summary Report'],
+      ['DataSheet IQ — Category Summary Report'],
       [''],
       ['Export Timestamp', new Date().toLocaleString()],
       ['Source File', (records[0] && (records[0]._raw_sheet_name || records[0]._sheet_name)) || 'N/A'],

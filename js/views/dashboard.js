@@ -467,7 +467,7 @@ App.Views.Dashboard = (() => {
       <div class="welcome-screen">
         <div class="welcome-logo">📦</div>
         <div class="welcome-title">No Dataset Loaded</div>
-        <div class="welcome-sub">Upload an Excel (.xlsx, .xls) or CSV inventory spreadsheet to get started. Liquidation IQ will automatically parse, normalize, and calculate live metrics for your active dataset.</div>
+        <div class="welcome-sub">Upload an Excel (.xlsx, .xls) or CSV inventory spreadsheet to get started. DataSheet IQ will automatically parse, normalize, and calculate live metrics for your active dataset.</div>
         <button class="btn btn-primary btn-lg" onclick="App.UI.showUploadModal()">
           <span>📂</span> Upload Inventory Spreadsheet
         </button>

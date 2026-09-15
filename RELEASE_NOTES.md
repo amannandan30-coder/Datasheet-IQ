@@ -1,4 +1,4 @@
-# Liquidation IQ — Release Notes
+# DataSheet IQ — Release Notes
 
 **Version:** `v3.4.0-RC1`  
 **Build Identifier:** `Build 20260905.01`  
@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-Liquidation IQ `v3.4.0-RC1` is the enterprise-grade, deterministic inventory intelligence platform engineered for rapid ingestion, forensic reconciliation, and natural-language exploration of complex, multi-worksheet liquidation manifests.
+DataSheet IQ `v3.4.0-RC1` is the enterprise-grade, deterministic inventory intelligence platform engineered for rapid ingestion, forensic reconciliation, and natural-language exploration of complex, multi-worksheet liquidation manifests.
 
 All six qualification phases (Phase 3C, Phase 2D, Phase 3D, Phase 3D.1, Phase 4, and Phase 5) have completed with **100% test pass rates across 913 evaluated assertions**.
 

@@ -157,7 +157,7 @@ App.UI = {
       main.innerHTML = `
         <div class="flex flex-col items-center justify-center" style="height:70vh">
           <div class="spinner mb-16" style="width:36px;height:36px"></div>
-          <div class="text-muted font-medium text-sm">Authenticating Liquidation IQ...</div>
+          <div class="text-muted font-medium text-sm">Authenticating DataSheet IQ...</div>
         </div>`;
       return;
     }

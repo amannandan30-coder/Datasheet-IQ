@@ -1,8 +1,8 @@
-# Liquidation Inventory Intelligence (Liquidation IQ)
+# DataSheet IQ — Inventory Intelligence Engine
 
 A production-quality, zero-dependency, offline-first web application designed for importing, normalizing, deduplicating, and visually analyzing messy liquidation and bad-inventory Excel spreadsheets.
 
-![Liquidation IQ Dashboard](https://img.shields.org/badge/Status-Production%20Ready-brightgreen)
+![DataSheet IQ Dashboard](https://img.shields.org/badge/Status-Production%20Ready-brightgreen)
 ![License](https://img.shields.org/badge/License-MIT-blue)
 ![Offline](https://img.shields.org/badge/Offline-100%25-orange)
 

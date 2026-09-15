@@ -483,5 +483,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Liquidation IQ server running at http://localhost:${PORT}`);
+  console.log(`DataSheet IQ server running at http://localhost:${PORT}`);
 });

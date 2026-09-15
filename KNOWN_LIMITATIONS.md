@@ -1,4 +1,4 @@
-# Liquidation IQ — Known Limitations & Operational Guidelines
+# DataSheet IQ — Known Limitations & Operational Guidelines
 
 **Version:** `v3.4.0-RC1`  
 **Build Identifier:** `Build 20260905.01`  
@@ -9,7 +9,7 @@
 
 ## 1. Scope & Architecture Boundaries
 
-Liquidation IQ is designed from the ground up as a **100% client-side, local-first inventory intelligence web application**. All file parsing, data cleaning, brand deduplication, classification, and financial reconciliation happen within the user's local browser memory and IndexedDB storage.
+DataSheet IQ is designed from the ground up as a **100% client-side, local-first inventory intelligence web application**. All file parsing, data cleaning, brand deduplication, classification, and financial reconciliation happen within the user's local browser memory and IndexedDB storage.
 
 While this architecture guarantees privacy and avoids server data leakage, it comes with operational boundaries documented below.
 
@@ -21,7 +21,7 @@ While this architecture guarantees privacy and avoids server data leakage, it co
 - **Recommended Manifest Size:** Up to **100,000 inventory rows** per individual Excel workbook.
 - **Maximum Tested Volume:** Tested successfully up to **100,000 rows** in 6.4 seconds.
 - **Extreme Scale (> 300,000 rows):** Browser tab memory limits (typically 2 GB in modern Chromium browsers) may cause UI throttling or GC pauses during synchronous table re-renders if a single sheet exceeds 300,000 rows without pagination.
-- **Mitigation:** Liquidation IQ utilizes virtualized list rendering and 25-row paginated tables to maintain smooth 60 FPS scrolling regardless of dataset size.
+- **Mitigation:** DataSheet IQ utilizes virtualized list rendering and 25-row paginated tables to maintain smooth 60 FPS scrolling regardless of dataset size.
 
 ### B. Password-Protected & Encrypted Spreadsheets
 - **Current Behavior:** Excel spreadsheets encrypted with native Microsoft Excel password protection cannot be decrypted client-side without the password provider module.
@@ -37,7 +37,7 @@ While this architecture guarantees privacy and avoids server data leakage, it co
 
 ### E. Business FM Reference Profile Applicability
 - **Profile Scope:** The 20-bucket Business FM Profile is calibrated specifically for FMCG and Grocery liquidation manifests (Grofers, Blinkit, Zepto, BigBasket formats).
-- **Behavior on Non-Grocery Workbooks:** When non-grocery workbooks (e.g., Electronics, Automotive, Healthcare) are uploaded, Liquidation IQ automatically defaults to the Universal Canonical 12-Domain Standard and safely hides the FMCG-specific 20-bucket selector to prevent user confusion.
+- **Behavior on Non-Grocery Workbooks:** When non-grocery workbooks (e.g., Electronics, Automotive, Healthcare) are uploaded, DataSheet IQ automatically defaults to the Universal Canonical 12-Domain Standard and safely hides the FMCG-specific 20-bucket selector to prevent user confusion.
 
 ---
 

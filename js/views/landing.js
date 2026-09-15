@@ -23,7 +23,7 @@ App.Views.Landing = (() => {
             <div class="landing-brand" onclick="App.Views.Landing.scrollTo('overview')" role="button" tabindex="0">
               <div class="landing-brand-icon">📦</div>
               <div>
-                <div class="landing-brand-title">Liquidation IQ</div>
+                <div class="landing-brand-title">DataSheet IQ</div>
                 <div class="landing-brand-sub">Inventory Intelligence</div>
               </div>
             </div>
@@ -251,7 +251,7 @@ App.Views.Landing = (() => {
             
             <div class="landing-section-header text-center">
               <div class="landing-section-tag">AUTOMATED INGESTION FLOW</div>
-              <h2 class="landing-section-title">The Liquidation IQ Ingestion Pipeline</h2>
+              <h2 class="landing-section-title">The DataSheet IQ Ingestion Pipeline</h2>
               <p class="landing-section-sub">
                 How raw spreadsheet manifests are parsed, cleaned, categorized, and reconciled in milliseconds.
               </p>
@@ -337,7 +337,7 @@ App.Views.Landing = (() => {
                     <span class="ecc-brand-icon-svg">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                     </span>
-                    <span class="ecc-brand-name">Liquidation IQ</span>
+                    <span class="ecc-brand-name">DataSheet IQ</span>
                     <span class="ecc-badge-divider">/</span>
                     <span class="ecc-badge-subtitle">Command Center</span>
                   </div>
@@ -523,7 +523,7 @@ App.Views.Landing = (() => {
                   <div class="ecc-panel ecc-ai-panel">
                     <div class="ecc-panel-header">
                       <div>
-                        <div class="ecc-panel-title">ASK LIQUIDATION IQ</div>
+                        <div class="ecc-panel-title">ASK DATASHEET IQ</div>
                         <div class="ecc-panel-subtitle">Ask questions about your inventory in plain English</div>
                       </div>
                       <div class="ecc-ai-status-indicator">
@@ -681,7 +681,7 @@ App.Views.Landing = (() => {
                   Liquidation inventory operates on razor-thin margins and strict timelines. Traditional spreadsheet analysis leads to lost units, incorrect pack-size conversions, and missed liquidation opportunities.
                 </p>
                 <p class="manifesto-subbody">
-                  Liquidation IQ was engineered as a high-precision intelligence layer. Every single row in the uploaded manifest is tracked, normalized, and accounted for—empowering buyers, auditors, and warehouse operators with mathematical certainty.
+                  DataSheet IQ was engineered as a high-precision intelligence layer. Every single row in the uploaded manifest is tracked, normalized, and accounted for—empowering buyers, auditors, and warehouse operators with mathematical certainty.
                 </p>
               </div>
 
@@ -750,7 +750,7 @@ App.Views.Landing = (() => {
                 <div class="flex items-center gap-12 mb-16">
                   <div class="landing-brand-icon footer-logo-glow">📦</div>
                   <div>
-                    <div class="landing-brand-title">Liquidation IQ</div>
+                    <div class="landing-brand-title">DataSheet IQ</div>
                     <div class="landing-brand-sub">Inventory Intelligence Engine</div>
                   </div>
                 </div>
@@ -815,7 +815,7 @@ App.Views.Landing = (() => {
             <!-- Footer Bottom Bar -->
             <div class="landing-footer-bottom">
               <div class="copyright-text">
-                © 2026 <strong>Liquidation IQ</strong>. Built for high-volume manifest intelligence.
+                © 2026 <strong>DataSheet IQ</strong>. Built for high-volume manifest intelligence.
               </div>
               <div class="footer-bottom-actions">
                 <span class="footer-bottom-meta">Engine Build v2.4.0</span>

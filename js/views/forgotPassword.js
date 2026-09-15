@@ -24,7 +24,7 @@ App.Views.ForgotPassword = (() => {
           <div class="auth-brand" onclick="App.Router.go('landing')" role="button" tabindex="0" title="Go to Landing Page">
             <div class="auth-brand-icon">📦</div>
             <div>
-              <div class="auth-brand-name">Liquidation IQ</div>
+              <div class="auth-brand-name">DataSheet IQ</div>
               <div class="auth-brand-sub">Inventory Intelligence Engine</div>
             </div>
           </div>
