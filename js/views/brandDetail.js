@@ -156,7 +156,7 @@ App.Views.BrandDetail = (() => {
         </div>
       </div>
 
-      <div class="grid-4 mb-24">
+      <div class="brand-kpi-grid mb-24">
         ${kpi('SKUs',    App.Fmt.number(totalSKUs),    '📦', '#6366f1')}
         ${kpi('Units',   App.Fmt.number(totalUnits),   '📊', '#10b981')}
         ${kpi('Value',   App.Fmt.currency(totalValue), '💰', '#f59e0b')}
@@ -199,31 +199,35 @@ App.Views.BrandDetail = (() => {
       el.dataset.name = fam.name || '';
       el.style.animationDelay = `${i*0.04}s`;
       el.innerHTML = `
-        <div class="product-row-header" onclick="toggleFamily('${fam.id}')">
-          <div class="product-expand-btn" id="expand-${fam.id}" aria-label="Expand">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <div class="product-row-header" onclick="toggleFamily('${fam.id}')" role="button" tabindex="0" aria-expanded="false">
+          <div class="product-expand-btn" id="expand-${fam.id}" aria-label="Expand product family">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </div>
           <div class="product-name-block">
             <div class="product-name">${App.Fmt.escapeHtml(fam.name || 'Unknown Product')}</div>
-            <div class="product-meta">${variants.length} variant${variants.length!==1?'s':''} · ${App.Fmt.escapeHtml(fam.subcategory||'')}</div>
+            <div class="product-meta">
+              <span class="product-meta-badge">${variants.length} ${variants.length!==1?'variants':'variant'}</span>
+              <span class="product-meta-dot" aria-hidden="true">•</span>
+              <span class="product-meta-subcat">${App.Fmt.escapeHtml(fam.subcategory || fam.category || '')}</span>
+            </div>
           </div>
           <div class="product-summary-stats">
-            <div class="product-summary-stat">
+            <div class="product-summary-stat product-summary-units">
               <div class="product-summary-val">${App.Fmt.number(fam.qty)}</div>
               <div class="product-summary-lbl">Units</div>
             </div>
-            <div class="product-summary-stat">
+            <div class="product-summary-stat product-summary-mass">
               <div class="product-summary-val">${fam.mass > 0 ? App.Fmt.mass(fam.mass) : "—"}</div>
               <div class="product-summary-lbl">Mass</div>
             </div>
-            <div class="product-summary-stat">
+            <div class="product-summary-stat product-summary-vol">
               <div class="product-summary-val">${fam.volume > 0 ? App.Fmt.volume(fam.volume) : "—"}</div>
               <div class="product-summary-lbl">Volume</div>
             </div>
-            <div class="product-summary-stat">
-              <div class="product-summary-val">${App.Fmt.currency(fam.value)}</div>
+            <div class="product-summary-stat product-summary-val-col">
+              <div class="product-summary-val product-val-highlight">${App.Fmt.currency(fam.value)}</div>
               <div class="product-summary-lbl">Value</div>
             </div>
           </div>

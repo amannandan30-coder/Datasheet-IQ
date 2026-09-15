@@ -17,19 +17,18 @@ App.Views.Dashboard = (() => {
 
   const CAT_COLORS = ['#6366f1','#10b981','#f59e0b','#38bdf8','#a78bfa','#fb923c','#34d399','#ef4444','#64748b'];
 
+  const SHEET_PALETTE = [
+    '#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#a855f7',
+    '#ec4899', '#14b8a6', '#f97316', '#3b82f6', '#84cc16', '#e11d48', '#64748b'
+  ];
+
   function getCatColor(cat, idx) {
     const cfg = App.Categorizer.getCategoryConfig(cat);
     return cfg.color || CAT_COLORS[idx % CAT_COLORS.length];
   }
 
-  function getStatusColor(statusKey) {
-    const k = String(statusKey || '').toLowerCase().trim();
-    if (k === 'damaged') return '#ef4444'; // Red (#ef4444)
-    if (k === 'expired') return '#a855f7'; // Purple (#a855f7)
-    if (k === 'near_expiry' || k === 'nearexpiry' || k === 'near expiry') return '#f59e0b'; // Amber (#f59e0b)
-    if (k === 'unknown') return '#94a3b8'; // Gray (#94a3b8)
-    if (k === 'saleable') return '#10b981'; // Green (#10b981)
-    return '#6366f1';
+  function getSheetColor(idx) {
+    return SHEET_PALETTE[idx % SHEET_PALETTE.length];
   }
 
   async function render(container, dataset_id) {
@@ -249,35 +248,166 @@ App.Views.Dashboard = (() => {
       `);
     }
 
-    /* ── Status Distribution ─────────────────────────────── */
-    if (Object.keys(statusDist).length > 0) {
-      const statusHtml = Object.entries(statusDist).map(([k,v]) => {
-        const pct = totalStatus ? (v.count/totalStatus*100).toFixed(1) : 0;
-        const color = getStatusColor(k);
-        return `<div class="flex items-center gap-8" style="margin-bottom:6px">
-          <span class="status-dot" style="background:${color}"></span>
-          <span class="text-sm" style="flex:1;text-transform:capitalize">${k.replace(/_/g,' ')}</span>
-          <span class="text-sm font-semibold">${App.Fmt.number(v.qty)} units</span>
-          <span class="badge badge-muted">${pct}%</span>
-        </div>`;
-      }).join('');
+    /* ── Workbook Sheet Breakdown (Units by Sheet & Value by Sheet) ──── */
+    const sheetMap = new Map();
+    for (const r of records) {
+      const sheetName = r._raw_sheet_name || r._sheet_name || (r._raw && (r._raw._raw_sheet_name || r._raw._sheet_name)) || 'Sheet 1';
+      if (!sheetMap.has(sheetName)) {
+        sheetMap.set(sheetName, { name: sheetName, units: 0, value: 0, count: 0 });
+      }
+      const s = sheetMap.get(sheetName);
+      s.units += (r.qty || 0);
+      s.value += (r.source_value || 0);
+      s.count += 1;
+    }
 
-      container.insertAdjacentHTML('beforeend', `
-        <div class="grid-2 mb-24">
-          <div class="card">
-            <div class="section-title mb-16">Inventory Status</div>
-            ${statusHtml}
+    const allSheets = [...sheetMap.values()].sort((a, b) => b.value - a.value);
+    const totalDatasetUnits = records.reduce((s, r) => s + (r.qty || 0), 0);
+    const totalDatasetValue = records.reduce((s, r) => s + (r.source_value || 0), 0);
+
+    // Top Contributors
+    const topUnitsSheet = [...allSheets].sort((a, b) => b.units - a.units)[0] || { name: '—', units: 0 };
+    const topUnitsPct = totalDatasetUnits ? ((topUnitsSheet.units / totalDatasetUnits) * 100).toFixed(1) : '0.0';
+
+    const topValueSheet = allSheets[0] || { name: '—', value: 0 };
+    const topValPct = totalDatasetValue ? ((topValueSheet.value / totalDatasetValue) * 100).toFixed(1) : '0.0';
+
+    // Generate Units Legend (top 5 + Other if > 5)
+    const unitsLegendSheets = allSheets.length > 5 ? [
+      ...allSheets.slice(0, 4),
+      {
+        name: `Other (${allSheets.length - 4} sheets)`,
+        units: allSheets.slice(4).reduce((s, x) => s + x.units, 0),
+        value: allSheets.slice(4).reduce((s, x) => s + x.value, 0),
+        isOther: true
+      }
+    ] : allSheets;
+
+    const unitsLegendItemsHtml = unitsLegendSheets.map((s, idx) => {
+      const color = s.isOther ? '#64748b' : getSheetColor(idx);
+      const unitsPct = totalDatasetUnits ? ((s.units / totalDatasetUnits) * 100).toFixed(1) : '0.0';
+      return `
+        <div class="sheet-legend-item">
+          <div class="sheet-legend-left">
+            <span class="sheet-legend-dot" style="background:${color}"></span>
+            <span class="sheet-legend-name" title="${App.Fmt.escapeHtml(s.name)}">${App.Fmt.escapeHtml(s.name)}</span>
           </div>
-          <div class="card" id="status-chart-wrap">
-            <div class="section-title mb-12">Value by Status</div>
-            <div class="chart-canvas-wrap" style="height:160px">
-              <canvas id="status-chart"></canvas>
+          <div class="sheet-legend-right">
+            <span class="sheet-legend-val">${App.Fmt.number(s.units)} units</span>
+            <span class="sheet-legend-pct">${unitsPct}%</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Generate Value Legend (top 5 + Other if > 5)
+    const valueLegendSheets = allSheets.length > 5 ? [
+      ...allSheets.slice(0, 4),
+      {
+        name: `Other (${allSheets.length - 4} sheets)`,
+        units: allSheets.slice(4).reduce((s, x) => s + x.units, 0),
+        value: allSheets.slice(4).reduce((s, x) => s + x.value, 0),
+        isOther: true
+      }
+    ] : allSheets;
+
+    const valueLegendItemsHtml = valueLegendSheets.map((s, idx) => {
+      const color = s.isOther ? '#64748b' : getSheetColor(idx);
+      const valPct = totalDatasetValue ? ((s.value / totalDatasetValue) * 100).toFixed(1) : '0.0';
+      return `
+        <div class="sheet-legend-item">
+          <div class="sheet-legend-left">
+            <span class="sheet-legend-dot" style="background:${color}"></span>
+            <span class="sheet-legend-name" title="${App.Fmt.escapeHtml(s.name)}">${App.Fmt.escapeHtml(s.name)}</span>
+          </div>
+          <div class="sheet-legend-right">
+            <span class="sheet-legend-val">${App.Fmt.currency(s.value)}</span>
+            <span class="sheet-legend-pct">${valPct}%</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    container.insertAdjacentHTML('beforeend', `
+      <div class="sheet-breakdown-section mb-24">
+        <div class="sheet-cards-grid">
+          <!-- Left Card: Units by Sheet -->
+          <div class="card sheet-intel-card">
+            <div class="sheet-card-header">
+              <div class="sheet-card-title-group">
+                <div class="sheet-card-title">Units by Sheet</div>
+                <div class="sheet-card-desc">Inventory units distributed across workbook sheets</div>
+              </div>
+              <div class="sheet-card-total-badge">
+                <span class="sheet-card-total-val">${App.Fmt.number(totalDatasetUnits)}</span>
+                <span class="sheet-card-total-unit">Units</span>
+              </div>
+            </div>
+
+            <div class="sheet-card-body">
+              <div class="sheet-donut-container">
+                <div class="sheet-donut-canvas-wrap">
+                  <canvas id="sheet-units-chart"></canvas>
+                </div>
+                <div class="sheet-donut-center">
+                  <span class="sheet-donut-center-label">TOTAL UNITS</span>
+                  <span class="sheet-donut-center-value">${App.Fmt.number(totalDatasetUnits)}</span>
+                </div>
+              </div>
+              <div class="sheet-legend-list">
+                ${unitsLegendItemsHtml}
+              </div>
+            </div>
+
+            <div class="sheet-card-footer">
+              <div class="sheet-top-contributor">
+                <span class="sheet-top-badge">TOP SHEET</span>
+                <span class="sheet-top-name" title="${App.Fmt.escapeHtml(topUnitsSheet.name)}">${App.Fmt.escapeHtml(topUnitsSheet.name)}</span>
+                <span class="sheet-top-metric">${topUnitsPct}% of Units · ${App.Fmt.number(topUnitsSheet.units)} units</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Card: Value by Sheet -->
+          <div class="card sheet-intel-card">
+            <div class="sheet-card-header">
+              <div class="sheet-card-title-group">
+                <div class="sheet-card-title">Value by Sheet</div>
+                <div class="sheet-card-desc">Canonical inventory value distributed across workbook sheets</div>
+              </div>
+              <div class="sheet-card-total-badge">
+                <span class="sheet-card-total-val">${App.Fmt.currency(totalDatasetValue)}</span>
+              </div>
+            </div>
+
+            <div class="sheet-card-body">
+              <div class="sheet-donut-container">
+                <div class="sheet-donut-canvas-wrap">
+                  <canvas id="sheet-value-chart"></canvas>
+                </div>
+                <div class="sheet-donut-center">
+                  <span class="sheet-donut-center-label">TOTAL VALUE</span>
+                  <span class="sheet-donut-center-value">${App.Fmt.currency(totalDatasetValue)}</span>
+                </div>
+              </div>
+              <div class="sheet-legend-list">
+                ${valueLegendItemsHtml}
+              </div>
+            </div>
+
+            <div class="sheet-card-footer">
+              <div class="sheet-top-contributor">
+                <span class="sheet-top-badge">TOP SHEET</span>
+                <span class="sheet-top-name" title="${App.Fmt.escapeHtml(topValueSheet.name)}">${App.Fmt.escapeHtml(topValueSheet.name)}</span>
+                <span class="sheet-top-metric">${topValPct}% of Value · ${App.Fmt.currency(topValueSheet.value)}</span>
+              </div>
             </div>
           </div>
         </div>
-      `);
-      renderStatusChart(statusDist);
-    }
+      </div>
+    `);
+
+    renderSheetCharts(allSheets, totalDatasetUnits, totalDatasetValue);
 
     /* ── Category Overview ───────────────────────────────── */
     container.insertAdjacentHTML('beforeend', `
@@ -436,20 +566,99 @@ App.Views.Dashboard = (() => {
     </div>`;
   }
 
-  function renderStatusChart(statusDist) {
+  function renderSheetCharts(sheets, totalUnits, totalValue) {
     requestAnimationFrame(() => {
-      const canvas = document.getElementById('status-chart');
-      if (!canvas) return;
-      const labels = Object.keys(statusDist).map(k => k.replace(/_/g,' '));
-      const values = Object.values(statusDist).map(v => v.value);
-      const colors = Object.keys(statusDist).map(k => getStatusColor(k));
+      // Prepare display data (top contributors + 'Other' if > 7 sheets for readable doughnut charts)
+      let chartSheets = sheets;
+      if (sheets.length > 7) {
+        const top = sheets.slice(0, 6);
+        const others = sheets.slice(6);
+        const otherUnits = others.reduce((s, x) => s + x.units, 0);
+        const otherValue = others.reduce((s, x) => s + x.value, 0);
+        chartSheets = [
+          ...top,
+          { name: `Other (${others.length} sheets)`, units: otherUnits, value: otherValue, isOther: true }
+        ];
+      }
 
-      if (window._statusChart) window._statusChart.destroy();
-      window._statusChart = new Chart(canvas, {
-        type: 'doughnut',
-        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth:2, borderColor:'#13151e' }] },
-        options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ color:'#94a3b8', font:{size:11} } } } }
-      });
+      const labels = chartSheets.map(s => s.name);
+      const colors = chartSheets.map((s, idx) => s.isOther ? '#64748b' : getSheetColor(idx));
+
+      // Units by Sheet Chart
+      const unitsCanvas = document.getElementById('sheet-units-chart');
+      if (unitsCanvas) {
+        if (window._sheetUnitsChart) window._sheetUnitsChart.destroy();
+        window._sheetUnitsChart = new Chart(unitsCanvas, {
+          type: 'doughnut',
+          data: {
+            labels,
+            datasets: [{
+              data: chartSheets.map(s => s.units),
+              backgroundColor: colors,
+              borderWidth: 2,
+              borderColor: '#13151e',
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const val = context.raw || 0;
+                    const pct = totalUnits ? ((val / totalUnits) * 100).toFixed(1) : '0.0';
+                    return ` ${context.label}: ${App.Fmt.number(val)} units (${pct}%)`;
+                  }
+                }
+              }
+            },
+            cutout: '72%'
+          }
+        });
+      }
+
+      // Value by Sheet Chart
+      const valueCanvas = document.getElementById('sheet-value-chart');
+      if (valueCanvas) {
+        if (window._sheetValueChart) window._sheetValueChart.destroy();
+        window._sheetValueChart = new Chart(valueCanvas, {
+          type: 'doughnut',
+          data: {
+            labels,
+            datasets: [{
+              data: chartSheets.map(s => s.value),
+              backgroundColor: colors,
+              borderWidth: 2,
+              borderColor: '#13151e',
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const val = context.raw || 0;
+                    const pct = totalValue ? ((val / totalValue) * 100).toFixed(1) : '0.0';
+                    return ` ${context.label}: ${App.Fmt.currency(val)} (${pct}%)`;
+                  }
+                }
+              }
+            },
+            cutout: '72%'
+          }
+        });
+      }
     });
   }
 
