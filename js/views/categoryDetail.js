@@ -95,13 +95,6 @@ App.Views.CategoryDetail = (() => {
     const initialSubcat = params.subcat ? decodeURIComponent(params.subcat) : '';
 
     container.innerHTML = `
-      <!-- Breadcrumb -->
-      <div class="breadcrumb">
-        <span class="breadcrumb-item" onclick="App.Router.go('dashboard')">Dashboard</span>
-        <span class="breadcrumb-sep">/</span>
-        <span class="breadcrumb-item active">${catCfg.icon||'📦'} ${catName}</span>
-      </div>
-
       <!-- Category Header -->
       <div class="category-header mb-24">
         <div class="cat-header-icon" style="background:${catCfg.color}22;color:${catCfg.color}">
@@ -160,21 +153,23 @@ App.Views.CategoryDetail = (() => {
       </div>
 
       <!-- Brand Breakdown Table -->
-      <div class="card p-20">
-        <div class="flex items-center justify-between mb-16">
+      <div class="card p-20 brand-breakdown-card">
+        <div class="flex items-center justify-between mb-16 brand-breakdown-header">
           <div>
             <div class="font-bold text-base" id="brand-list-title">Brand Breakdown</div>
             <div class="text-xs text-muted" id="brand-list-subtitle">Ranked by inventory valuation</div>
           </div>
           <div class="flex items-center gap-8">
             <span class="text-xs text-muted">Sort by:</span>
-            <button class="btn btn-xs btn-secondary" onclick="App.Views.CategoryDetail.sort('value')">Value</button>
-            <button class="btn btn-xs btn-secondary" onclick="App.Views.CategoryDetail.sort('units')">Units</button>
-            <button class="btn btn-xs btn-secondary" onclick="App.Views.CategoryDetail.sort('weight')">Weight</button>
-            <button class="btn btn-xs btn-secondary" onclick="App.Views.CategoryDetail.sort('alpha')">A–Z</button>
+            <div class="brand-sort-group" id="brand-sort-group">
+              <button class="brand-sort-btn active" data-sort="value" onclick="App.Views.CategoryDetail.sort('value')">Value</button>
+              <button class="brand-sort-btn" data-sort="units" onclick="App.Views.CategoryDetail.sort('units')">Units</button>
+              <button class="brand-sort-btn" data-sort="weight" onclick="App.Views.CategoryDetail.sort('weight')">Weight</button>
+              <button class="brand-sort-btn" data-sort="alpha" onclick="App.Views.CategoryDetail.sort('alpha')">A–Z</button>
+            </div>
           </div>
         </div>
-        <div id="brand-list-wrap"></div>
+        <div id="brand-list-wrap" class="brand-list-wrap"></div>
       </div>
     `;
 
@@ -621,41 +616,79 @@ App.Views.CategoryDetail = (() => {
     if (sortBy === 'alpha')  brands.sort((a,b) => a.name.localeCompare(b.name));
 
     wrap.innerHTML = '';
+
+    // Synchronize sort buttons UI
+    const sortGroup = document.getElementById('brand-sort-group');
+    if (sortGroup) {
+      sortGroup.querySelectorAll('.brand-sort-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sort === sortBy);
+      });
+    }
+    const subTitle = document.getElementById('brand-list-subtitle');
+    if (subTitle) {
+      if (sortBy === 'units') subTitle.textContent = 'Ranked by total quantity / units';
+      else if (sortBy === 'weight') subTitle.textContent = 'Ranked by total weight / mass';
+      else if (sortBy === 'alpha') subTitle.textContent = 'Alphabetical order (A to Z)';
+      else subTitle.textContent = 'Ranked by inventory valuation';
+    }
+
+    const avatarStyles = [
+      'background: rgba(99, 102, 241, 0.12); color: #818cf8; border-color: rgba(99, 102, 241, 0.25);',
+      'background: rgba(16, 185, 129, 0.12); color: #34d399; border-color: rgba(16, 185, 129, 0.25);',
+      'background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.25);',
+      'background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.25);',
+      'background: rgba(168, 85, 247, 0.12); color: #c084fc; border-color: rgba(168, 85, 247, 0.25);',
+      'background: rgba(236, 72, 153, 0.12); color: #f472b6; border-color: rgba(236, 72, 153, 0.25);'
+    ];
+
     brands.forEach((b, i) => {
       const pct = totalValue ? (b.value/totalValue*100).toFixed(1) : 0;
+      const rankClass = i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : '';
+      const avatarStyle = avatarStyles[(b.name.charCodeAt(0) || 0) % avatarStyles.length];
+
       const el  = document.createElement('div');
       el.className = 'brand-row';
       el.dataset.brand = b.name;
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('title', `View analytics for ${b.name}`);
       el.innerHTML = `
-        <div class="brand-rank">${i+1}</div>
-        <div class="brand-avatar">${(b.name[0]||'?').toUpperCase()}</div>
+        <div class="brand-rank ${rankClass}">${i+1}</div>
+        <div class="brand-avatar" style="${avatarStyle}">${escHtml((b.name[0]||'?').toUpperCase())}</div>
         <div class="brand-name-block">
           <div class="brand-name">${escHtml(b.name)}</div>
-          <div class="brand-aliases">${b.skus.size} SKUs</div>
+          <div class="brand-aliases">${b.skus.size} ${b.skus.size === 1 ? 'SKU' : 'SKUs'}</div>
         </div>
         <div class="brand-stats">
-          <div class="brand-stat-item">
+          <div class="brand-stat-item brand-stat-units">
             <div class="brand-stat-val">${App.Fmt.number(b.qty)}</div>
             <div class="brand-stat-lbl">Units</div>
           </div>
-          <div class="brand-stat-item">
+          <div class="brand-stat-item brand-stat-mass">
             <div class="brand-stat-val">${App.Fmt.mass(b.mass || b.weight)}</div>
             <div class="brand-stat-lbl">Mass</div>
           </div>
-          <div class="brand-stat-item">
+          <div class="brand-stat-item brand-stat-vol">
             <div class="brand-stat-val">${(b.volume > 0 ? App.Fmt.volume(b.volume) : "—")}</div>
             <div class="brand-stat-lbl">Volume</div>
           </div>
-          <div class="brand-stat-item">
-            <div class="brand-stat-val">${App.Fmt.currency(b.value)}</div>
+          <div class="brand-stat-item brand-stat-val-col">
+            <div class="brand-stat-val brand-val-highlight">${App.Fmt.currency(b.value)}</div>
             <div class="brand-stat-lbl">Value</div>
           </div>
-          <div class="brand-stat-item">
+          <div class="brand-stat-item brand-stat-pct-col">
             <div class="brand-stat-val">${pct}%</div>
             <div class="brand-stat-lbl">of View</div>
           </div>
         </div>
-        <div class="brand-pct-bar"><div class="brand-pct-fill" style="width:${Math.min(100,parseFloat(pct)*3)}%"></div></div>
+        <div class="brand-pct-bar" title="${pct}% of total view value">
+          <div class="brand-pct-fill" style="width:${Math.min(100, Math.max(2, parseFloat(pct) * 3))}%"></div>
+        </div>
+        <div class="brand-arrow" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </div>
       `;
       el.onclick = () => {
         const routeParams = {
