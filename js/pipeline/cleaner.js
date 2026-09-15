@@ -195,26 +195,54 @@ App.Cleaner = (() => {
     return res ? res.value_kg : null;
   }
 
-  // Generic mass extraction: kg / g ONLY (never volume)
-  function extractMassKG(uomStr, nameStr) {
-    const combined = ((uomStr || '') + ' ' + (nameStr || '')).toLowerCase();
-    const kgMatch = combined.match(/\b(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilogram|kilograms)\b/);
+  // Helper to parse mass from a single text string
+  function parseMassFromText(str) {
+    if (!str) return null;
+    const s = String(str).toLowerCase();
+    const kgMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilogram|kilograms)\b/);
     if (kgMatch) return parseFloat(kgMatch[1]);
 
-    const gMatch = combined.match(/\b(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/);
+    const gMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/);
     if (gMatch) return parseFloat(gMatch[1]) / 1000;
 
     return null;
   }
 
-  // Generic volume extraction: L / ml ONLY (never mass)
-  function extractVolumeL(uomStr, nameStr) {
-    const combined = ((uomStr || '') + ' ' + (nameStr || '')).toLowerCase();
-    const lMatch = combined.match(/\b(\d+(?:\.\d+)?)\s*(?:l|ltr|ltrs|liter|litres|litre)\b/);
+  // Generic mass extraction: field precedence (Variant/UOM first, then Product Name)
+  function extractMassKG(uomStr, nameStr) {
+    // 1. Check Variant/UOM first (highest priority)
+    const uomMass = parseMassFromText(uomStr);
+    if (uomMass != null) return uomMass;
+
+    // 2. Fallback to package / name-derived mass only if UOM has no explicit mass
+    const nameMass = parseMassFromText(nameStr);
+    if (nameMass != null) return nameMass;
+
+    return null;
+  }
+
+  // Helper to parse volume from a single text string
+  function parseVolumeFromText(str) {
+    if (!str) return null;
+    const s = String(str).toLowerCase();
+    const lMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:l|ltr|ltrs|liter|litres|litre)\b/);
     if (lMatch) return parseFloat(lMatch[1]);
 
-    const mlMatch = combined.match(/\b(\d+(?:\.\d+)?)\s*(?:ml|milliliter|millilitres)\b/);
+    const mlMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:ml|milliliter|millilitres)\b/);
     if (mlMatch) return parseFloat(mlMatch[1]) / 1000;
+
+    return null;
+  }
+
+  // Generic volume extraction: field precedence (Variant/UOM first, then Product Name)
+  function extractVolumeL(uomStr, nameStr) {
+    // 1. Check Variant/UOM first (highest priority)
+    const uomVol = parseVolumeFromText(uomStr);
+    if (uomVol != null) return uomVol;
+
+    // 2. Fallback to package / name-derived volume only if UOM has no explicit volume
+    const nameVol = parseVolumeFromText(nameStr);
+    if (nameVol != null) return nameVol;
 
     return null;
   }

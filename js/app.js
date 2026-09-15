@@ -1,4 +1,4 @@
-﻿window.App = window.App || {};
+window.App = window.App || {};
 console.log('[ROUTE-DIAG] app.js v3.3 ACTIVE | ' + new Date().toISOString());
 
 /* ============================================================
@@ -382,13 +382,14 @@ App.UI = {
       App.UI.toast('No records found for current dataset');
       return;
     }
-    const filename = `${(dataset.filename || 'inventory_export').replace(/\.[^/.]+$/, '')}_export`;
+    const filename = `${(dataset.filename || 'inventory_export').replace(/\.[^/.]+$/, '')}_category_summary`;
     if (format === 'xlsx') {
-      App.Exporter.exportToXLSX(filename, records);
+      App.Exporter.exportCategorySummaryXLSX(filename, records);
+      App.UI.toast(`Exported Category Summary XLSX — ${records.length} records`);
     } else {
       App.Exporter.exportToCSV(filename, records);
+      App.UI.toast(`Exported ${records.length} records to CSV`);
     }
-    App.UI.toast(`Exported ${records.length} records to ${format.toUpperCase()} `);
   },
 
   /* ── Upload Modal ────────────────────────────────────────── */

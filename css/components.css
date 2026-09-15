@@ -1426,6 +1426,225 @@
   flex-wrap: wrap;
 }
 
+/* ── DATA QUALITY CENTER ENHANCEMENTS ────────────────────── */
+.dq-hero-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .dq-hero-grid { grid-template-columns: 1fr; }
+}
+
+.dq-score-card {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.dq-score-ring {
+  width: 96px;
+  height: 96px;
+  min-width: 96px;
+  border-radius: 50%;
+  background: conic-gradient(var(--score-color, #10b981) var(--score-deg, 360deg), var(--bg-surface-3, #1e2230) var(--score-deg, 360deg));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.dq-score-inner {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--bg-surface-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dq-score-value {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dq-score-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.dq-score-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dq-score-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.dq-severity-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.dq-sev-card {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.dq-sev-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.dq-sev-critical::before { background: var(--danger, #ef4444); }
+.dq-sev-warning::before  { background: var(--warning, #f59e0b); }
+.dq-sev-info::before     { background: #38bdf8; }
+
+.dq-sev-icon {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.dq-sev-critical .dq-sev-icon { color: var(--danger, #ef4444); }
+.dq-sev-warning .dq-sev-icon  { color: var(--warning, #f59e0b); }
+.dq-sev-info .dq-sev-icon     { color: #38bdf8; }
+
+.dq-sev-count {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dq-sev-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+
+/* ── DIMENSION CARDS ── */
+.dq-dim-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1200px) {
+  .dq-dim-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .dq-dim-grid { grid-template-columns: 1fr; }
+}
+
+.dq-dim-card {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dq-dim-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dq-dim-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.dq-dim-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.dq-dim-score {
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.dq-dim-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-surface-3, #1e2230);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dq-dim-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.dq-dim-stats {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── CHECK LIST & TABLE ── */
+.dq-check-group-header td {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* ── DASHBOARD COMPACT DQ CARD ── */
+.dashboard-dq-card {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition);
+}
+.dashboard-dq-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
 /* ── CONFIDENCE BADGES ───────────────────────────────────── */
 .conf-high {
   background: var(--success-dim);

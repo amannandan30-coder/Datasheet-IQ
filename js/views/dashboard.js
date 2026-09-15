@@ -158,6 +158,41 @@ App.Views.Dashboard = (() => {
       `);
     }
 
+    /* ── Compact Data Quality Card (Shared Audit) ─────────────── */
+    if (App.DQAudit && typeof App.DQAudit.getAudit === 'function') {
+      const audit = App.DQAudit.getAudit(dataset_id, records);
+      const scoreColor = audit.overall >= 90 ? '#10b981' : audit.overall >= 70 ? '#f59e0b' : '#ef4444';
+      container.insertAdjacentHTML('beforeend', `
+        <div class="card mb-24 dashboard-dq-card" onclick="App.Router.go('quality')" style="cursor:pointer">
+          <div class="flex items-center gap-16">
+            <div style="width:48px;height:48px;min-width:48px;border-radius:50%;background:${scoreColor}22;border:2px solid ${scoreColor};display:flex;align-items:center;justify-content:center">
+              <span style="font-size:16px;font-weight:800;color:${scoreColor}">${Math.round(audit.overall)}</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-8">
+                <span class="font-bold text-sm text-primary">Data Quality Health</span>
+                <span class="badge" style="background:${scoreColor}22;color:${scoreColor};font-size:11px;font-weight:600">${audit.overall >= 90 ? 'HEALTHY' : audit.overall >= 70 ? 'FAIR' : 'NEEDS ATTENTION'} (${audit.overall}%)</span>
+              </div>
+              <div class="text-xs text-muted mt-4">
+                <span>${App.Fmt.number(audit.totalAffectedRecords)} of ${App.Fmt.number(audit.total)} records have quality notes</span>
+                <span style="margin:0 6px">·</span>
+                <span class="text-danger font-semibold">${audit.severity.critical} Critical</span>
+                <span style="margin:0 4px">·</span>
+                <span class="text-warning font-semibold">${audit.severity.warning} Warning</span>
+                <span style="margin:0 4px">·</span>
+                <span style="color:#38bdf8;font-weight:600">${audit.severity.info} Info</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-8">
+            <button class="btn btn-xs btn-ghost" style="display:inline-flex;align-items:center;gap:4px">
+              Inspect Data Quality Center &rarr;
+            </button>
+          </div>
+        </div>
+      `);
+    }
+
     /* ── Primary Inventory Status Section (3-Card Simplification) ─── */
     if (App.InventoryStatusResolver && typeof App.InventoryStatusResolver.resolveDataset === 'function') {
       const statusSummary = App.InventoryStatusResolver.resolveDataset(records);
