@@ -369,35 +369,58 @@ App.Views.Dashboard = (() => {
     const topBrands = [...brandMap.values()].sort((a,b) => b.value-a.value).slice(0,10);
 
     container.insertAdjacentHTML('beforeend', `
-      <div class="section-header">
+      <div class="section-header" style="margin-bottom: 12px;">
         <div class="section-title">Top Brands by Value</div>
         <button class="btn btn-sm btn-ghost" onclick="App.Router.go('brands')">View All &rarr;</button>
       </div>
-      <div class="card mb-24" id="top-brands-list"></div>
+      <div class="card top-brands-card mb-24">
+        <div class="top-brands-header">
+          <div class="tb-col-rank">#</div>
+          <div class="tb-col-brand">Brand</div>
+          <div class="tb-col-units">Units</div>
+          <div class="tb-col-value">Total Value</div>
+          <div class="tb-col-share">Share</div>
+        </div>
+        <div class="top-brands-list" id="top-brands-list"></div>
+      </div>
     `);
 
     const tbList = container.querySelector('#top-brands-list');
+    const maxBrandVal = topBrands[0]?.value || 1;
     topBrands.forEach((b, i) => {
-      const pct = totalValue ? (b.value/totalValue*100).toFixed(1) : 0;
+      const pct = totalValue ? (b.value / totalValue * 100).toFixed(1) : '0.0';
+      const relPct = Math.max(4, Math.min(100, Math.round((b.value / maxBrandVal) * 100)));
+      const rank = i + 1;
+      const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+      const cleanName = App.Fmt.escapeHtml(b.name);
+
       tbList.insertAdjacentHTML('beforeend', `
-        <div class="brand-row" onclick="App.Router.go('brand',{id:'${encodeURIComponent(b.name)}'})">
-          <div class="brand-rank">${i+1}</div>
-          <div class="brand-avatar">${b.name[0].toUpperCase()}</div>
-          <div class="brand-name-block">
-            <div class="brand-name">${b.name}</div>
+        <div class="top-brand-row" onclick="App.Router.go('brand',{id:'${encodeURIComponent(b.name)}'})" role="button" tabindex="0" title="View ${cleanName} details">
+          <div class="tb-col-rank">
+            <span class="tb-rank-badge ${rankClass}">${rank}</span>
           </div>
-          <div class="brand-stats">
-            <div class="brand-stat-item">
-              <div class="brand-stat-val">${App.Fmt.number(b.qty)}</div>
-              <div class="brand-stat-lbl">Units</div>
-            </div>
-            <div class="brand-stat-item">
-              <div class="brand-stat-val">${App.Fmt.currency(b.value)}</div>
-              <div class="brand-stat-lbl">Value</div>
+          <div class="tb-col-brand">
+            <div class="tb-avatar">${(b.name[0] || '?').toUpperCase()}</div>
+            <div class="tb-info">
+              <div class="tb-name">${cleanName}</div>
             </div>
           </div>
-          <div class="brand-pct-bar">
-            <div class="brand-pct-fill" style="width:${Math.min(100,pct*5)}%"></div>
+          <div class="tb-col-units">
+            <span class="tb-metric-num">${App.Fmt.number(b.qty)}</span>
+          </div>
+          <div class="tb-col-value">
+            <span class="tb-metric-val">${App.Fmt.currency(b.value)}</span>
+          </div>
+          <div class="tb-col-share">
+            <div class="tb-share-wrap">
+              <span class="tb-share-pct">${pct}%</span>
+              <div class="tb-share-bar">
+                <div class="tb-share-bar-fill" style="width:${relPct}%"></div>
+              </div>
+            </div>
+            <div class="tb-arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
           </div>
         </div>`
       );

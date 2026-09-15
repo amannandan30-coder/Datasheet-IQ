@@ -99,55 +99,59 @@ App.Views.BrandDetail = (() => {
 
     container.innerHTML = '';
 
-    /* ── Header ──────────────────────────────────────────── */
-    let pageSub = '';
+    /* ── Header Meta & Chips ──────────────────────────────── */
+    let categoryChipsHtml = '';
     if (catName && subcatName) {
-      pageSub = `${catName} › ${subcatName} · ${families.length} product families`;
+      categoryChipsHtml = `<span class="brand-header-chip chip-accent"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>${App.Fmt.escapeHtml(catName)} › ${App.Fmt.escapeHtml(subcatName)}</span>`;
     } else if (catName) {
-      pageSub = `${catName} · ${families.length} product families`;
-    } else {
-      pageSub = `${cats.join(' · ')} · ${families.length} product families`;
+      categoryChipsHtml = `<span class="brand-header-chip chip-accent"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>${App.Fmt.escapeHtml(catName)}</span>`;
+    } else if (cats.length === 1) {
+      categoryChipsHtml = `<span class="brand-header-chip chip-accent"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>${App.Fmt.escapeHtml(cats[0])}</span>`;
+    } else if (cats.length > 1) {
+      categoryChipsHtml = `<span class="brand-header-chip chip-accent"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>${cats.length} Categories</span>`;
     }
 
     let filterControlsHtml = '';
     if (subcatName) {
       filterControlsHtml = `
-        <div class="flex items-center gap-8">
-          <div class="badge badge-primary" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px">
-            Context: ${catName} › ${subcatName}
-            <button class="btn-ghost text-xs font-bold ml-4" style="color:inherit;border:none;background:none;cursor:pointer;padding:0"
-                    onclick="App.Router.go('brand',{id:'${encodeURIComponent(brandName)}'})" title="Clear filter (View all products of ${brandName})">✕</button>
-          </div>
+        <div class="brand-context-badge">
+          <span>Context: ${App.Fmt.escapeHtml(catName)} › ${App.Fmt.escapeHtml(subcatName)}</span>
+          <button class="brand-context-clear" onclick="App.Router.go('brand',{id:'${encodeURIComponent(brandName)}'})" title="Clear filter (View all products of ${App.Fmt.escapeHtml(brandName)})">✕</button>
         </div>`;
     } else if (catName) {
       filterControlsHtml = `
-        <div class="flex items-center gap-8">
-          <div class="badge badge-primary" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px">
-            Context: ${catName}
-            <button class="btn-ghost text-xs font-bold ml-4" style="color:inherit;border:none;background:none;cursor:pointer;padding:0"
-                    onclick="App.Router.go('brand',{id:'${encodeURIComponent(brandName)}'})" title="Clear filter (View all products of ${brandName})">✕</button>
-          </div>
+        <div class="brand-context-badge">
+          <span>Context: ${App.Fmt.escapeHtml(catName)}</span>
+          <button class="brand-context-clear" onclick="App.Router.go('brand',{id:'${encodeURIComponent(brandName)}'})" title="Clear filter (View all products of ${App.Fmt.escapeHtml(brandName)})">✕</button>
         </div>`;
     } else {
       filterControlsHtml = `
-        <select class="select" onchange="filterFamilies(this.value)">
-          <option value="">All Categories</option>
-          ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
-        </select>`;
+        <div class="brand-select-wrap">
+          <select class="select brand-category-select" onchange="filterFamilies(this.value)" aria-label="Filter by category">
+            <option value="">All Categories</option>
+            ${cats.map(c=>`<option value="${App.Fmt.escapeHtml(c)}">${App.Fmt.escapeHtml(c)}</option>`).join('')}
+          </select>
+        </div>`;
     }
 
     container.insertAdjacentHTML('beforeend', `
-      <div class="page-header">
-        <div class="flex items-center gap-14">
-          <div class="brand-avatar" style="width:52px;height:52px;font-size:22px;border-radius:14px">
-            ${brandName[0]?.toUpperCase()||'?'}
+      <div class="brand-detail-header mb-24">
+        <div class="brand-header-identity">
+          <div class="brand-header-avatar">
+            ${(brandName[0] || '?').toUpperCase()}
           </div>
-          <div>
-            <div class="page-title">${brandName}</div>
-            <div class="page-sub">${pageSub}</div>
+          <div class="brand-header-info">
+            <h1 class="brand-header-title">${App.Fmt.escapeHtml(brandName)}</h1>
+            <div class="brand-header-chips">
+              ${categoryChipsHtml}
+              <span class="brand-header-chip chip-neutral">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                ${families.length} Product ${families.length === 1 ? 'Family' : 'Families'}
+              </span>
+            </div>
           </div>
         </div>
-        <div class="flex gap-8">
+        <div class="brand-header-actions">
           ${filterControlsHtml}
         </div>
       </div>

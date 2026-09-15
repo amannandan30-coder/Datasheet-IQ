@@ -228,61 +228,125 @@ App.Views.AllBrands = (() => {
     // Build brand stats from records
     const brandStats = new Map();
     for (const r of records) {
-      const b = r.normalized_brand||'Unknown';
-      if (!brandStats.has(b)) brandStats.set(b, {name:b,qty:0,value:0,weight:0,skus:new Set()});
+      const b = r.normalized_brand || 'Unknown';
+      if (!brandStats.has(b)) brandStats.set(b, { name: b, qty: 0, value: 0, weight: 0, mass: 0, volume: 0, skus: new Set() });
       const s = brandStats.get(b);
-      s.qty    += (r.qty||0);
-      s.value  += (r.source_value||0);
-      s.weight += (r.total_weight||0);
+      s.qty    += (r.qty || 0);
+      s.value  += (r.source_value || 0);
+      s.weight += (r.total_weight || 0);
+      s.mass   += (r.total_mass || r.total_weight || 0);
+      s.volume += (r.total_volume || 0);
       s.skus.add(r.product_family_id);
     }
 
-    const sortedBrands = [...brandStats.values()].sort((a,b) => b.value-a.value);
-    const totalValue   = records.reduce((s,r) => s+(r.source_value||0), 0);
+    const sortedBrands = [...brandStats.values()].sort((a,b) => b.value - a.value);
+    const totalValue   = records.reduce((s,r) => s + (r.source_value || 0), 0);
 
     container.innerHTML = '';
     container.insertAdjacentHTML('beforeend', `
-      <div class="page-header">
+      <div class="page-header flex items-center justify-between gap-16 mb-20">
         <div>
           <div class="page-title">All Brands</div>
-          <div class="page-sub">${sortedBrands.length} brands</div>
+          <div class="page-sub" id="all-brands-count">${sortedBrands.length} brands in active dataset</div>
         </div>
-        <input class="input" style="width:200px" placeholder="Search brands…" oninput="filterAllBrands(this.value)" id="all-brand-search">
+        <div class="flex items-center gap-12">
+          <div style="position:relative; width:240px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;">
+              <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input class="input" style="padding-left:34px; width:100%; height:36px; font-size:13px;" placeholder="Search brands…" oninput="filterAllBrands(this.value)" id="all-brand-search" autocomplete="off">
+          </div>
+        </div>
       </div>
-      <div class="card" id="all-brands-list"></div>
+      <div class="card all-brands-card mb-24">
+        <div class="all-brands-header">
+          <div class="ab-col-rank">#</div>
+          <div class="ab-col-brand">Brand</div>
+          <div class="ab-col-units">Units</div>
+          <div class="ab-col-mass">Mass</div>
+          <div class="ab-col-volume">Volume</div>
+          <div class="ab-col-value">Total Value</div>
+          <div class="ab-col-share">Share</div>
+        </div>
+        <div class="all-brands-list" id="all-brands-list"></div>
+      </div>
     `);
 
     const list = container.querySelector('#all-brands-list');
+    const countEl = container.querySelector('#all-brands-count');
     renderBrandRows(sortedBrands, list, totalValue);
 
     window.filterAllBrands = (q) => {
       const filtered = q ? sortedBrands.filter(b => b.name.toLowerCase().includes(q.toLowerCase())) : sortedBrands;
+      if (countEl) countEl.textContent = q ? `${filtered.length} of ${sortedBrands.length} brands` : `${sortedBrands.length} brands in active dataset`;
       renderBrandRows(filtered, list, totalValue);
     };
   }
 
   function renderBrandRows(brands, wrap, totalValue) {
     wrap.innerHTML = '';
+    if (!brands.length) {
+      wrap.innerHTML = `
+        <div style="padding:48px 20px; text-align:center; color:var(--text-muted); font-size:13.5px;">
+          No matching brands found
+        </div>`;
+      return;
+    }
+
+    const maxBrandVal = brands[0]?.value || 1;
     brands.forEach((b, i) => {
-      const pct = totalValue ? (b.value/totalValue*100).toFixed(1) : 0;
+      const pct = totalValue ? (b.value / totalValue * 100).toFixed(1) : '0.0';
+      const relPct = Math.max(4, Math.min(100, Math.round((b.value / maxBrandVal) * 100)));
+      const rank = i + 1;
+      const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+      const cleanName = App.Fmt.escapeHtml(b.name);
+      const massVal = (b.mass || b.weight) ? App.Fmt.mass(b.mass || b.weight) : '—';
+      const volVal = (b.volume > 0) ? App.Fmt.volume(b.volume) : '—';
+
       const el = document.createElement('div');
-      el.className = 'brand-row';
+      el.className = 'all-brands-row';
+      el.role = 'button';
+      el.tabIndex = 0;
+      el.title = `View ${cleanName} details`;
       el.innerHTML = `
-        <div class="brand-rank">${i+1}</div>
-        <div class="brand-avatar">${b.name[0]?.toUpperCase()||'?'}</div>
-        <div class="brand-name-block">
-          <div class="brand-name">${b.name}</div>
-          <div class="brand-aliases">${b.skus.size} SKUs</div>
+        <div class="ab-col-rank">
+          <span class="ab-rank-badge ${rankClass}">${rank}</span>
         </div>
-        <div class="brand-stats">
-          <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.number(b.qty)}</div><div class="brand-stat-lbl">Units</div></div>
-          <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.mass(b.mass || b.weight)}</div><div class="brand-stat-lbl">Mass</div></div><div class="brand-stat-item"><div class="brand-stat-val">${(b.volume > 0 ? App.Fmt.volume(b.volume) : "—")}</div><div class="brand-stat-lbl">Volume</div></div>
-          <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.currency(b.value)}</div><div class="brand-stat-lbl">Value</div></div>
-          <div class="brand-stat-item"><div class="brand-stat-val">${pct}%</div><div class="brand-stat-lbl">of Total</div></div>
+        <div class="ab-col-brand">
+          <div class="ab-avatar">${(b.name[0] || '?').toUpperCase()}</div>
+          <div class="ab-info">
+            <div class="ab-name-row">
+              <span class="ab-name">${cleanName}</span>
+              <span class="ab-sku-pill">${b.skus.size} SKU${b.skus.size === 1 ? '' : 's'}</span>
+            </div>
+          </div>
         </div>
-        <div class="brand-pct-bar"><div class="brand-pct-fill" style="width:${Math.min(100,parseFloat(pct)*5)}%"></div></div>
+        <div class="ab-col-units">
+          <span class="ab-metric-num">${App.Fmt.number(b.qty)}</span>
+        </div>
+        <div class="ab-col-mass">
+          <span class="ab-metric-sub">${massVal}</span>
+        </div>
+        <div class="ab-col-volume">
+          <span class="ab-metric-sub">${volVal}</span>
+        </div>
+        <div class="ab-col-value">
+          <span class="ab-metric-val">${App.Fmt.currency(b.value)}</span>
+        </div>
+        <div class="ab-col-share">
+          <div class="ab-share-wrap">
+            <span class="ab-share-pct">${pct}%</span>
+            <div class="ab-share-bar">
+              <div class="ab-share-bar-fill" style="width:${relPct}%"></div>
+            </div>
+          </div>
+          <div class="ab-arrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </div>
       `;
       el.onclick = () => App.Router.go('brand', { id: encodeURIComponent(b.name) });
+      el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') App.Router.go('brand', { id: encodeURIComponent(b.name) }); };
       wrap.appendChild(el);
     });
   }
