@@ -226,11 +226,13 @@ App.Views.WarehouseView = (() => {
       catMap.get(c).brands.add(r.normalized_brand);
     }
 
+    const cleanWhName = App.Fmt.escapeHtml(whName);
+
     container.innerHTML = '';
     container.insertAdjacentHTML('beforeend', `
-      <div class="page-header">
-        <div class="flex items-center gap-14">
-          <div style="width:48px;height:48px;border-radius:12px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);display:flex;align-items:center;justify-content:center;color:#6366f1;flex-shrink:0">
+      <div class="wh-detail-header mb-24">
+        <div class="wh-header-identity">
+          <div class="wh-header-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/>
               <path d="M6 18h12"/>
@@ -238,10 +240,29 @@ App.Views.WarehouseView = (() => {
               <rect x="10" y="10" width="4" height="4"/>
             </svg>
           </div>
-          <div>
-            <div class="page-title">${whName}</div>
-            <div class="page-sub">${skuCount} SKUs · ${catMap.size} categories represented</div>
+          <div class="wh-header-info">
+            <h1 class="wh-header-title">${cleanWhName}</h1>
+            <div class="wh-header-chips">
+              <span class="wh-header-chip chip-neutral">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                ${App.Fmt.number(skuCount)} SKUs
+              </span>
+              <span class="wh-header-chip chip-accent">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+                ${catMap.size} Categories Represented
+              </span>
+              <span class="wh-header-chip chip-cyan">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                ${App.Fmt.number(totalQty)} Units
+              </span>
+            </div>
           </div>
+        </div>
+        <div class="wh-header-actions">
+          <button class="btn btn-secondary btn-sm" onclick="App.Router.go('warehouses')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            All Warehouses
+          </button>
         </div>
       </div>
       <div class="flex gap-12 mb-24" style="flex-wrap:wrap">
@@ -251,20 +272,63 @@ App.Views.WarehouseView = (() => {
         ${kpi('Total Volume', App.Fmt.volume(totalVolume), '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 2v7.31M14 2v7.31M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>', '#06b6d4')}
         ${kpi('SKUs',    App.Fmt.number(skuCount), '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>', '#6366f1')}
       </div>
-      <div class="section-title mb-16">Categories in this Warehouse</div>
-      <div class="card">
-        ${[...catMap.values()].sort((a,b)=>b.value-a.value).map((c,i) => `
-          <div class="brand-row" onclick="App.Router.go('category',{name:encodeURIComponent('${c.name}')})">
-            <div class="brand-rank">${i+1}</div>
-            <div class="brand-name-block">
-              <div class="brand-name">${c.name}</div>
-              <div class="brand-aliases">${c.brands.size} brands</div>
-            </div>
-            <div class="brand-stats">
-              <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.number(c.qty)}</div><div class="brand-stat-lbl">Units</div></div>
-              <div class="brand-stat-item"><div class="brand-stat-val">${App.Fmt.currency(c.value)}</div><div class="brand-stat-lbl">Value</div></div>
-            </div>
-          </div>`).join('')}
+      <div class="section-header mb-12" style="display:flex;align-items:center;justify-content:space-between">
+        <div class="section-title">Categories in this Warehouse</div>
+        <span class="text-xs text-muted font-medium">${catMap.size} categories</span>
+      </div>
+      <div class="card wh-categories-card mb-24">
+        <div class="wh-categories-header">
+          <div class="wh-col-rank">#</div>
+          <div class="wh-col-cat">Category</div>
+          <div class="wh-col-units">Units</div>
+          <div class="wh-col-value">Total Value</div>
+          <div class="wh-col-share">Share</div>
+        </div>
+        <div class="wh-categories-list">
+          ${(() => {
+            const sortedCats = [...catMap.values()].sort((a,b) => b.value - a.value);
+            const maxCatVal = sortedCats[0]?.value || 1;
+            return sortedCats.map((c, i) => {
+              const pct = totalValue ? (c.value / totalValue * 100).toFixed(1) : '0.0';
+              const relPct = Math.max(4, Math.min(100, Math.round((c.value / maxCatVal) * 100)));
+              const rank = i + 1;
+              const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+              const cleanName = App.Fmt.escapeHtml(c.name);
+
+              return `
+                <div class="wh-category-row" onclick="App.Router.go('category',{name:encodeURIComponent('${c.name}')})" role="button" tabindex="0" title="View ${cleanName} details">
+                  <div class="wh-col-rank">
+                    <span class="wh-rank-badge ${rankClass}">${rank}</span>
+                  </div>
+                  <div class="wh-col-cat">
+                    <div class="wh-cat-avatar">${(c.name[0] || '?').toUpperCase()}</div>
+                    <div class="wh-cat-info">
+                      <span class="wh-cat-name">${cleanName}</span>
+                      <span class="wh-cat-brand-pill">${c.brands.size} Brand${c.brands.size === 1 ? '' : 's'}</span>
+                    </div>
+                  </div>
+                  <div class="wh-col-units">
+                    <span class="wh-metric-num">${App.Fmt.number(c.qty)}</span>
+                  </div>
+                  <div class="wh-col-value">
+                    <span class="wh-metric-val">${App.Fmt.currency(c.value)}</span>
+                  </div>
+                  <div class="wh-col-share">
+                    <div class="wh-share-wrap">
+                      <span class="wh-share-pct">${pct}%</span>
+                      <div class="wh-share-bar">
+                        <div class="wh-share-bar-fill" style="width:${relPct}%"></div>
+                      </div>
+                    </div>
+                    <div class="wh-cat-arrow">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('');
+          })()}
+        </div>
       </div>
     `);
   }

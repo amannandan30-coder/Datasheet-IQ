@@ -583,11 +583,11 @@ App.Views.CategoryDetail = (() => {
           <div class="subcat-stat-label">Brands</div>
         </div>
       </div>
-      <div class="subcat-stat-card" style="--stat-color: #fb923c">
-        <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg></div>
+      <div class="subcat-stat-card" style="--stat-color: #06b6d4">
+        <div class="subcat-stat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.31M14 2v7.31M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/></svg></div>
         <div class="subcat-stat-info">
-          <div class="subcat-stat-value">${scData.qty ? App.Fmt.currency(scData.value / scData.qty) : '&mdash;'}</div>
-          <div class="subcat-stat-label">Avg Value / Unit</div>
+          <div class="subcat-stat-value">${scData.volume > 0 ? App.Fmt.volume(scData.volume) : '&mdash;'}</div>
+          <div class="subcat-stat-label">Volume</div>
         </div>
       </div>
     `;

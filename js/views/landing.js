@@ -6,6 +6,135 @@ App.Views = App.Views || {};
    ============================================================ */
 App.Views.Landing = (() => {
 
+  /* ============================================================
+     TUTORIAL VIDEO CONFIGURATION (Single Source of Truth)
+     Update the URL below with your YouTube video URL or ID.
+     Supported formats:
+       - https://www.youtube.com/watch?v=VIDEO_ID
+       - https://youtu.be/VIDEO_ID
+       - https://www.youtube.com/embed/VIDEO_ID
+       - VIDEO_ID (11 characters)
+     If left empty or set to a placeholder, a graceful "coming soon" state is shown.
+     ============================================================ */
+  const TUTORIAL_VIDEO = {
+    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    title: "How to Use DataSheet IQ",
+    badge: "DataSheet IQ Tutorial",
+    description: "Learn how to turn your inventory spreadsheets into actionable intelligence with DataSheet IQ."
+  };
+
+  function getYouTubeVideoId(url) {
+    if (!url || typeof url !== 'string') return null;
+    const clean = url.trim();
+    if (clean === '' || clean.includes('YOUR_YOUTUBE') || clean.includes('PLACEHOLDER') || clean.includes('EXAMPLE')) {
+      return null;
+    }
+    const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/;
+    const match = clean.match(regExp);
+    if (match && match[1]) {
+      return match[1];
+    }
+    if (/^[\w-]{11}$/.test(clean)) {
+      return clean;
+    }
+    return null;
+  }
+
+  function renderTutorialVideoCard() {
+    const videoId = getYouTubeVideoId(TUTORIAL_VIDEO.url);
+    const watchUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : (TUTORIAL_VIDEO.url || '#');
+    const hasValidVideo = Boolean(videoId);
+
+    if (hasValidVideo) {
+      return `
+        <div class="tutorial-video-card" id="tutorial-video-container">
+          <div class="tutorial-video-header">
+            <div class="tutorial-video-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 22c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 2c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/>
+              </svg>
+              <span>${App.Fmt.escapeHtml(TUTORIAL_VIDEO.badge || 'DataSheet IQ Tutorial')}</span>
+            </div>
+            <div class="tutorial-video-dots" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+          
+          <div class="tutorial-video-frame-wrap">
+            <iframe
+              class="tutorial-video-iframe"
+              src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1"
+              title="DataSheet IQ Tutorial — ${App.Fmt.escapeHtml(TUTORIAL_VIDEO.title)}"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen>
+            </iframe>
+          </div>
+
+          <div class="tutorial-video-footer">
+            <span class="tutorial-video-caption">${App.Fmt.escapeHtml(TUTORIAL_VIDEO.title)}</span>
+            <a href="${App.Fmt.escapeHtml(watchUrl)}" target="_blank" rel="noopener noreferrer" class="tutorial-yt-link" id="tutorial-watch-youtube-link" aria-label="Watch tutorial on YouTube (opens in new tab)">
+              <span>Watch on YouTube</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
+    // Graceful placeholder state when no video URL is configured
+    return `
+      <div class="tutorial-video-card tutorial-video-placeholder" id="tutorial-video-container">
+        <div class="tutorial-video-header">
+          <div class="tutorial-video-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 22c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 2c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/>
+            </svg>
+            <span>${App.Fmt.escapeHtml(TUTORIAL_VIDEO.badge || 'DataSheet IQ Tutorial')}</span>
+          </div>
+          <div class="tutorial-video-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        
+        <div class="tutorial-placeholder-body">
+          <div class="tutorial-placeholder-icon" aria-hidden="true">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+              <line x1="7" y1="2" x2="7" y2="22"></line>
+              <line x1="17" y1="2" x2="17" y2="22"></line>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <line x1="2" y1="7" x2="7" y2="7"></line>
+              <line x1="2" y1="17" x2="7" y2="17"></line>
+              <line x1="17" y1="17" x2="22" y2="17"></line>
+              <line x1="17" y1="7" x2="22" y2="7"></line>
+            </svg>
+          </div>
+          <div class="tutorial-placeholder-title">Tutorial Video Coming Soon</div>
+          <p class="tutorial-placeholder-desc">
+            We are preparing a step-by-step walkthrough demonstrating the full DataSheet IQ manifest parsing and inventory intelligence workflow.
+          </p>
+          <div class="tutorial-placeholder-tag">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Platform Walkthrough in Production</span>
+          </div>
+        </div>
+
+        <div class="tutorial-video-footer">
+          <span class="tutorial-video-caption">${App.Fmt.escapeHtml(TUTORIAL_VIDEO.title)}</span>
+          <span class="tutorial-yt-link-disabled">Video Link Available Soon</span>
+        </div>
+      </div>
+    `;
+  }
+
   let _cleanup = null;
 
   function render(container) {
@@ -35,6 +164,7 @@ App.Views.Landing = (() => {
               <button class="landing-link" onclick="App.Views.Landing.scrollTo('features')">Features</button>
               <button class="landing-link" onclick="App.Views.Landing.scrollTo('pipeline')">Pipeline</button>
               <button class="landing-link" onclick="App.Views.Landing.scrollTo('matrix')">Control Center</button>
+              <button class="landing-link" onclick="App.Views.Landing.scrollTo('tutorial')">Product Guide</button>
               <button class="landing-link" onclick="App.Views.Landing.scrollTo('about')">About</button>
             </nav>
 
@@ -65,6 +195,7 @@ App.Views.Landing = (() => {
             <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('features'); App.Views.Landing.closeMobileNav()">Features</button>
             <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('pipeline'); App.Views.Landing.closeMobileNav()">Pipeline</button>
             <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('matrix'); App.Views.Landing.closeMobileNav()">Control Center</button>
+            <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('tutorial'); App.Views.Landing.closeMobileNav()">Product Guide</button>
             <button class="landing-mobile-link" onclick="App.Views.Landing.scrollTo('about'); App.Views.Landing.closeMobileNav()">About</button>
             <button class="btn btn-primary btn-md w-full mt-12" onclick="App.Router.go('dashboard')">Open Dashboard</button>
           </div>
@@ -740,6 +871,68 @@ App.Views.Landing = (() => {
           </div>
         </section>
 
+        <!-- ── HOW TO USE DATASHEET IQ (EDUCATIONAL VIDEO SECTION) ── -->
+        <section class="landing-section tutorial-section" id="tutorial" aria-labelledby="tutorial-heading">
+          <div class="landing-container">
+            
+            <div class="tutorial-grid">
+              <!-- Left Column: Educational Explanation -->
+              <div class="tutorial-content-col">
+                <div class="landing-section-tag tutorial-eyebrow">PRODUCT GUIDE</div>
+                <h2 class="landing-section-title tutorial-title" id="tutorial-heading">
+                  How to Use DataSheet IQ
+                </h2>
+                <p class="landing-section-sub tutorial-desc">
+                  Learn how to upload your inventory data, understand your inventory, explore categories and brands, inspect products, use AI-powered insights, and export actionable reports.
+                </p>
+
+                <!-- Compact 4-Step Workflow -->
+                <div class="tutorial-steps-list" role="list">
+                  
+                  <div class="tutorial-step-item" role="listitem">
+                    <div class="tutorial-step-num" aria-hidden="true">01</div>
+                    <div class="tutorial-step-body">
+                      <h3 class="tutorial-step-title">Upload Your Excel</h3>
+                      <p class="tutorial-step-text">Upload your inventory spreadsheet and let DataSheet IQ process the data.</p>
+                    </div>
+                  </div>
+
+                  <div class="tutorial-step-item" role="listitem">
+                    <div class="tutorial-step-num" aria-hidden="true">02</div>
+                    <div class="tutorial-step-body">
+                      <h3 class="tutorial-step-title">Analyze Your Inventory</h3>
+                      <p class="tutorial-step-text">Automatically organize and structure your inventory data.</p>
+                    </div>
+                  </div>
+
+                  <div class="tutorial-step-item" role="listitem">
+                    <div class="tutorial-step-num" aria-hidden="true">03</div>
+                    <div class="tutorial-step-body">
+                      <h3 class="tutorial-step-title">Explore Intelligence</h3>
+                      <p class="tutorial-step-text">Explore categories, brands, products, warehouses, and AI-powered insights.</p>
+                    </div>
+                  </div>
+
+                  <div class="tutorial-step-item" role="listitem">
+                    <div class="tutorial-step-num" aria-hidden="true">04</div>
+                    <div class="tutorial-step-body">
+                      <h3 class="tutorial-step-title">Export &amp; Act</h3>
+                      <p class="tutorial-step-text">Use the generated insights and reports to make better inventory decisions.</p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Right Column: Video Card -->
+              <div class="tutorial-video-col">
+                ${renderTutorialVideoCard()}
+              </div>
+            </div>
+
+          </div>
+        </section>
+
         <!-- ── MODERN SAAS FOOTER ────────────────────────────────── -->
         <footer class="landing-footer">
           <div class="footer-top-glow"></div>
@@ -780,6 +973,9 @@ App.Views.Landing = (() => {
                   </button>
                   <button class="footer-link" onclick="App.Views.Landing.scrollTo('pipeline')">
                     <span>Neural Pipeline</span>
+                  </button>
+                  <button class="footer-link" onclick="App.Views.Landing.scrollTo('tutorial')">
+                    <span>Product Guide</span>
                   </button>
                   <button class="footer-link" onclick="App.Views.Landing.scrollTo('about')">
                     <span>Enterprise Guarantee</span>
@@ -917,5 +1113,5 @@ App.Views.Landing = (() => {
     }
   }
 
-  return { render, scrollTo, toggleMobileNav, closeMobileNav, setQuery, runHeroQuery };
+  return { render, scrollTo, toggleMobileNav, closeMobileNav, setQuery, runHeroQuery, TUTORIAL_VIDEO, getYouTubeVideoId };
 })();
