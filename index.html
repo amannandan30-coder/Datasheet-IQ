@@ -29,7 +29,7 @@
 
   <!-- Design System + Components -->
   <link rel="stylesheet" href="css/design-system.css?v=5.0">
-  <link rel="stylesheet" href="css/components.css?v=6.5">
+  <link rel="stylesheet" href="css/components.css?v=6.6">
 
   <!-- Google Fonts (with fallback) -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,27 +76,33 @@
     <!-- â”€â”€ TOPBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <header class="topbar">
 
-      <!-- Mobile Hamburger Button -->
-      <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="App.UI.toggleMobileMenu()" aria-label="Toggle Navigation Menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <line x1="3" y1="12" x2="21" y2="12"/>
-          <line x1="3" y1="6" x2="21" y2="6"/>
-          <line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
+      <!-- Navigation Row (Row 1 on Mobile / Direct contents on Desktop) -->
+      <div class="topbar-nav-row" id="topbar-nav-row">
+        <!-- Mobile Hamburger Button -->
+        <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="App.UI.toggleMobileMenu()" aria-label="Toggle Navigation Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
 
-      <!-- Dedicated Back Button -->
-      <button class="btn btn-secondary btn-sm" id="topbar-back-btn" onclick="App.Router.back()" title="Go to previous page" style="display:none;align-items:center;gap:6px;padding:5px 12px;font-size:12px;font-weight:600;flex-shrink:0">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="19" y1="12" x2="5" y2="12"/>
-          <polyline points="12 19 5 12 12 5"/>
-        </svg>
-        Back
-      </button>
+        <!-- Dedicated Back Button -->
+        <button class="btn btn-secondary btn-sm" id="topbar-back-btn" onclick="App.Router.back()" title="Go to previous page" style="display:none;align-items:center;gap:6px;padding:5px 12px;font-size:12px;font-weight:600;flex-shrink:0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Back
+        </button>
 
-      <!-- Breadcrumb -->
-      <div class="topbar-breadcrumb" id="breadcrumb">
-        <span class="breadcrumb-item active">Dashboard</span>
+        <!-- Breadcrumb -->
+        <div class="topbar-breadcrumb" id="breadcrumb">
+          <span class="breadcrumb-item active">Dashboard</span>
+        </div>
+
+        <!-- User Profile Control (Populated dynamically when authenticated) -->
+        <div class="user-header-control" id="user-header-control"></div>
       </div>
 
       <!-- Global Search -->
@@ -110,7 +116,7 @@
         <div id="search-results-dropdown" class="search-dropdown-menu"></div>
       </div>
 
-      <!-- Actions -->
+      <!-- Actions (Row 2 on Mobile) -->
       <div class="topbar-actions flex gap-8 items-center">
         <button class="btn btn-secondary" onclick="App.UI.exportDataset('xlsx')" title="Export Dataset to XLSX"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Export XLSX</button>
         <button class="btn btn-primary" onclick="App.UI.showUploadModal()" title="Upload Excel file">
@@ -121,9 +127,6 @@
           </svg>
           Upload
         </button>
-
-        <!-- User Profile Control (Populated dynamically when authenticated) -->
-        <div class="user-header-control" id="user-header-control"></div>
       </div>
 
     </header>
