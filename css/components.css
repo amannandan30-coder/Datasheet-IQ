@@ -6743,7 +6743,7 @@ body.is-landing .main-content {
   border-color: #818cf8;
 }
 
-/* ── Responsive Adaptations ── */
+/* ── Responsive Adaptations for Command Center ── */
 @media (max-width: 1100px) {
   .command-center-page .ecc-kpi-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -6754,33 +6754,278 @@ body.is-landing .main-content {
 }
 
 @media (max-width: 768px) {
+  .command-center-section {
+    padding: 50px 0 60px;
+  }
+  .command-center-container {
+    padding: 0 16px;
+  }
   .command-center-page .enterprise-command-center {
     padding: 24px 20px;
+    border-radius: 18px;
   }
   .command-center-page .ecc-header {
     flex-direction: column;
     align-items: stretch;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
   }
   .command-center-page .ecc-header-right {
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
     width: 100%;
+    margin-top: 0;
   }
   .command-center-page .ecc-kpi-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .command-center-page .ecc-kpi-card-reconciled {
+    grid-column: 1 / -1;
   }
   .command-center-page .ecc-tools-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
   .command-center-page .ecc-bottom-banner {
     flex-direction: column;
     align-items: stretch;
+    gap: 16px;
     text-align: left;
+    padding: 20px 18px;
+  }
+  .command-center-page .ecc-banner-cta {
+    width: 100%;
+    justify-content: center;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+  .command-center-section {
+    padding: 40px 0 50px;
+  }
+  .command-center-container {
+    padding: 0 12px;
+  }
+  .command-center-page .enterprise-command-center {
+    padding: 20px 16px;
+    border-radius: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* 1. Header Layout */
+  .command-center-page .ecc-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+  }
+  .command-center-page .ecc-brand-badge {
+    margin-bottom: 10px;
+    font-size: 11.5px;
+    padding: 3px 10px;
+  }
+  .command-center-page .ecc-title {
+    font-size: clamp(22px, 6.5vw, 26px);
+    line-height: 1.25;
+    margin: 0 0 8px 0;
+    word-break: break-word;
+  }
+  .command-center-page .ecc-subtitle {
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .command-center-page .ecc-header-right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    margin-top: 0;
+  }
+  .command-center-page .ecc-trust-pill {
+    align-self: flex-start;
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  .command-center-page .ecc-primary-cta {
+    width: 100%;
+    height: 44px;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  /* 2. 2-Column KPI Grid */
   .command-center-page .ecc-kpi-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  .command-center-page .ecc-kpi-card {
+    padding: 14px 12px;
+    border-radius: 12px;
+    min-height: 96px;
+    box-sizing: border-box;
+  }
+  .command-center-page .ecc-kpi-top {
+    margin-bottom: 6px;
+  }
+  .command-center-page .ecc-kpi-label {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+  .command-center-page .ecc-kpi-value {
+    font-size: 22px;
+    line-height: 1.15;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .command-center-page .ecc-kpi-unit {
+    font-size: 12px;
+  }
+  .command-center-page .ecc-kpi-meta {
+    font-size: 10.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .command-center-page .ecc-kpi-card-reconciled {
+    grid-column: 1 / -1;
+  }
+
+  /* 3. Main Intelligence Stack */
+  .command-center-page .ecc-main-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  .command-center-page .ecc-panel {
+    padding: 18px 14px;
+    border-radius: 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .command-center-page .ecc-panel-header {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .command-center-page .ecc-category-list {
+    gap: 10px;
+  }
+  .command-center-page .ecc-cat-row {
+    padding: 12px 12px;
+    border-radius: 10px;
+  }
+  .command-center-page .ecc-cat-name {
+    font-size: 13px;
+  }
+  .command-center-page .ecc-cat-val {
+    font-size: 13px;
+  }
+  .command-center-page .ecc-cat-meta {
+    font-size: 10.5px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* 4. Ask DataSheet IQ */
+  .command-center-page .ecc-right-column {
+    gap: 16px;
+    width: 100%;
+  }
+  .command-center-page .ecc-ai-panel {
+    padding: 18px 14px;
+  }
+  .command-center-page .ecc-input-shell {
+    padding: 5px 6px 5px 10px;
+  }
+  .command-center-page .ecc-input-field {
+    font-size: 12.5px;
+    min-width: 0;
+  }
+  .command-center-page .ecc-input-btn {
+    padding: 7px 12px;
+    font-size: 11.5px;
+    flex-shrink: 0;
+  }
+  .command-center-page .ecc-chips-row {
+    gap: 6px;
+  }
+  .command-center-page .ecc-chips-label {
+    width: 100%;
+    margin-bottom: 2px;
+  }
+  .command-center-page .ecc-chip {
+    font-size: 10.5px;
+    padding: 3px 7px;
+  }
+  .command-center-page .ecc-ai-output {
+    padding: 10px 12px;
+    font-size: 11.5px;
+    min-height: auto;
+  }
+
+  /* 5. Tool Grid */
+  .command-center-page .ecc-tools-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .command-center-page .ecc-tool-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .command-center-page .ecc-tool-icon-wrap {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+  .command-center-page .ecc-tool-name {
+    font-size: 13px;
+  }
+  .command-center-page .ecc-tool-desc {
+    font-size: 11px;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  /* 6. Bottom Banner */
+  .command-center-page .ecc-bottom-banner {
+    padding: 18px 16px;
+    border-radius: 14px;
+    gap: 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .command-center-page .ecc-banner-title {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .command-center-page .ecc-banner-sub {
+    font-size: 11.5px;
+    line-height: 1.45;
+  }
+  .command-center-page .ecc-banner-cta {
+    width: 100%;
+    height: 42px;
+    justify-content: center;
+    font-size: 13px;
   }
 }
 
@@ -7989,6 +8234,24 @@ body.is-landing .main-content {
   .footer-bottom-actions {
     flex-direction: column;
     gap: 10px;
+  }
+@media (max-width: 600px) {
+  /* 1. Hide Header Open Dashboard button on mobile, keep logo and hamburger */
+  .landing-nav-actions .landing-cta-btn {
+    display: none !important;
+  }
+
+  /* 2. Hide Hero Stats / Trust Card on mobile */
+  .hero-metrics-pill {
+    display: none !important;
+  }
+
+  .landing-hero-section {
+    padding-bottom: 36px;
+  }
+
+  .landing-stage-actions {
+    margin-bottom: 0;
   }
 }
 
