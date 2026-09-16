@@ -154,14 +154,21 @@ App.Views.CategoryDetail = (() => {
 
       <!-- Brand Breakdown Table -->
       <div class="card p-20 brand-breakdown-card">
-        <div class="flex items-center justify-between mb-16 brand-breakdown-header">
-          <div>
-            <div class="font-bold text-base" id="brand-list-title">Brand Breakdown</div>
-            <div class="text-xs text-muted" id="brand-list-subtitle">Ranked by inventory valuation</div>
+        <div class="brand-breakdown-header mb-16">
+          <div class="brand-header-left">
+            <div class="brand-header-title-row">
+              <div class="font-bold text-base brand-list-title" id="brand-list-title">Brand Breakdown</div>
+              <div class="brand-header-icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+              </div>
+            </div>
+            <div class="text-xs text-muted brand-list-subtitle" id="brand-list-subtitle">Ranked by inventory valuation</div>
           </div>
-          <div class="flex items-center gap-8">
-            <span class="text-xs text-muted">Sort by:</span>
-            <div class="brand-sort-group" id="brand-sort-group">
+          <div class="brand-header-right">
+            <span class="text-xs text-muted brand-sort-label">Sort by:</span>
+            <div class="brand-sort-group" id="brand-sort-group" role="tablist" aria-label="Sort brands">
               <button class="brand-sort-btn active" data-sort="value" onclick="App.Views.CategoryDetail.sort('value')">Value</button>
               <button class="brand-sort-btn" data-sort="units" onclick="App.Views.CategoryDetail.sort('units')">Units</button>
               <button class="brand-sort-btn" data-sort="weight" onclick="App.Views.CategoryDetail.sort('weight')">Weight</button>
@@ -653,11 +660,18 @@ App.Views.CategoryDetail = (() => {
       el.setAttribute('tabindex', '0');
       el.setAttribute('title', `View analytics for ${b.name}`);
       el.innerHTML = `
-        <div class="brand-rank ${rankClass}">${i+1}</div>
-        <div class="brand-avatar" style="${avatarStyle}">${escHtml((b.name[0]||'?').toUpperCase())}</div>
-        <div class="brand-name-block">
-          <div class="brand-name">${escHtml(b.name)}</div>
-          <div class="brand-aliases">${b.skus.size} ${b.skus.size === 1 ? 'SKU' : 'SKUs'}</div>
+        <div class="brand-card-header">
+          <div class="brand-rank ${rankClass}">${i+1}</div>
+          <div class="brand-avatar" style="${avatarStyle}">${escHtml((b.name[0]||'?').toUpperCase())}</div>
+          <div class="brand-name-block">
+            <div class="brand-name">${escHtml(b.name)}</div>
+            <div class="brand-aliases">${b.skus.size} ${b.skus.size === 1 ? 'SKU' : 'SKUs'}</div>
+          </div>
+          <div class="brand-arrow" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
         </div>
         <div class="brand-stats">
           <div class="brand-stat-item brand-stat-units">
@@ -684,10 +698,13 @@ App.Views.CategoryDetail = (() => {
         <div class="brand-pct-bar" title="${pct}% of total view value">
           <div class="brand-pct-fill" style="width:${Math.min(100, Math.max(2, parseFloat(pct) * 3))}%"></div>
         </div>
-        <div class="brand-arrow" aria-hidden="true">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
+        <div class="brand-card-footer">
+          <div class="brand-footer-text">
+            <span class="brand-footer-pct-val">${pct}%</span> OF VIEW
+          </div>
+          <div class="brand-footer-track">
+            <div class="brand-footer-bar" style="width:${Math.min(100, Math.max(3, parseFloat(pct)))}%"></div>
+          </div>
         </div>
       `;
       el.onclick = () => {

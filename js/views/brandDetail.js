@@ -164,10 +164,10 @@ App.Views.BrandDetail = (() => {
         ${kpi('Total Volume', App.Fmt.volume(totalVolume),  '🧪', '#06b6d4')}
       </div>
 
-      <div class="section-header">
+      <div class="section-header product-families-header">
         <div class="section-title">Product Families</div>
-        <div class="flex gap-8">
-          <input class="input" style="width:200px" placeholder="Search products…" 
+        <div class="product-search-wrap">
+          <input class="input product-search-input" placeholder="Search products…" 
                  oninput="filterProductFamilies(this.value)">
         </div>
       </div>
@@ -200,17 +200,19 @@ App.Views.BrandDetail = (() => {
       el.style.animationDelay = `${i*0.04}s`;
       el.innerHTML = `
         <div class="product-row-header" onclick="toggleFamily('${fam.id}')" role="button" tabindex="0" aria-expanded="false">
-          <div class="product-expand-btn" id="expand-${fam.id}" aria-label="Expand product family">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </div>
-          <div class="product-name-block">
-            <div class="product-name">${App.Fmt.escapeHtml(fam.name || 'Unknown Product')}</div>
-            <div class="product-meta">
-              <span class="product-meta-badge">${variants.length} ${variants.length!==1?'variants':'variant'}</span>
-              <span class="product-meta-dot" aria-hidden="true">•</span>
-              <span class="product-meta-subcat">${App.Fmt.escapeHtml(fam.subcategory || fam.category || '')}</span>
+          <div class="product-card-top">
+            <div class="product-expand-btn" id="expand-${fam.id}" aria-label="Expand product family">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+            <div class="product-name-block">
+              <div class="product-name">${App.Fmt.escapeHtml(fam.name || 'Unknown Product')}</div>
+              <div class="product-meta">
+                <span class="product-meta-badge">${variants.length} ${variants.length!==1?'variants':'variant'}</span>
+                <span class="product-meta-dot" aria-hidden="true">•</span>
+                <span class="product-meta-subcat">${App.Fmt.escapeHtml(fam.subcategory || fam.category || '')}</span>
+              </div>
             </div>
           </div>
           <div class="product-summary-stats">

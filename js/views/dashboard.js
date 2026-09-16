@@ -129,28 +129,60 @@ App.Views.Dashboard = (() => {
     if (dataset.sourceRowCount) {
       container.insertAdjacentHTML('beforeend', `
         <div class="card mb-24 source-reconciliation-card">
-          <div class="flex items-center justify-between mb-14">
-            <div class="font-bold text-sm flex items-center gap-8 text-primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Source File Reconciliation
+          <div class="source-recon-header">
+            <div class="source-recon-header-left">
+              <div class="source-recon-title-row">
+                <svg class="source-recon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <span class="source-recon-title">Source File Reconciliation</span>
+              </div>
+              <div class="source-recon-subtitle">Source rows &rarr; processed inventory records</div>
             </div>
-            <button class="btn btn-xs btn-secondary" onclick="App.Router.go('quality')">Inspect Unresolved Records</button>
+            <button class="btn btn-xs btn-secondary source-recon-btn" onclick="App.Router.go('quality')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              Inspect Unresolved Records
+            </button>
           </div>
-          <div class="grid-4" style="gap:12px">
-            <div class="reconciliation-box">
-              <div class="text-xs text-muted font-medium">Total Source Rows</div>
-              <div class="font-bold text-base mt-4 text-primary">${App.Fmt.number(dataset.sourceRowCount)}</div>
+          <div class="source-recon-pipeline">
+            <div class="source-recon-node">
+              <div class="source-recon-node-top">
+                <span class="source-recon-dot neutral"></span>
+                <span class="source-recon-label">Total Source Rows</span>
+              </div>
+              <div class="source-recon-value neutral">${App.Fmt.number(dataset.sourceRowCount)}</div>
+              <div class="source-recon-desc">All ingested rows</div>
             </div>
-            <div class="reconciliation-box">
-              <div class="text-xs text-muted font-medium">Summary/Total Rows (Excluded)</div>
-              <div class="font-bold text-base mt-4 text-warning">${App.Fmt.number(dataset.excludedSummaryRows || 0)}</div>
+            <div class="source-recon-connector">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </div>
-            <div class="reconciliation-box">
-              <div class="text-xs text-muted font-medium">Unresolved (No Name) Rows</div>
-              <div class="font-bold text-base mt-4 text-danger">${App.Fmt.number(dataset.excludedNoNameRows || 0)}</div>
+            <div class="source-recon-node">
+              <div class="source-recon-node-top">
+                <span class="source-recon-dot warning"></span>
+                <span class="source-recon-label">Excluded</span>
+              </div>
+              <div class="source-recon-value warning">${App.Fmt.number(dataset.excludedSummaryRows || 0)}</div>
+              <div class="source-recon-desc">Summary / total rows</div>
             </div>
-            <div class="reconciliation-box">
-              <div class="text-xs text-muted font-medium">Processed Inventory Records</div>
-              <div class="font-bold text-base mt-4 text-success">${App.Fmt.number(records.length)}</div>
+            <div class="source-recon-connector">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </div>
+            <div class="source-recon-node">
+              <div class="source-recon-node-top">
+                <span class="source-recon-dot danger"></span>
+                <span class="source-recon-label">Unresolved</span>
+              </div>
+              <div class="source-recon-value danger">${App.Fmt.number(dataset.excludedNoNameRows || 0)}</div>
+              <div class="source-recon-desc">No-name rows</div>
+            </div>
+            <div class="source-recon-connector">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </div>
+            <div class="source-recon-node">
+              <div class="source-recon-node-top">
+                <span class="source-recon-dot success"></span>
+                <span class="source-recon-label">Processed</span>
+              </div>
+              <div class="source-recon-value success">${App.Fmt.number(records.length)}</div>
+              <div class="source-recon-desc">Canonical inventory records</div>
             </div>
           </div>
         </div>
@@ -162,30 +194,58 @@ App.Views.Dashboard = (() => {
       const audit = App.DQAudit.getAudit(dataset_id, records);
       const scoreColor = audit.overall >= 90 ? '#10b981' : audit.overall >= 70 ? '#f59e0b' : '#ef4444';
       container.insertAdjacentHTML('beforeend', `
-        <div class="card mb-24 dashboard-dq-card" onclick="App.Router.go('quality')" style="cursor:pointer">
-          <div class="flex items-center gap-16">
-            <div style="width:48px;height:48px;min-width:48px;border-radius:50%;background:${scoreColor}22;border:2px solid ${scoreColor};display:flex;align-items:center;justify-content:center">
-              <span style="font-size:16px;font-weight:800;color:${scoreColor}">${Math.round(audit.overall)}</span>
-            </div>
-            <div>
-              <div class="flex items-center gap-8">
-                <span class="font-bold text-sm text-primary">Data Quality Health</span>
-                <span class="badge" style="background:${scoreColor}22;color:${scoreColor};font-size:11px;font-weight:600">${audit.overall >= 90 ? 'HEALTHY' : audit.overall >= 70 ? 'FAIR' : 'NEEDS ATTENTION'} (${audit.overall}%)</span>
+        <div class="card mb-24 dashboard-dq-card" onclick="App.Router.go('quality')" style="cursor:pointer" role="button" tabindex="0" title="Inspect Data Quality Center">
+          <div class="dq-card-main">
+            <!-- Row 1: Score circle + Title & Badge -->
+            <div class="dq-card-header-block">
+              <div class="dq-score-circle" style="background:${scoreColor}22;border-color:${scoreColor}">
+                <span class="dq-score-num" style="color:${scoreColor}">${Math.round(audit.overall)}</span>
               </div>
-              <div class="text-xs text-muted mt-4">
-                <span>${App.Fmt.number(audit.totalAffectedRecords)} of ${App.Fmt.number(audit.total)} records have quality notes</span>
-                <span style="margin:0 6px">·</span>
-                <span class="text-danger font-semibold">${audit.severity.critical} Critical</span>
-                <span style="margin:0 4px">·</span>
-                <span class="text-warning font-semibold">${audit.severity.warning} Warning</span>
-                <span style="margin:0 4px">·</span>
-                <span style="color:#38bdf8;font-weight:600">${audit.severity.info} Info</span>
+              <div class="dq-title-block">
+                <div class="dq-title-row">
+                  <span class="dq-title-text font-bold text-primary">Data Quality Health</span>
+                  <span class="badge dq-status-badge" style="background:${scoreColor}22;color:${scoreColor}">${audit.overall >= 90 ? 'HEALTHY' : audit.overall >= 70 ? 'FAIR' : 'NEEDS ATTENTION'} (${audit.overall}%)</span>
+                </div>
+                <!-- Desktop description + inline chips -->
+                <div class="dq-desc-desktop text-xs text-muted">
+                  <span>${App.Fmt.number(audit.totalAffectedRecords)} of ${App.Fmt.number(audit.total)} records have quality notes</span>
+                  <span class="dq-bullet">·</span>
+                  <span class="text-danger font-semibold">${audit.severity.critical} Critical</span>
+                  <span class="dq-bullet">·</span>
+                  <span class="text-warning font-semibold">${audit.severity.warning} Warning</span>
+                  <span class="dq-bullet">·</span>
+                  <span style="color:#38bdf8;font-weight:600">${audit.severity.info} Info</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mobile Row 2: Description text -->
+            <div class="dq-desc-mobile text-xs text-muted">
+              ${App.Fmt.number(audit.totalAffectedRecords)} of ${App.Fmt.number(audit.total)} records have quality notes
+            </div>
+
+            <!-- Mobile Row 3: Quality metrics chips grid -->
+            <div class="dq-metrics-grid-mobile">
+              <div class="dq-metric-chip dq-chip-critical">
+                <div class="dq-chip-val text-danger">${App.Fmt.number(audit.severity.critical)}</div>
+                <div class="dq-chip-lbl">Critical</div>
+              </div>
+              <div class="dq-metric-chip dq-chip-warning">
+                <div class="dq-chip-val text-warning">${App.Fmt.number(audit.severity.warning)}</div>
+                <div class="dq-chip-lbl">Warning</div>
+              </div>
+              <div class="dq-metric-chip dq-chip-info">
+                <div class="dq-chip-val" style="color:#38bdf8">${App.Fmt.number(audit.severity.info)}</div>
+                <div class="dq-chip-lbl">Info</div>
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-8">
-            <button class="btn btn-xs btn-ghost" style="display:inline-flex;align-items:center;gap:4px">
-              Inspect Data Quality Center &rarr;
+
+          <!-- Row 4 / Right action button -->
+          <div class="dq-card-action">
+            <button class="btn btn-xs btn-ghost dq-inspect-btn" type="button" aria-label="Inspect Data Quality Center">
+              <span>Inspect Data Quality Center</span>
+              <span class="dq-btn-arrow" aria-hidden="true">&rarr;</span>
             </button>
           </div>
         </div>

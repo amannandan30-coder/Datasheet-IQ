@@ -205,8 +205,20 @@ body {
 
 @media (max-width: 1400px) { .grid-6 { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 1200px) { .grid-5 { grid-template-columns: repeat(3, 1fr); } .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 900px)  { .grid-3 { grid-template-columns: repeat(2, 1fr); } .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 600px)  { .grid-2, .grid-3, .grid-4, .grid-5, .grid-6 { grid-template-columns: 1fr; } }
+@media (max-width: 900px)  { .grid-3 { grid-template-columns: repeat(2, 1fr); } .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-5 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .grid-2, .grid-3, .grid-4, .grid-5, .grid-6 { grid-template-columns: 1fr; gap: 12px; } }
+
+/* ── Table Scroll Containers ────────────────────────────── */
+.table-scroll-container,
+.table-responsive,
+.data-table-wrap,
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 12px;
+}
 
 /* ── Flex helpers ────────────────────────────────────────── */
 .flex        { display: flex; }
