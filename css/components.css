@@ -4980,6 +4980,12 @@
     font-size: 12px;
     font-weight: 600;
     border-radius: 8px;
+    white-space: nowrap;
+  }
+
+  .topbar-upload-btn,
+  #topbar-upload-btn {
+    display: none !important;
   }
 
   .user-header-control {
@@ -4991,6 +4997,14 @@
     width: min(400px, calc(100vw - 28px));
     left: 0;
     right: 0;
+  }
+}
+
+/* Tablet range (601px - 1024px) upload button hide */
+@media (max-width: 1024px) {
+  .topbar-upload-btn,
+  #topbar-upload-btn {
+    display: none !important;
   }
 }
 
@@ -5163,12 +5177,18 @@
     font-size: 12px;
     font-weight: 600;
     border-radius: 8px;
-    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     box-sizing: border-box;
+    white-space: nowrap;
+    width: auto;
+  }
+
+  .topbar-upload-btn,
+  #topbar-upload-btn {
+    display: none !important;
   }
 
   .topbar-search {
@@ -5220,6 +5240,7 @@
     min-height: 32px;
     padding: 0 11px;
     font-size: 11.5px;
+    width: auto;
   }
 }
 
