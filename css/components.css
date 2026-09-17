@@ -5006,6 +5006,15 @@
   #topbar-upload-btn {
     display: none !important;
   }
+
+  .topbar-actions #topbar-export-btn,
+  .topbar-actions .topbar-export-btn {
+    width: max-content !important;
+    max-width: 100%;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 600px) {
@@ -5022,6 +5031,7 @@
     color: var(--text-primary, #f1f5f9);
     cursor: pointer;
     flex-shrink: 0;
+    order: 1;
     box-sizing: border-box;
   }
 
@@ -5051,32 +5061,30 @@
   }
 
   .topbar {
-    padding: 8px 14px 10px;
-    gap: 6px;
-    height: auto;
-    min-height: auto;
+    padding: 0 12px;
+    gap: 8px;
+    height: 56px;
+    min-height: 56px;
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
     background: var(--bg-surface, #0f1322);
     border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    box-sizing: border-box;
   }
 
-  /* ROW 1: Navigation Toolbar */
   .topbar-nav-row {
-    width: 100%;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
+    display: contents;
   }
 
   #topbar-back-btn {
-    height: 36px;
-    min-height: 36px;
-    padding: 0 10px !important;
-    font-size: 12px !important;
+    order: 2;
+    height: 34px;
+    min-height: 34px;
+    padding: 0 8px !important;
+    font-size: 11.5px !important;
     font-weight: 600;
     border-radius: 8px;
     background: var(--bg-surface-2, #181c2a);
@@ -5084,7 +5092,7 @@
     color: var(--text-muted, #94a3b8);
     display: inline-flex;
     align-items: center;
-    gap: 5px !important;
+    gap: 4px !important;
     flex-shrink: 0;
     box-sizing: border-box;
   }
@@ -5095,21 +5103,26 @@
   }
 
   .topbar-breadcrumb {
+    order: 3;
     flex: 1 1 auto;
     min-width: 0;
     font-size: 13px;
     font-weight: 600;
-    margin-left: 2px;
+    margin-left: 0;
     display: flex;
     align-items: center;
     overflow: hidden;
     white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .topbar-breadcrumb .breadcrumb-item {
     font-size: 13px;
     color: var(--text-muted, #94a3b8);
     font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .topbar-breadcrumb .breadcrumb-item.active {
@@ -5122,17 +5135,60 @@
     margin: 0 4px;
   }
 
-  .user-header-control {
+  .topbar-search {
+    display: none !important;
+  }
+
+  .topbar-actions {
+    order: 4;
+    width: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin-left: auto;
+    padding: 0;
+    border: none;
+    flex-shrink: 0;
+  }
+
+  .topbar-actions .btn,
+  .topbar-actions #topbar-export-btn,
+  .topbar-actions .topbar-export-btn {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    box-sizing: border-box;
+    white-space: nowrap;
+    width: max-content !important;
+    max-width: 100%;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+  }
+
+  .topbar-upload-btn,
+  #topbar-upload-btn {
+    display: none !important;
+  }
+
+  .user-header-control {
+    order: 5;
+    margin-left: 2px;
     flex-shrink: 0;
   }
 
   .user-profile-badge {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-    padding: 3px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 2px;
     border-radius: 50%;
     justify-content: center;
     box-sizing: border-box;
@@ -5157,67 +5213,27 @@
     border-radius: 50% !important;
     object-fit: cover !important;
   }
-
-  /* ROW 2: Secondary Action Toolbar */
-  .topbar-actions {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    border: none;
-  }
-
-  .topbar-actions .btn {
-    height: 34px;
-    min-height: 34px;
-    padding: 0 13px;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    box-sizing: border-box;
-    white-space: nowrap;
-    width: auto;
-  }
-
-  .topbar-upload-btn,
-  #topbar-upload-btn {
-    display: none !important;
-  }
-
-  .topbar-search {
-    display: none !important;
-  }
 }
 
 @media (max-width: 390px) {
   .topbar {
-    padding: 8px 12px 8px;
+    padding: 0 8px;
     gap: 6px;
-  }
-
-  .topbar-nav-row {
-    gap: 6px;
-    height: 36px;
+    height: 52px;
+    min-height: 52px;
   }
 
   .mobile-menu-btn {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
   }
 
   #topbar-back-btn {
-    height: 34px;
-    min-height: 34px;
-    padding: 0 8px !important;
-    font-size: 11.5px !important;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 6px !important;
+    font-size: 11px !important;
   }
 
   .topbar-breadcrumb {
@@ -5225,22 +5241,40 @@
   }
 
   .user-profile-badge {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+  }
+
+  .user-avatar-circle {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
+  }
+
+  .user-avatar-img {
+    width: 26px !important;
+    height: 26px !important;
   }
 
   .topbar-actions {
-    gap: 6px;
+    gap: 4px;
   }
 
-  .topbar-actions .btn {
-    height: 32px;
-    min-height: 32px;
-    padding: 0 11px;
-    font-size: 11.5px;
-    width: auto;
+  .topbar-actions .btn,
+  .topbar-actions #topbar-export-btn,
+  .topbar-actions .topbar-export-btn {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 11px;
+    gap: 4px;
+    width: max-content !important;
+    max-width: 100%;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
   }
 }
 
