@@ -37,7 +37,7 @@ App.Cleaner = (() => {
   const UOM_PATTERNS = [
     { pattern: /^(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilogram|kilograms)$/i,  unit: 'KG' },
     { pattern: /^(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)$/i,        unit: 'G' },
-    { pattern: /^(\d+(?:\.\d+)?)\s*(?:l|ltr|ltrs|liter|litres|litre)$/i, unit: 'L' },
+    { pattern: /^(\d+(?:\.\d+)?)\s*(?:l|lt|ltr|ltrs|liter|litres|litre)$/i, unit: 'L' },
     { pattern: /^(\d+(?:\.\d+)?)\s*(?:ml|milliliter|millilitres)$/i, unit: 'ML' },
     { pattern: /^(\d+(?:\.\d+)?)\s*(?:pc|pcs|piece|pieces)$/i,        unit: 'PCS' },
     { pattern: /^(\d+(?:\.\d+)?)\s*(?:pk|pack|packs|pkt|packet)$/i,  unit: 'PACK' },
@@ -135,7 +135,7 @@ App.Cleaner = (() => {
     const s = String(h).toLowerCase();
     if (/\b(?:kg|kgs|kilogram|kilograms)\b|_kg|\(kg\)/.test(s)) return 'KG';
     if (/\b(?:g|gm|gms|gram|grams)\b|_g|\(g\)/.test(s)) return 'G';
-    if (/\b(?:l|ltr|ltrs|liter|litres|litre)\b|_l|\(l\)/.test(s)) return 'L';
+    if (/\b(?:l|lt|ltr|ltrs|liter|litres|litre)\b|_l|\(l\)/.test(s)) return 'L';
     if (/\b(?:ml)\b|_ml|\(ml\)/.test(s)) return 'ML';
     return null;
   }
@@ -163,7 +163,7 @@ App.Cleaner = (() => {
       }
 
       // Volume in string -> NOT mass
-      if (/^([\d.]+)\s*(?:l|ltr|ltrs|liter|litres|litre|ml|milliliter|millilitres)$/i.test(s)) {
+      if (/^([\d.]+)\s*(?:l|lt|ltr|ltrs|liter|litres|litre|ml|milliliter|millilitres)$/i.test(s)) {
         return null;
       }
 
@@ -199,10 +199,21 @@ App.Cleaner = (() => {
   function parseMassFromText(str) {
     if (!str) return null;
     const s = String(str).toLowerCase();
-    const kgMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilogram|kilograms)\b/);
+
+    // Check compound pattern first (e.g. "6 x 12.5 g", "4 x 225 g", "24 x 1 kg")
+    const compoundKg = s.match(/\b(\d+(?:\.\d+)?)\s*(?:x|\*)\s*(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilogram|kilograms)\b/i);
+    if (compoundKg) {
+      return parseFloat(compoundKg[1]) * parseFloat(compoundKg[2]);
+    }
+    const compoundG = s.match(/\b(\d+(?:\.\d+)?)\s*(?:x|\*)\s*(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/i);
+    if (compoundG) {
+      return (parseFloat(compoundG[1]) * parseFloat(compoundG[2])) / 1000;
+    }
+
+    const kgMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:kg|kgs|kilogram|kilograms)\b/i);
     if (kgMatch) return parseFloat(kgMatch[1]);
 
-    const gMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/);
+    const gMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:g|gm|gms|gram|grams)\b/i);
     if (gMatch) return parseFloat(gMatch[1]) / 1000;
 
     return null;
@@ -225,10 +236,21 @@ App.Cleaner = (() => {
   function parseVolumeFromText(str) {
     if (!str) return null;
     const s = String(str).toLowerCase();
-    const lMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:l|ltr|ltrs|liter|litres|litre)\b/);
+
+    // Check compound pattern first (e.g. "24 x 250 ml", "6 x 300 ml", "12 x 1 ltr")
+    const compoundL = s.match(/\b(\d+(?:\.\d+)?)\s*(?:x|\*)\s*(\d+(?:\.\d+)?)\s*(?:l|lt|ltr|ltrs|liter|litres|litre)\b/i);
+    if (compoundL) {
+      return parseFloat(compoundL[1]) * parseFloat(compoundL[2]);
+    }
+    const compoundMl = s.match(/\b(\d+(?:\.\d+)?)\s*(?:x|\*)\s*(\d+(?:\.\d+)?)\s*(?:ml|milliliter|millilitres)\b/i);
+    if (compoundMl) {
+      return (parseFloat(compoundMl[1]) * parseFloat(compoundMl[2])) / 1000;
+    }
+
+    const lMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:l|lt|ltr|ltrs|liter|litres|litre)\b/i);
     if (lMatch) return parseFloat(lMatch[1]);
 
-    const mlMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:ml|milliliter|millilitres)\b/);
+    const mlMatch = s.match(/\b(\d+(?:\.\d+)?)\s*(?:ml|milliliter|millilitres)\b/i);
     if (mlMatch) return parseFloat(mlMatch[1]) / 1000;
 
     return null;
@@ -368,8 +390,18 @@ App.Cleaner = (() => {
     const parsedTotalWeight = parseWeightValue(rawTotalWeightVal, rec._total_weight_header || 'Total Weight', { schemaUnit: options?.totalWeightSchemaUnit || options?.schemaUnit });
     const parsedUnitWeight  = parseWeightValue(rawUnitWeightVal, rec._weight_header || 'Weight', { schemaUnit: options?.weightSchemaUnit || options?.schemaUnit });
 
-    const extractedMass = extractMassKG(raw_uom, raw_name);
-    const extractedVol  = extractVolumeL(raw_uom, raw_name);
+    // Weight/UOM cross-feed: when raw_uom is empty but rawUnitWeightVal contains a text descriptor,
+    // cross-feed that descriptor into the UOM/volume fallback pipeline.
+    let effective_uom = norm(raw_uom);
+    if (!effective_uom && rawUnitWeightVal != null && typeof rawUnitWeightVal === 'string') {
+      const wStr = rawUnitWeightVal.trim();
+      if (wStr) {
+        effective_uom = wStr;
+      }
+    }
+
+    const extractedMass = extractMassKG(effective_uom, raw_name);
+    const extractedVol  = extractVolumeL(effective_uom, raw_name);
 
     let source_total_weight_kg = null;
     let derived_source_weight_kg = null;
@@ -450,7 +482,7 @@ App.Cleaner = (() => {
       mass_status = 'NOT_APPLICABLE';
     }
 
-    const uomNorm = normalizeUOM(stripEmbeddedPrice(raw_uom), raw_name);
+    const uomNorm = normalizeUOM(stripEmbeddedPrice(effective_uom), raw_name);
 
     return {
       ...rec,
