@@ -56,8 +56,65 @@ App.State = {
 /* ── Router ──────────────────────────────────────────────── */
 App.Router = {
   historyStack: [],
+  scrollPositions: new Map(),
+  _isHistoryNavigation: false,
+  _currentRouteKey: '',
+
+  getCurrentRouteKey() {
+    return window.location.hash || ('#/' + (App.State?.route || 'landing'));
+  },
+
+  saveScrollPosition(routeKey) {
+    const key = routeKey || this._currentRouteKey || this.getCurrentRouteKey();
+    if (!key) return;
+    const main = document.getElementById('main-content');
+    const top = main ? main.scrollTop : 0;
+    const left = main ? main.scrollLeft : 0;
+    const winY = window.scrollY || window.pageYOffset || document.documentElement?.scrollTop || 0;
+    const winX = window.scrollX || window.pageXOffset || document.documentElement?.scrollLeft || 0;
+    this.scrollPositions.set(key, { top, left, winY, winX });
+  },
+
+  restoreScroll(main, saved) {
+    if (!saved) return;
+    const top = saved.top || 0;
+    const left = saved.left || 0;
+    const winY = saved.winY || 0;
+    const winX = saved.winX || 0;
+
+    if (main) {
+      const prevBehavior = main.style.scrollBehavior;
+      main.style.scrollBehavior = 'auto';
+      main.scrollTop = top;
+      main.scrollLeft = left;
+
+      if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(() => {
+          if (main) {
+            main.scrollTop = top;
+            main.scrollLeft = left;
+            window.requestAnimationFrame(() => {
+              if (main) {
+                main.scrollTop = top;
+                main.scrollLeft = left;
+                main.style.scrollBehavior = prevBehavior;
+              }
+            });
+          }
+        });
+      } else {
+        main.style.scrollBehavior = prevBehavior;
+      }
+    }
+
+    if (winY || winX) {
+      window.scrollTo({ left: winX, top: winY, behavior: 'auto' });
+    }
+  },
 
   go(page, params = {}) {
+    this.saveScrollPosition();
+    this._isHistoryNavigation = false;
     const qs = new URLSearchParams(params).toString();
     const targetHash = '#/' + page + (qs ? '?' + qs : '');
     const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown';
@@ -78,6 +135,8 @@ App.Router = {
   },
 
   back() {
+    this.saveScrollPosition();
+    this._isHistoryNavigation = true;
     if (this.historyStack.length > 1) {
       window.history.back();
     } else {
@@ -134,11 +193,42 @@ App.UI = {
     this._renderCount = (this._renderCount || 0) + 1;
     const renderNum = this._renderCount;
     App.UI.closeMobileMenu();
+
+    const isHistoryNav = App.Router._isHistoryNavigation;
+    const incomingRouteKey = window.location.hash || ('#/' + (App.State?.route || 'landing'));
+
+    // Save previous route scroll position if we are navigating away
+    if (App.Router._currentRouteKey && App.Router._currentRouteKey !== incomingRouteKey) {
+      App.Router.saveScrollPosition(App.Router._currentRouteKey);
+    }
+
+    const savedPos = isHistoryNav ? (App.Router.scrollPositions.get(incomingRouteKey) || null) : null;
+    App.Router._currentRouteKey = incomingRouteKey;
+    App.Router._isHistoryNavigation = false;
+
     App.Router.parse();
     const { route, params } = App.State;
     const dataset_id = App.State.dataset_id;
     const main = document.getElementById('main-content');
     if (!main) return;
+
+    // Attach passive scroll listeners to main and window if not already attached
+    if (!main._scrollListenerAttached) {
+      main._scrollListenerAttached = true;
+      main.addEventListener('scroll', () => {
+        if (App.Router._currentRouteKey) {
+          App.Router.saveScrollPosition(App.Router._currentRouteKey);
+        }
+      }, { passive: true });
+    }
+    if (!window._scrollListenerAttached) {
+      window._scrollListenerAttached = true;
+      window.addEventListener('scroll', () => {
+        if (App.Router._currentRouteKey) {
+          App.Router.saveScrollPosition(App.Router._currentRouteKey);
+        }
+      }, { passive: true });
+    }
 
     const isAuthenticated = !!(App.Auth && App.Auth.isAuthenticated);
 
@@ -198,7 +288,10 @@ App.UI = {
     });
 
     main.innerHTML = '';
-    main.scrollTop = 0;
+    if (!savedPos) {
+      main.scrollTop = 0;
+      window.scrollTo(0, 0);
+    }
 
     // Update sidebar active state
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -236,6 +329,11 @@ App.UI = {
           await App.Views.Login.render(main);
         }
     }
+
+    if (savedPos) {
+      App.Router.restoreScroll(main, savedPos);
+    }
+
     console.log(`[AUTH-FLOW] ${_appTs()} RENDER #${renderNum} COMPLETE, final route="${App.State.route}", hash="${window.location.hash}"`);
     console.log(`[ROUTE-DIAG] FINAL_URL: ${window.location.href} | ROUTE_AFTER="${App.State.route}" | HASH_AFTER="${window.location.hash}" | isAuthenticated=${isAuthenticated}`);
   },
@@ -913,6 +1011,12 @@ App.GlobalSearch = {
         }
       }
     }
+  });
+
+  // Listen for browser back / forward navigation (popstate)
+  window.addEventListener('popstate', () => {
+    console.log(`[EDGE-LOOP] ${_appTs()} POPSTATE EVENT: hash="${window.location.hash}"`);
+    App.Router._isHistoryNavigation = true;
   });
 
   // Listen for hash changes
