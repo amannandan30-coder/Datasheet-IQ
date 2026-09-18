@@ -1,4 +1,4 @@
-﻿window.App = window.App || {};
+window.App = window.App || {};
 App.Views = App.Views || {};
 
 /* ============================================================
@@ -16,7 +16,7 @@ App.Views.UploadsHistory = (() => {
           <div class="page-title">Upload History</div>
           <div class="page-sub">${datasets.length} dataset${datasets.length!==1?'s':''} stored</div>
         </div>
-        <button class="btn btn-primary" onclick="App.UI.showUploadModal()">
+        <button class="btn btn-primary upload-header-btn" onclick="App.UI.showUploadModal()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Upload New File
         </button>
@@ -39,29 +39,31 @@ App.Views.UploadsHistory = (() => {
       const kpis = ds.kpis || {};
       const isActive = ds.id === App.State.dataset_id;
       const el = document.createElement('div');
-      el.className = 'upload-row';
+      el.className = `upload-row ${isActive ? 'is-active' : ''}`;
       if (isActive) el.style.borderColor = 'var(--accent)';
       el.innerHTML = `
-        <div class="upload-row-icon">${ds.status==='processed' ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}</div>
-        <div class="upload-row-info">
-          <div class="upload-row-name">${ds.filename}</div>
-          <div class="upload-row-meta">
-            ${App.Fmt.date(ds.uploadedAt)} &bull; 
-            ${App.Fmt.number(ds.rowCount)} rows &bull; 
-            ${App.Fmt.number(ds.columnCount)} columns &bull;
-            ${App.Fmt.number(kpis.total_skus)} SKUs &bull;
-            ${App.Fmt.currency(kpis.total_value)}
-          </div>
-          ${ds.missingColumns?.length ? `<div class="text-xs" style="color:var(--warning);margin-top:3px">Missing columns: ${ds.missingColumns.join(', ')}</div>` : ''}
-          <div class="flex items-center gap-6 mt-4">
-            ${isActive ? '<div class="badge badge-accent">Active Dataset</div>' : ''}
-            ${ds.archiveStatus === 'uploaded' ? '<div class="badge badge-success" title="Original file archived">Original file archived</div>' : (ds.archiveStatus === 'failed' ? '<div class="badge badge-warning" title="Original file archive failed">Original file archive failed</div>' : '')}
+        <div class="upload-row-main">
+          <div class="upload-row-icon">${ds.status==='processed' ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}</div>
+          <div class="upload-row-info">
+            <div class="upload-row-name" title="${App.Fmt.escapeHtml(ds.filename)}">${App.Fmt.escapeHtml(ds.filename)}</div>
+            <div class="upload-row-meta">
+              ${App.Fmt.date(ds.uploadedAt)} &bull; 
+              ${App.Fmt.number(ds.rowCount)} rows &bull; 
+              ${App.Fmt.number(ds.columnCount)} columns &bull;
+              ${App.Fmt.number(kpis.total_skus)} SKUs &bull;
+              ${App.Fmt.currency(kpis.total_value)}
+            </div>
+            ${ds.missingColumns?.length ? `<div class="upload-row-missing-cols text-xs" style="color:var(--warning);margin-top:4px">Missing columns: ${App.Fmt.escapeHtml(ds.missingColumns.join(', '))}</div>` : ''}
+            <div class="upload-row-badges flex items-center gap-6 mt-4">
+              ${isActive ? '<div class="badge badge-accent">Active Dataset</div>' : ''}
+              ${ds.archiveStatus === 'uploaded' ? '<div class="badge badge-success" title="Original file archived">Original file archived</div>' : (ds.archiveStatus === 'failed' ? '<div class="badge badge-warning" title="Original file archive failed">Original file archive failed</div>' : '')}
+            </div>
           </div>
         </div>
         <div class="upload-row-actions">
-          ${!isActive ? `<button class="btn btn-sm btn-primary" onclick="App.UI.loadDataset('${ds.id}')">Load</button>` : ''}
-          <button class="btn btn-sm btn-secondary" onclick="App.UI.downloadReconciliation('${ds.id}')" style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Reconciliation</button>
-          <button class="btn btn-sm btn-ghost" onclick="App.UI.deleteDataset('${ds.id}')" title="Delete Dataset" style="display:inline-flex;align-items:center;color:var(--danger)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+          ${!isActive ? `<button class="btn btn-sm btn-primary upload-btn-load" onclick="App.UI.loadDataset('${ds.id}')">Load</button>` : ''}
+          <button class="btn btn-sm btn-secondary upload-btn-reconcile" onclick="App.UI.downloadReconciliation('${ds.id}')" style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Reconciliation</button>
+          <button class="btn btn-sm btn-ghost upload-btn-delete" onclick="App.UI.deleteDataset('${ds.id}')" title="Delete Dataset" style="display:inline-flex;align-items:center;color:var(--danger)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
         </div>
       `;
       container.appendChild(el);
@@ -70,7 +72,6 @@ App.Views.UploadsHistory = (() => {
 
   return { render };
 })();
-
 /* ============================================================
    INVENTORY TABLE VIEW (all records with debounced search/filter & pagination)
    ============================================================ */
