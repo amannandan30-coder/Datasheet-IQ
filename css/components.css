@@ -9697,6 +9697,148 @@ body.is-landing .main-content {
   font-size: 13px;
 }
 
+/* ── Excel Cleaner Options / Toggle ──────────────────────── */
+.ec-options-card {
+  background: var(--bg-surface-1, #13161c);
+  border: 1px solid var(--border-subtle, #1e232d);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  transition: border-color 0.2s ease;
+}
+
+.ec-options-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.ec-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.ec-toggle-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ec-toggle-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ec-toggle-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ec-toggle-badge.badge-active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.ec-toggle-badge.badge-inactive {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.ec-toggle-desc {
+  font-size: 12.5px;
+  color: var(--text-secondary, #cbd5e1);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.ec-toggle-example {
+  display: inline-block;
+  margin-top: 2px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.ec-toggle-example code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  color: #a5b4fc;
+}
+
+.ec-toggle-scope-note {
+  font-size: 11.5px;
+  color: var(--text-muted, #94a3b8);
+  background: rgba(99, 102, 241, 0.05);
+  border-left: 2px solid #6366f1;
+  padding: 4px 10px;
+  border-radius: 0 4px 4px 0;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.ec-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.ec-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.ec-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #334155;
+  transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ec-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #f1f5f9;
+  transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ec-switch input:checked + .ec-slider {
+  background-color: #6366f1;
+  border-color: #818cf8;
+}
+
+.ec-switch input:focus-visible + .ec-slider {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+}
+
+.ec-switch input:checked + .ec-slider:before {
+  transform: translateX(22px);
+  background-color: #ffffff;
+}
+
 
 /* ── CATEGORY DETAIL & RECONCILIATION POLISHED STYLES ── */
 .category-header {

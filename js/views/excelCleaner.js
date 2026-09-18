@@ -15,10 +15,12 @@ App.Views.ExcelCleaner = (() => {
     filename: '',
     processing: false,
     results: null,
+    stripEmbeddedPrices: true,
   };
 
   function _reset() {
-    _state = { file: null, filename: '', processing: false, results: null };
+    const prevToggle = typeof _state !== 'undefined' && _state ? _state.stripEmbeddedPrices : true;
+    _state = { file: null, filename: '', processing: false, results: null, stripEmbeddedPrices: prevToggle !== false };
   }
 
   function _escHtml(s) {
@@ -165,7 +167,7 @@ App.Views.ExcelCleaner = (() => {
   // NOTE: Damage, Expired, Broken, Scrap, Defect, Quarantine, Good, OK are ignored for status.
   function _resolveRecordStatus(record) {
     const sheetName = String(record._raw_sheet_name || record._sheet_name || '').trim();
-    const rawStatus = String(record.inventory_status || (record._raw ? (record._raw.Status || record._raw.status || record._raw['Inventory Status'] || record._raw['inventory_status'] || record._raw.Remarks || record._raw.Remark || record._raw.remarks || record._raw.remark) : '') || '').trim();
+    const rawStatus = String(record.inventory_status || (record._raw ? (record._raw.Status || record._raw.status || record._raw['Inventory Status'] || record._raw['inventory_status']) : '') || '').trim();
     const normStatus = rawStatus.toLowerCase().replace(/[^a-z0-9-]/g, ' ').replace(/\s+/g, ' ').trim();
 
     // 1. Check Non-Saleable FIRST
@@ -415,26 +417,28 @@ App.Views.ExcelCleaner = (() => {
         ws[XLSX.utils.encode_cell({ r: rowIdx, c: remarkColIdx })] = { t: 's', v: 'Saleable' };
       }
 
-      // Identify Variant / UOM columns and normalize cell values (strip embedded prices)
-      const variantColIndices = [];
-      for (let c = range.s.c; c <= range.e.c; c++) {
-        const cell = ws[XLSX.utils.encode_cell({ r: headerRowIdx, c })];
-        if (cell && cell.v != null && _isVariantOrUomHeader(cell.v)) {
-          variantColIndices.push(c);
+      // Identify Variant / UOM columns and normalize cell values (strip embedded prices if toggle ON)
+      if (_state.stripEmbeddedPrices) {
+        const variantColIndices = [];
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r: headerRowIdx, c })];
+          if (cell && cell.v != null && _isVariantOrUomHeader(cell.v)) {
+            variantColIndices.push(c);
+          }
         }
-      }
 
-      if (variantColIndices.length > 0) {
-        for (let r = headerRowIdx + 1; r <= range.e.r; r++) {
-          for (const c of variantColIndices) {
-            const addr = XLSX.utils.encode_cell({ r: r, c: c });
-            const cell = ws[addr];
-            if (cell && cell.v != null && typeof cell.v === 'string') {
-              const stripped = _stripEmbeddedPrice(cell.v);
-              if (stripped !== cell.v) {
-                cell.v = stripped;
-                if (cell.w) cell.w = stripped;
-                cell.t = 's';
+        if (variantColIndices.length > 0) {
+          for (let r = headerRowIdx + 1; r <= range.e.r; r++) {
+            for (const c of variantColIndices) {
+              const addr = XLSX.utils.encode_cell({ r: r, c: c });
+              const cell = ws[addr];
+              if (cell && cell.v != null && typeof cell.v === 'string') {
+                const stripped = _stripEmbeddedPrice(cell.v);
+                if (stripped !== cell.v) {
+                  cell.v = stripped;
+                  if (cell.w) cell.w = stripped;
+                  cell.t = 's';
+                }
               }
             }
           }
@@ -532,6 +536,42 @@ App.Views.ExcelCleaner = (() => {
     _bindEvents(main);
   }
 
+  function _renderPriceToggle(idPrefix) {
+    const isChecked = _state.stripEmbeddedPrices ? 'checked' : '';
+    const statusText = _state.stripEmbeddedPrices ? 'ON' : 'OFF';
+    const explanationText = _state.stripEmbeddedPrices
+      ? 'Removes embedded prices from Variant/UOM text.<br><span class="ec-toggle-example">Example: <code>10 kg - Rs 749</code> &rarr; <code>10 kg</code></span>'
+      : 'Keeps Variant/UOM text unchanged.<br><span class="ec-toggle-example">Example: <code>10 kg - Rs 749</code> &rarr; <code>10 kg - Rs 749</code></span>';
+
+    return '<div class="ec-options-card">' +
+      '<div class="ec-toggle-row">' +
+        '<div class="ec-toggle-info">' +
+          '<div class="ec-toggle-title">' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:text-bottom">' +
+              '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>' +
+              '<line x1="7" y1="7" x2="7.01" y2="7"></line>' +
+            '</svg>' +
+            'Remove embedded prices' +
+            '<span class="ec-toggle-badge ' + (_state.stripEmbeddedPrices ? 'badge-active' : 'badge-inactive') + '">' + statusText + '</span>' +
+          '</div>' +
+          '<div class="ec-toggle-desc">' + explanationText + '</div>' +
+          '<div class="ec-toggle-scope-note">' +
+            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:text-top;margin-right:3px">' +
+              '<circle cx="12" cy="12" r="10"></circle>' +
+              '<line x1="12" y1="16" x2="12" y2="12"></line>' +
+              '<line x1="12" y1="8" x2="12.01" y2="8"></line>' +
+            '</svg>' +
+            'Works only when the price appears inside the Variant/UOM field. Other columns are not modified by this setting.' +
+          '</div>' +
+        '</div>' +
+        '<label class="ec-switch" title="Toggle embedded price removal">' +
+          '<input type="checkbox" id="' + idPrefix + '-strip-prices" ' + isChecked + ' class="ec-toggle-input">' +
+          '<span class="ec-slider"></span>' +
+        '</label>' +
+      '</div>' +
+    '</div>';
+  }
+
   function _renderUploadZone() {
     return '<div class="ec-upload-section">' +
       '<div class="ec-upload-zone" id="ec-drop-zone" role="button" tabindex="0" title="Click or drop Excel file to upload">' +
@@ -566,7 +606,8 @@ App.Views.ExcelCleaner = (() => {
         '</div>' +
         '<div class="ec-rules-note">Damage, Expired, Scrap, Quarantine are <strong>ignored</strong> in status resolution</div>' +
       '</div>' +
-    '</div>';
+    '</div>' +
+    _renderPriceToggle('ec-upload');
   }
 
   function _renderProcessing() {
@@ -617,6 +658,9 @@ App.Views.ExcelCleaner = (() => {
     if (r.removedCount > 0) {
       html += '<div class="ec-section"><div class="ec-section-header">Removed Non-Saleable Rows (Preview - first 50)</div>' + _renderPreviewTable(r.removedRows.slice(0, 50), 'removed') + '</div>';
     }
+
+    // Price toggle before download button
+    html += _renderPriceToggle('ec-results');
 
     // Buttons
     html += '<div class="ec-actions">' +
@@ -715,6 +759,22 @@ App.Views.ExcelCleaner = (() => {
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
           _handleUpload(e.dataTransfer.files[0], main);
         }
+      });
+    }
+
+    const toggleUpload = document.getElementById('ec-upload-strip-prices');
+    if (toggleUpload) {
+      toggleUpload.addEventListener('change', (e) => {
+        _state.stripEmbeddedPrices = e.target.checked;
+        _renderPage(main);
+      });
+    }
+
+    const toggleResults = document.getElementById('ec-results-strip-prices');
+    if (toggleResults) {
+      toggleResults.addEventListener('change', (e) => {
+        _state.stripEmbeddedPrices = e.target.checked;
+        _renderPage(main);
       });
     }
 
