@@ -1174,8 +1174,8 @@ App.NLEngine = (() => {
     // Direct answer for limit=1
     if (parsed.limit === 1 && returnedBrands.length > 0) {
       const top = returnedBrands[0];
-      const metricLabel = parsed.metric === 'value' ? `${App.Fmt.currency(top.value)} value` :
-                          parsed.metric === 'weight' ? `${App.Fmt.weight(top.weight)} weight` :
+      const metricLabel = parsed.metric === 'value' ? `${App.Fmt.currency(top.value, false)} value` :
+                          parsed.metric === 'weight' ? `${App.Fmt.weight(top.weight, false)} weight` :
                           `${App.Fmt.number(top.qty)} units`;
       return {
         type: 'answer',
@@ -1235,9 +1235,9 @@ App.NLEngine = (() => {
     }
 
     const top = cats[0];
-    const metricLabel = parsed.metric === 'weight' ? `${App.Fmt.weight(top.weight)} weight` :
+    const metricLabel = parsed.metric === 'weight' ? `${App.Fmt.weight(top.weight, false)} weight` :
                         parsed.metric === 'quantity' ? `${App.Fmt.number(top.qty)} units` :
-                        `${App.Fmt.currency(top.value)} value`;
+                        `${App.Fmt.currency(top.value, false)} value`;
 
     return {
       type: 'category_list',

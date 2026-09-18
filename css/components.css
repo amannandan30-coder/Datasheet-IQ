@@ -10148,3 +10148,9 @@ body.is-landing .main-content {
   }
 }
 
+/* ── Compact Number / Currency Hover Tooltip ──────────────── */
+.fmt-compact {
+  display: inline;
+  cursor: default;
+}
+

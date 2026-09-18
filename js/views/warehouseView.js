@@ -193,7 +193,7 @@ App.Views.WarehouseView = (() => {
           plugins:{ legend:{ labels:{ color:'#94a3b8' } } },
           scales:{
             x:{ ticks:{color:'#64748b'}, grid:{color:'#1a1d28'} },
-            y:{ ticks:{color:'#64748b', callback:v=>App.Fmt.currency(v)}, grid:{color:'#1a1d28'} }
+            y:{ ticks:{color:'#64748b', callback:v=>App.Fmt.currency(v, false)}, grid:{color:'#1a1d28'} }
           }
         }
       });

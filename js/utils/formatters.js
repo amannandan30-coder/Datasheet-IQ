@@ -5,25 +5,64 @@ window.App = window.App || {};
    FORMATTERS — Currency, Weight, Numbers
    ============================================================ */
 App.Fmt = (() => {
-  const inrFmt = new Intl.NumberFormat('en-IN', {
+  const inrFmtInt = new Intl.NumberFormat('en-IN', {
     style: 'currency', currency: 'INR',
     maximumFractionDigits: 0, minimumFractionDigits: 0
   });
 
+  const inrFmtDec = new Intl.NumberFormat('en-IN', {
+    style: 'currency', currency: 'INR',
+    maximumFractionDigits: 2, minimumFractionDigits: 2
+  });
+
   const numFmt = new Intl.NumberFormat('en-IN');
 
-  function currency(val) {
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function currencyText(val) {
     if (val == null || isNaN(val)) return '—';
     const n = Number(val);
-    if (n >= 1e7)  return `₹${(n/1e7).toFixed(2)} Cr`;
-    if (n >= 1e5)  return `₹${(n/1e5).toFixed(2)} L`;
-    if (n >= 1000) return `₹${(n/1000).toFixed(1)}K`;
-    return inrFmt.format(n);
+    if (!Number.isFinite(n)) return '—';
+    const abs = Math.abs(n);
+    const sign = n < 0 ? '-' : '';
+    if (abs >= 1e7)  return `${sign}₹${(abs / 1e7).toFixed(2)} Cr`;
+    if (abs >= 1e5)  return `${sign}₹${(abs / 1e5).toFixed(2)} L`;
+    if (abs >= 1000) return `${sign}₹${(abs / 1000).toFixed(1)}K`;
+    if (abs % 1 !== 0) {
+      return inrFmtDec.format(n);
+    }
+    return inrFmtInt.format(n);
   }
 
   function currencyFull(val) {
     if (val == null || isNaN(val)) return '—';
-    return inrFmt.format(Number(val));
+    const n = Number(val);
+    if (!Number.isFinite(n)) return '—';
+    if (n % 1 !== 0) {
+      return inrFmtDec.format(n);
+    }
+    return inrFmtInt.format(n);
+  }
+
+  function currency(val, asHtml = true) {
+    if (val == null || isNaN(val)) return '—';
+    const n = Number(val);
+    if (!Number.isFinite(n)) return '—';
+    const text = currencyText(n);
+    const isCompact = Math.abs(n) >= 1000;
+    if (asHtml && isCompact) {
+      const full = currencyFull(n);
+      return `<span class="fmt-compact" title="${escapeHtml(full)}">${text}</span>`;
+    }
+    return text;
   }
 
   function number(val) {
@@ -31,42 +70,49 @@ App.Fmt = (() => {
     return numFmt.format(Number(val));
   }
 
-  function mass(val) {
+  function mass(val, asHtml = true) {
     if (val == null || isNaN(val) || Number(val) === 0) return '—';
     const n = Number(val);
+    if (!Number.isFinite(n)) return '—';
+    let text;
+    let full = null;
     if (n >= 1000) {
       const t = n / 1000;
-      return (Number.isInteger(t) ? t : t.toFixed(2)) + ' T';
+      text = (Number.isInteger(t) ? t : t.toFixed(2)) + ' T';
+      full = `${numFmt.format(n)} KG`;
+    } else if (n >= 1) {
+      text = (Number.isInteger(n) ? n : n.toFixed(2)) + ' KG';
+    } else {
+      const g = n * 1000;
+      text = (Number.isInteger(g) ? g : g.toFixed(0)) + ' g';
     }
-    if (n >= 1) {
-      return (Number.isInteger(n) ? n : n.toFixed(2)) + ' KG';
+    if (asHtml && full) {
+      return `<span class="fmt-compact" title="${escapeHtml(full)}">${text}</span>`;
     }
-    const g = n * 1000;
-    return (Number.isInteger(g) ? g : g.toFixed(0)) + ' g';
+    return text;
   }
 
-  function volume(val) {
+  function volume(val, asHtml = true) {
     if (val == null || isNaN(val) || Number(val) === 0) return '—';
     const n = Number(val);
+    if (!Number.isFinite(n)) return '—';
+    let text;
+    let full = null;
     if (n >= 1000) {
       const kl = n / 1000;
-      return kl.toFixed(2) + ' kL';
+      text = kl.toFixed(2) + ' kL';
+      full = `${numFmt.format(n)} L`;
+    } else {
+      text = n.toFixed(2) + ' L';
     }
-    return n.toFixed(2) + ' L';
+    if (asHtml && full) {
+      return `<span class="fmt-compact" title="${escapeHtml(full)}">${text}</span>`;
+    }
+    return text;
   }
 
-  function weight(val) {
-    if (val == null || isNaN(val) || Number(val) === 0) return '—';
-    const n = Number(val);
-    if (n >= 1000) {
-      const t = n / 1000;
-      return `${Number.isInteger(t) ? t : t.toFixed(2)} T`;
-    }
-    if (n >= 1) {
-      return `${Number.isInteger(n) ? n : n.toFixed(2)} KG`;
-    }
-    const g = n * 1000;
-    return `${Number.isInteger(g) ? g : g.toFixed(0)} g`;
+  function weight(val, asHtml = true) {
+    return mass(val, asHtml);
   }
 
   function pct(val, total) {
@@ -89,21 +135,11 @@ App.Fmt = (() => {
     });
   }
 
-  function escapeHtml(str) {
-    if (str == null) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
   function badge_confidence(conf) {
     const map = { HIGH:'conf-high', MEDIUM:'conf-medium', LOW:'conf-low', 'MANUAL REVIEW':'conf-review' };
     return map[conf] || 'badge-muted';
   }
 
-  return { currency, currencyFull, number, weight, mass, volume, pct, date, shortDate, badge_confidence, escapeHtml };
+  return { currency, currencyText, currencyFull, number, weight, mass, volume, pct, date, shortDate, badge_confidence, escapeHtml };
 })();
 

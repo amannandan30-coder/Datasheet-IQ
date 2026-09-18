@@ -709,7 +709,7 @@ App.Views.Dashboard = (() => {
                   label: function(context) {
                     const val = context.raw || 0;
                     const pct = totalValue ? ((val / totalValue) * 100).toFixed(1) : '0.0';
-                    return ` ${context.label}: ${App.Fmt.currency(val)} (${pct}%)`;
+                    return ` ${context.label}: ${App.Fmt.currency(val, false)} (${pct}%)`;
                   }
                 }
               }
@@ -734,7 +734,7 @@ App.Views.Dashboard = (() => {
           data:{ labels, datasets:[{ data: cats.map(c=>c.value), backgroundColor: cats.map((_,i)=>colors[i%colors.length]+'cc'), borderRadius:4 }] },
           options:{ responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
             scales:{x:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'#1a1d28'}},
-                    y:{ticks:{color:'#64748b',font:{size:10},callback:(v)=>App.Fmt.currency(v)},grid:{color:'#1a1d28'}}} }
+                    y:{ticks:{color:'#64748b',font:{size:10},callback:(v)=>App.Fmt.currency(v, false)},grid:{color:'#1a1d28'}}} }
         });
       }
 
