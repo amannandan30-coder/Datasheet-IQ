@@ -304,13 +304,35 @@ App.UI = {
     // Route dispatch
     console.log(`[AUTH-FLOW] ${_appTs()} ROUTE DISPATCH: "${route}" (render #${renderNum})`);
     console.log(`[ROUTE-DIAG] ROUTE_DISPATCH: "${route}" (render #${renderNum}) | HASH=${window.location.hash}`);
+
+    // Analytics: track page_view only when route/page identity actually changes (deduplicated)
+    try {
+      const pageKey = route + (params && Object.keys(params).length ? '?' + Object.keys(params).sort().join('&') : '');
+      if (App.UI._lastTrackedPageKey !== pageKey) {
+        App.UI._lastTrackedPageKey = pageKey;
+        if (App.Analytics && typeof App.Analytics.track === 'function') {
+          App.Analytics.track('page_view', { page: route, is_authenticated: isAuthenticated });
+        }
+      }
+    } catch (_) { /* analytics must never crash app */ }
+
     switch (route) {
       case 'landing':
       case 'home':            await App.Views.Landing.render(main); break;
       case 'login':           await App.Views.Login.render(main); break;
       case 'signup':          await App.Views.Signup.render(main); break;
       case 'forgot-password': await App.Views.ForgotPassword.render(main); break;
-      case 'dashboard':       await App.Views.Dashboard.render(main, dataset_id); break;
+      case 'dashboard':
+        await App.Views.Dashboard.render(main, dataset_id);
+        if (App.UI._pendingDashboardReached) {
+          App.UI._pendingDashboardReached = false;
+          try {
+            if (App.Analytics && typeof App.Analytics.track === 'function') {
+              App.Analytics.track('dashboard_reached', { dataset_loaded: true });
+            }
+          } catch (_) {}
+        }
+        break;
       case 'category':        await App.Views.CategoryDetail.render(main, params, dataset_id); break;
       case 'brand':           await App.Views.BrandDetail.render(main, params, dataset_id); break;
       case 'brands':          await App.Views.AllBrands.render(main, params, dataset_id); break;
@@ -325,6 +347,14 @@ App.UI = {
       default:                
         if (isAuthenticated) {
           await App.Views.Dashboard.render(main, dataset_id);
+          if (App.UI._pendingDashboardReached) {
+            App.UI._pendingDashboardReached = false;
+            try {
+              if (App.Analytics && typeof App.Analytics.track === 'function') {
+                App.Analytics.track('dashboard_reached', { dataset_loaded: true });
+              }
+            } catch (_) {}
+          }
         } else {
           await App.Views.Login.render(main);
         }
@@ -595,6 +625,17 @@ App.UI = {
     const sheetListEl = document.getElementById('sheet-preview-list');
     const sheetNamesEl = document.getElementById('sheet-preview-names');
 
+    // Analytics: file_selected
+    try {
+      if (App.Analytics && typeof App.Analytics.track === 'function') {
+        App.Analytics.track('file_selected', {
+          file_extension: file.name.split('.').pop().toLowerCase(),
+          file_size_mb: +(file.size / 1024 / 1024).toFixed(2),
+          is_valid: validation.ok,
+        });
+      }
+    } catch (_) { /* analytics must never crash app */ }
+
     if (!validation.ok) {
       errEl.style.display = ''; errMsg.textContent = validation.errors.join('\n');
       btn.disabled = true; return;
@@ -624,6 +665,8 @@ App.UI = {
   async processFile() {
     const file = App.UI._pendingFile;
     if (!file) return;
+
+    const _processStartTime = Date.now();
 
     document.getElementById('process-btn').disabled = true;
     document.getElementById('process-btn').innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Processing...';
@@ -662,6 +705,21 @@ App.UI = {
     });
 
     if (result.ok) {
+      // Ingestion succeeded: prepare dashboard_reached for when dashboard renders with dataset
+      App.UI._pendingDashboardReached = true;
+
+      // Analytics: processing_success
+      try {
+        if (App.Analytics && typeof App.Analytics.track === 'function') {
+          App.Analytics.track('processing_success', {
+            row_count: result.stats?.rowCount || 0,
+            brand_count: result.stats?.brandCount || 0,
+            family_count: result.stats?.familyCount || 0,
+            processing_duration_ms: Date.now() - _processStartTime,
+          });
+        }
+      } catch (_) { /* analytics must never crash app */ }
+
       App.UI._pendingFile = null;
       const pctEl = document.getElementById(`pipeline-progress-pct`);
       const barEl = document.getElementById(`pipeline-progress-bar`);
@@ -674,6 +732,14 @@ App.UI = {
         App.UI.toast(`✓ "${file.name}" processed: ${App.Fmt.number(result.stats.rowCount)} records, ${result.stats.brandCount} brands, ${result.stats.familyCount} product families`);
       }, 700);
     } else {
+      // Analytics: processing_failed (sanitized category only, no column names or raw data)
+      try {
+        if (App.Analytics && typeof App.Analytics.track === 'function') {
+          const category = (App.Analytics.categorizeError && App.Analytics.categorizeError(result.error)) || 'PROCESSING_ERROR';
+          App.Analytics.track('processing_failed', { error_category: category });
+        }
+      } catch (_) { /* analytics must never crash app */ }
+
       const errEl = document.getElementById('upload-error');
       const errMsg= document.getElementById('upload-error-msg');
       errEl.style.display = '';
@@ -694,6 +760,9 @@ App.UI = {
   async openDrawer(record_id) {
     const rec = await App.DB.get('inventory_records', record_id);
     if (!rec) return;
+
+    // Analytics: meaningful_action (inspect record)
+    try { App.Analytics && App.Analytics.track('meaningful_action', { action: 'inspect_record' }); } catch (_) {}
 
     // Remove existing drawer
     document.getElementById('drawer-overlay')?.remove();
@@ -799,6 +868,9 @@ App.UI = {
   },
 
   async downloadReconciliation(dataset_id) {
+    // Analytics: meaningful_action (download reconciliation)
+    try { App.Analytics && App.Analytics.track('meaningful_action', { action: 'download_reconciliation' }); } catch (_) {}
+
     const records = await App.DB.getAllByIndex('inventory_records','dataset_id',dataset_id);
     const dataset = await App.DB.getDataset(dataset_id);
     const lines = [

@@ -209,21 +209,21 @@ App.Views.Landing = (() => {
               
               <div class="landing-stage-badge mb-20">
                 <span class="landing-stage-badge-dot"></span>
-                <span>AUTONOMOUS INGESTION ENGINE</span>
+                <span>INVENTORY INTELLIGENCE PLATFORM</span>
               </div>
 
               <h1 class="landing-hero-title">
-                Turn Liquidation Manifests Into<br>
-                <span class="gradient-text">Actionable Intelligence</span>
+                Turn Your Inventory Excel Into<br>
+                <span class="gradient-text">Actionable Insights</span>
               </h1>
 
               <p class="landing-hero-sub">
-                Robotic optical scanners and automated intake pipelines ingest high-volume inventory manifests with zero data loss.
+                Upload your inventory spreadsheet and instantly explore products, brands, categories, quantities, value, and more.
               </p>
 
               <div class="landing-stage-actions justify-center mb-32">
                 <button class="btn btn-primary btn-lg landing-hero-btn" onclick="App.Router.go('dashboard')">
-                  <span>Open Dashboard</span>
+                  <span>Analyze My Excel</span>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
@@ -1028,6 +1028,18 @@ App.Views.Landing = (() => {
 
       </div>
     `;
+
+    // Analytics: clean event listener for Hero CTA
+    const heroBtn = container.querySelector('.landing-hero-btn');
+    if (heroBtn) {
+      heroBtn.addEventListener('click', () => {
+        try {
+          if (App.Analytics && typeof App.Analytics.track === 'function') {
+            App.Analytics.track('hero_cta_clicked', { cta_text: 'Analyze My Excel' });
+          }
+        } catch (_) {}
+      });
+    }
   }
 
   function scrollTo(id) {

@@ -1,6 +1,11 @@
 # Dependencies
 node_modules/
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
 # Scratch / Temporary Log Files
 scratch/
 *.log

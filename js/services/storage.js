@@ -81,6 +81,11 @@ App.Storage = (() => {
   async function archiveOriginalFile(originalFile, customMeta = {}) {
     if (!originalFile || !(originalFile instanceof Blob)) {
       console.error('[STORAGE] archive:failed - Input is not a valid File/Blob');
+      try {
+        if (window.App?.Analytics?.track) {
+          window.App.Analytics.track('upload_failed', { error_category: 'INVALID_FILE' });
+        }
+      } catch (_) {}
       return {
         ok: false,
         archiveStatus: 'failed',
@@ -96,6 +101,19 @@ App.Storage = (() => {
       : ('up_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9));
     const timestamp = new Date().toISOString();
 
+    const fileExt = (originalFilename || '').split('.').pop().toLowerCase();
+    const fileSizeMb = +(fileSize / 1024 / 1024).toFixed(2);
+
+    // Analytics: upload_started
+    try {
+      if (window.App?.Analytics?.track) {
+        window.App.Analytics.track('upload_started', {
+          file_extension: fileExt,
+          file_size_mb: fileSizeMb,
+        });
+      }
+    } catch (_) {}
+
     // ── Transition: archive:start ──────────────────────────────
     console.log(`[STORAGE] archive:start | filename="${originalFilename}" | size=${fileSize} bytes | uploadId=${uploadId}`);
 
@@ -104,6 +122,11 @@ App.Storage = (() => {
       sha256 = await computeSHA256(originalFile);
     } catch (hashErr) {
       console.error(`[STORAGE] archive:failed - SHA-256 computation failed: ${hashErr.message}`);
+      try {
+        if (window.App?.Analytics?.track) {
+          window.App.Analytics.track('upload_failed', { error_category: 'INTEGRITY_CHECK_FAILED' });
+        }
+      } catch (_) {}
       return {
         ok: false,
         archiveId: uploadId,
@@ -236,6 +259,11 @@ App.Storage = (() => {
       }
     } catch (putErr) {
       console.error(`[STORAGE] archive:failed - Direct PUT to R2 failed: ${putErr.message}`);
+      try {
+        if (window.App?.Analytics?.track) {
+          window.App.Analytics.track('upload_failed', { error_category: 'UPLOAD_ERROR' });
+        }
+      } catch (_) {}
       return {
         ok: false,
         archiveId: uploadId,
@@ -280,6 +308,16 @@ App.Storage = (() => {
 
       const compData = await compRes.json();
       console.log(`[STORAGE] archive:complete | successfully archived to ${storagePath} (SHA-256: ${sha256})`);
+
+      // Analytics: upload_success
+      try {
+        if (window.App?.Analytics?.track) {
+          window.App.Analytics.track('upload_success', {
+            file_extension: fileExt,
+            file_size_mb: fileSizeMb,
+          });
+        }
+      } catch (_) {}
 
       return {
         ok: true,

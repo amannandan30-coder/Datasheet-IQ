@@ -163,6 +163,12 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── API ROUTES: ANALYTICS INGESTION PROXY ───────────────────
+  if (pathname === '/api/analytics/track') {
+    const trackHandler = require('./api/analytics/track');
+    return trackHandler(req, res);
+  }
+
   // ── API ROUTES: ORIGINAL FILE ARCHIVE ───────────────────────
   if (pathname === '/api/archive/create-upload' && req.method === 'POST') {
     try {

@@ -160,8 +160,13 @@ App.Views.Login = (() => {
     hideError();
     setSubmitting(submitBtn, true, 'Signing In…');
 
+    // Analytics: login_started
+    try { App.Analytics && App.Analytics.track('login_started', { method: 'email' }); } catch (_) {}
+
     try {
       await App.Auth.signInWithEmail(email, password);
+      // Analytics: login_success
+      try { App.Analytics && App.Analytics.track('login_success', { method: 'email' }); } catch (_) {}
       App.UI.toast('Welcome back! 👋');
       App.Router.go('dashboard');
     } catch (err) {
@@ -176,6 +181,9 @@ App.Views.Login = (() => {
 
     console.log(`[ROUTE-DIAG] BEFORE_AUTH | handleGoogleSignIn click | ROUTE_BEFORE=${App.State?.route} | HASH_BEFORE=${window.location.hash} | isAuth=${App.Auth?.isAuthenticated}`);
 
+    // Analytics: login_started (Google)
+    try { App.Analytics && App.Analytics.track('login_started', { method: 'google' }); } catch (_) {}
+
     if (googleBtn) {
       googleBtn.disabled = true;
       googleBtn.style.opacity = '0.7';
@@ -186,6 +194,8 @@ App.Views.Login = (() => {
       console.log(`[ROUTE-DIAG] POPUP_RESOLVED | handleGoogleSignIn received user | user=${user ? user.email : 'null'} | uid=${user ? user.uid : 'null'} | isAuth=${App.Auth?.isAuthenticated} | ROUTE_BEFORE=${App.State?.route} | HASH_BEFORE=${window.location.hash}`);
 
       if (user) {
+        // Analytics: login_success (Google)
+        try { App.Analytics && App.Analytics.track('login_success', { method: 'google' }); } catch (_) {}
         App.UI.toast('Signed in with Google! 🌐');
         if (App.State.route === 'login' || App.State.route === 'signup') {
           console.log(`[ROUTE-DIAG] ROUTER_GO_DASHBOARD | caller=handleGoogleSignIn | HASH_BEFORE=${window.location.hash}`);

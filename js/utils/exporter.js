@@ -37,6 +37,9 @@ App.Exporter = (() => {
 
   function exportToCSV(filename, records) {
     if (!records || !records.length) return;
+
+    // Analytics: meaningful_action (CSV export)
+    try { App.Analytics && App.Analytics.track('meaningful_action', { action: 'export_csv', record_count: records.length }); } catch (_) {}
     
     const headers = [
       'Source Sheet', 'Item ID', 'UPC', 'Product Name', 'Brand', 
@@ -88,6 +91,9 @@ App.Exporter = (() => {
       exportToCSV(filename, records);
       return;
     }
+
+    // Analytics: meaningful_action (XLSX export)
+    try { App.Analytics && App.Analytics.track('meaningful_action', { action: 'export_xlsx', record_count: records.length }); } catch (_) {}
 
     const wb = XLSX.utils.book_new();
 

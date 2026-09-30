@@ -194,8 +194,13 @@ App.Views.Signup = (() => {
     hideError();
     setSubmitting(submitBtn, true, 'Creating Account…');
 
+    // Analytics: signup_started
+    try { App.Analytics && App.Analytics.track('signup_started', { method: 'email' }); } catch (_) {}
+
     try {
       await App.Auth.signUpWithEmail(email, password, name);
+      // Analytics: signup_success
+      try { App.Analytics && App.Analytics.track('signup_success', { method: 'email' }); } catch (_) {}
       App.UI.toast('Account created! Welcome to DataSheet IQ 🎉');
       App.Router.go('dashboard');
     } catch (err) {
@@ -209,6 +214,9 @@ App.Views.Signup = (() => {
     hideError();
     console.log(`[AUTH-FLOW] SIGNUP.handleGoogleSignIn START`);
 
+    // Analytics: signup_started (Google)
+    try { App.Analytics && App.Analytics.track('signup_started', { method: 'google' }); } catch (_) {}
+
     if (googleBtn) {
       googleBtn.disabled = true;
       googleBtn.style.opacity = '0.7';
@@ -218,6 +226,8 @@ App.Views.Signup = (() => {
       const user = await App.Auth.signInWithGoogle();
       console.log(`[AUTH-FLOW] SIGNUP.handleGoogleSignIn RESOLVED, user=${user?.email}, route=${App.State?.route}`);
       if (user) {
+        // Analytics: signup_success (Google)
+        try { App.Analytics && App.Analytics.track('signup_success', { method: 'google' }); } catch (_) {}
         App.UI.toast('Signed up with Google! 🌐');
         const currentRoute = App.State.route;
         if (currentRoute === 'login' || currentRoute === 'signup') {
