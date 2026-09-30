@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="is-landing-html">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="description" content="DataSheet IQ — Upload, normalize, and analyze inventory Excel files with Category → Brand → Product → Variant drill-down.">
   <title>DataSheet IQ — Inventory Intelligence</title>
-  <link rel="canonical" href="https://datasheetiq.com">
+  <link rel="canonical" href="https://liquidation-iq.vercel.app/">
 
   <!-- Favicon & App Icons -->
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
@@ -19,13 +19,52 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="DataSheet IQ — Inventory Intelligence">
   <meta property="og:description" content="Upload, normalize, and analyze inventory Excel files with Category → Brand → Product → Variant drill-down.">
-  <meta property="og:url" content="https://datasheetiq.com">
+  <meta property="og:url" content="https://liquidation-iq.vercel.app/">
   <meta property="og:site_name" content="DataSheet IQ">
 
   <!-- Twitter Card Metadata -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="DataSheet IQ — Inventory Intelligence">
   <meta name="twitter:description" content="Upload, normalize, and analyze inventory Excel files with Category → Brand → Product → Variant drill-down.">
+
+  <!-- Structured Data for Search Crawlers -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "DataSheet IQ",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "All",
+    "description": "Upload, normalize, and analyze inventory Excel files with Category → Brand → Product → Variant drill-down, AI conversational querying, and automated data quality reconciliation.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <!-- Early Route Detection (prevents app shell flash on direct non-landing hash navigation) -->
+  <script>
+    (function() {
+      try {
+        var h = window.location.hash;
+        if (h && h !== '#/' && h !== '#/landing' && h !== '#/home') {
+          document.documentElement.classList.remove('is-landing-html');
+          if (document.body) {
+            document.body.classList.remove('is-landing');
+          } else {
+            document.addEventListener('DOMContentLoaded', function() {
+              var h2 = window.location.hash;
+              if (h2 && h2 !== '#/' && h2 !== '#/landing' && h2 !== '#/home') {
+                document.body.classList.remove('is-landing');
+              }
+            });
+          }
+        }
+      } catch (_) {}
+    })();
+  </script>
 
   <!-- Design System + Components -->
   <link rel="stylesheet" href="css/design-system.css?v=5.0">
@@ -35,7 +74,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="is-landing">
 
 <div class="app-shell">
 
@@ -133,11 +172,83 @@
 
     <!-- â”€â”€ MAIN CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <main class="main-content" id="main-content">
-      <!-- Populated by router -->
-      <div class="flex items-center justify-center" style="height:100%">
-        <div class="text-center" style="opacity:0.4">
-          <div class="spinner" style="width:32px;height:32px;margin:0 auto 12px auto"></div><div class="text-lg font-semibold">Initializing...</div>
-        </div>
+      <!-- Static crawlable landing content for SEO and instant first-paint (dynamically replaced by Landing view) -->
+      <div class="landing-wrapper" id="landing-root">
+        <header class="landing-nav" id="landing-nav">
+          <div class="landing-nav-container">
+            <div class="landing-brand" role="button" tabindex="0">
+              <div class="landing-brand-icon">
+                <img src="assets/logo-icon.svg" alt="DataSheet IQ" width="28" height="28" style="display:block;width:28px;height:28px;object-fit:contain">
+              </div>
+              <div>
+                <div class="landing-brand-title">DataSheet IQ</div>
+              </div>
+            </div>
+            <div class="landing-nav-actions">
+              <a href="#/dashboard" class="btn btn-primary btn-md landing-cta-btn">
+                <span>Open Dashboard</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </header>
+
+        <section class="landing-hero-section" id="overview">
+          <div class="hero-bg-overlay"></div>
+          <div class="landing-container">
+            <div class="landing-hero-content text-center">
+              <div class="landing-stage-badge mb-20">
+                <span class="landing-stage-badge-dot"></span>
+                <span>INVENTORY INTELLIGENCE PLATFORM</span>
+              </div>
+              <h1 class="landing-hero-title">
+                Turn Your Inventory Excel Into<br>
+                <span class="gradient-text">Actionable Insights</span>
+              </h1>
+              <p class="landing-hero-sub">
+                Upload your inventory spreadsheet and instantly explore products, brands, categories, quantities, value, and more.
+              </p>
+              <div class="landing-stage-actions justify-center mb-32">
+                <a href="#/dashboard" class="btn btn-primary btn-lg landing-hero-btn">
+                  <span>Analyze My Excel</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </a>
+              </div>
+              <div class="hero-metrics-pill">
+                <div class="pill-stat"><span class="stat-num">7,980</span> <span class="stat-lbl">SKUs Parsed</span></div>
+                <div class="stat-sep">•</div>
+                <div class="pill-stat"><span class="stat-num">20,861</span> <span class="stat-lbl">Units Reconciled</span></div>
+                <div class="stat-sep">•</div>
+                <div class="pill-stat"><span class="stat-num">15,144.22 KG</span> <span class="stat-lbl">Net Weight</span></div>
+                <div class="stat-sep">•</div>
+                <div class="pill-stat tag-green"><span>Deterministic Pipeline</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="landing-section features-section" id="features">
+          <div class="landing-container">
+            <div class="landing-section-header text-center">
+              <div class="landing-section-badge mb-16">
+                <span class="landing-stage-badge-dot dot-cyan"></span>
+                <span>ENGINEERED FOR ENTERPRISE SCALE</span>
+              </div>
+              <h2 class="landing-section-title">
+                Comprehensive Inventory <span class="gradient-text">Intelligence</span>
+              </h2>
+              <p class="landing-section-sub">
+                Designed to solve the hardest problems in inventory liquidation — from unstructured manifests to instant financial reconciliation.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
 

@@ -49,7 +49,7 @@ window.addEventListener('beforeunload', function() {
 
 App.State = {
   dataset_id: null,
-  route: 'dashboard',
+  route: 'landing',
   params: {},
 };
 
@@ -61,7 +61,11 @@ App.Router = {
   _currentRouteKey: '',
 
   getCurrentRouteKey() {
-    return window.location.hash || ('#/' + (App.State?.route || 'landing'));
+    const h = window.location.hash;
+    if (!h || h === '#/' || h === '#/landing' || h === '#/home') {
+      return '/';
+    }
+    return h;
   },
 
   saveScrollPosition(routeKey) {
@@ -115,6 +119,24 @@ App.Router = {
   go(page, params = {}) {
     this.saveScrollPosition();
     this._isHistoryNavigation = false;
+
+    // Special-case navigation to public landing page so navigation goes to "/"
+    if (page === 'landing' || page === 'home') {
+      const targetUrl = window.location.pathname + (window.location.search || '');
+      const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown';
+      const fromRoute = App.State?.route || 'unknown';
+      console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHANGE\n  FROM: ${fromRoute}\n  TO: ${page}\n  REASON: Router.go (landing root)\n  CALLER/FUNCTION: ${caller}\n  AUTH_USER: ${App.Auth?.currentUser?.email || 'null'}`);
+      console.log(`[ROUTE-DIAG] ROUTER_GO_LANDING | ROUTE_BEFORE=${fromRoute} | HASH_BEFORE=${window.location.hash} | targetUrl=${targetUrl} | caller=${caller}`);
+
+      if (!window.location.hash && App.State.route === 'landing') {
+        App.UI.render();
+      } else {
+        history.pushState(null, '', targetUrl);
+        App.UI.render();
+      }
+      return;
+    }
+
     const qs = new URLSearchParams(params).toString();
     const targetHash = '#/' + page + (qs ? '?' + qs : '');
     const caller = new Error().stack?.split('\n')[2]?.trim() || 'unknown';
@@ -145,16 +167,30 @@ App.Router = {
   },
 
   parse() {
-    const rawHash = window.location.hash.slice(2) || 'landing';
-    const [page, qs] = rawHash.split('?');
+    const rawHash = window.location.hash ? window.location.hash.slice(2) : '';
+    let page = '';
+    let qs = '';
+    if (rawHash) {
+      [page, qs] = rawHash.split('?');
+    }
     const params = Object.fromEntries(new URLSearchParams(qs));
     const prevRoute = App.State.route;
-    App.State.route  = page || 'landing';
+
+    // Normalize root and landing routes
+    if (!page || page === 'landing' || page === 'home') {
+      page = 'landing';
+      // If user entered via hash like #/landing or #/home or #/, cleanly replace with '/' in URL bar
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname + (window.location.search || ''));
+      }
+    }
+
+    App.State.route  = page;
     App.State.params = params;
     console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_CHECK: prev="${prevRoute}" current="${App.State.route}" hash="${window.location.hash}" isAuthenticated=${App.Auth?.isAuthenticated}`);
     console.log(`[ROUTE-DIAG] ROUTE_BEFORE: "${prevRoute}" | ROUTE_AFTER: "${App.State.route}" | HASH: "${window.location.hash}" | isAuthenticated=${App.Auth?.isAuthenticated}`);
 
-    const currentHash = rawHash;
+    const currentHash = page === 'landing' ? '/' : (rawHash || page);
     const stack = this.historyStack;
 
     if (stack.length === 0) {
@@ -195,7 +231,7 @@ App.UI = {
     App.UI.closeMobileMenu();
 
     const isHistoryNav = App.Router._isHistoryNavigation;
-    const incomingRouteKey = window.location.hash || ('#/' + (App.State?.route || 'landing'));
+    const incomingRouteKey = App.Router.getCurrentRouteKey();
 
     // Save previous route scroll position if we are navigating away
     if (App.Router._currentRouteKey && App.Router._currentRouteKey !== incomingRouteKey) {
@@ -235,15 +271,25 @@ App.UI = {
     console.log(`[EDGE-LOOP] ${_appTs()} RENDER #${renderNum} START: route="${route}" hash="${window.location.hash}" dataset_id=${dataset_id}`);
     console.log(`[ROUTE-DIAG] RENDER_START #${renderNum} | route="${route}" | HASH="${window.location.hash}" | isAuthenticated=${isAuthenticated}`);
 
-    // ── FIREBASE AUTHENTICATION ROUTE GUARD ──────────────────
+    // ── FIREBASE AUTHENTICATION ROUTE GUARD & FULLSCREEN TOGGLE ──
     const PUBLIC_ROUTES = ['landing', 'home', 'login', 'signup', 'forgot-password'];
     const AUTH_PAGES = ['login', 'signup', 'forgot-password'];
 
+    // Toggle Landing / Auth Fullscreen Mode layout on document.body AND html element immediately
+    const isFullScreenPage = PUBLIC_ROUTES.includes(route);
+    if (isFullScreenPage) {
+      document.body.classList.add('is-landing');
+      document.documentElement.classList.add('is-landing-html');
+    } else {
+      document.body.classList.remove('is-landing');
+      document.documentElement.classList.remove('is-landing-html');
+    }
+
     console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_GUARD_START: route="${route}" isInitialized=${App.Auth?.isInitialized} isAuthenticated=${isAuthenticated}`);
 
-    // 1. If Auth service is initializing, render clean loading state (NEVER redirect while pending)
-    if (window.App.Auth && !App.Auth.isInitialized) {
-      console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_GUARD_DECISION: WAITING (auth initializing)`);
+    // 1. If Auth service is initializing AND route is NOT landing/home, render clean loading state (NEVER redirect while pending)
+    if (window.App.Auth && !App.Auth.isInitialized && route !== 'landing' && route !== 'home') {
+      console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_GUARD_DECISION: WAITING (auth initializing for ${route})`);
       main.innerHTML = `
         <div class="flex flex-col items-center justify-center" style="height:70vh">
           <div class="spinner mb-16" style="width:36px;height:36px"></div>
@@ -268,16 +314,6 @@ App.UI = {
     }
 
     console.log(`[EDGE-LOOP] ${_appTs()} ROUTE_GUARD_DECISION: ALLOW "${route}" (isAuthenticated=${isAuthenticated})`);
-
-    // Toggle Landing / Auth Fullscreen Mode layout on document.body AND html element
-    const isFullScreenPage = PUBLIC_ROUTES.includes(route);
-    if (isFullScreenPage) {
-      document.body.classList.add('is-landing');
-      document.documentElement.classList.add('is-landing-html');
-    } else {
-      document.body.classList.remove('is-landing');
-      document.documentElement.classList.remove('is-landing-html');
-    }
 
     // Update Topbar User Header Control
     App.UI.updateUserHeader();
@@ -1089,12 +1125,17 @@ App.GlobalSearch = {
   window.addEventListener('popstate', () => {
     console.log(`[EDGE-LOOP] ${_appTs()} POPSTATE EVENT: hash="${window.location.hash}"`);
     App.Router._isHistoryNavigation = true;
+    App.UI.render();
   });
 
   // Listen for hash changes
   window.addEventListener('hashchange', () => {
     console.log(`[EDGE-LOOP] ${_appTs()} HASHCHANGE EVENT: new hash="${window.location.hash}", isAuthenticated=${App.Auth?.isAuthenticated}`);
     console.log(`[ROUTE-DIAG] HASHCHANGE: new hash="${window.location.hash}" | isAuthenticated=${App.Auth?.isAuthenticated} | route=${App.State?.route}`);
+    // If popstate already handled history navigation for this event cycle, skip duplicate render
+    if (App.Router._isHistoryNavigation) {
+      return;
+    }
     App.UI.render();
   });
 
