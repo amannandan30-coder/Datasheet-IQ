@@ -27,6 +27,7 @@ scratch_*
 !package-lock.json
 *.csv
 *.txt
+!robots.txt
 !LICENSE
 !README.md
 *_cleaned*.xlsx
